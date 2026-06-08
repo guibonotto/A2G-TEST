@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Editar Caso de Teste — A2G TEST</title>
+<link rel="stylesheet" href="styles.css" />
+<style>
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  .steps-editor { display: flex; flex-direction: column; gap: 8px; }
+  .step-row { display: flex; align-items: flex-start; gap: 10px; }
+  .step-num {
+    width: 28px; height: 28px; border-radius: 6px;
+    background: rgba(0,229,192,0.1); border: 1px solid rgba(0,229,192,0.2);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-size: 10px; color: var(--accent2);
+    flex-shrink: 0; margin-top: 4px;
+  }
+  .step-input {
+    flex: 1; background: var(--surface2); border: 0.5px solid var(--border); border-radius: 8px;
+    padding: 10px 14px; color: var(--text); font-family: var(--mono); font-size: 12px;
+    outline: none; transition: border-color 0.2s;
+  }
+  .step-input:focus { border-color: var(--accent2); }
+  .step-del { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 16px; padding: 4px 8px; border-radius: 4px; transition: all 0.15s; margin-top: 4px; }
+  .step-del:hover { color: var(--danger); background: rgba(255,92,92,0.08); }
+  .add-step-btn {
+    display: flex; align-items: center; gap: 8px;
+    font-family: var(--mono); font-size: 12px; color: var(--muted);
+    background: none; border: 0.5px dashed var(--border); border-radius: 8px;
+    padding: 10px 16px; cursor: pointer; width: 100%; margin-top: 4px; transition: all 0.15s;
+  }
+  .add-step-btn:hover { color: var(--accent2); border-color: rgba(0,229,192,0.3); }
+  .form-footer {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding-top: 24px; border-top: 0.5px solid var(--border); margin-top: 8px; flex-wrap: wrap;
+  }
+  .section-divider { border: none; border-top: 0.5px solid var(--border); margin: 28px 0; }
+  .subsection-title { font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 14px; }
+  .edit-banner {
+    display: flex; align-items: center; gap: 12px;
+    background: rgba(0,229,192,0.07); border: 0.5px solid rgba(0,229,192,0.2); border-radius: 8px;
+    padding: 12px 16px; margin-bottom: 24px; font-family: var(--mono); font-size: 12px; color: var(--accent2);
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="logo" href="index.html">
+    <span class="logo-dot"></span>
+    A2G<span>&nbsp;TEST</span>
+  </a>
+  <div class="nav-right">
+    <div class="nav-user">
+      <div class="avatar">AS</div>
+      Admin Silva
+    </div>
+    <a class="btn btn-ghost btn-sm" href="login.html">Sair</a>
+  </div>
+</nav>
+
+<div class="app-layout">
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Principal</div>
+      <a class="sidebar-link active" href="dashboard.html">
+        <span class="sidebar-icon">◈</span> Dashboard
+      </a>
+      <a class="sidebar-link" href="test-create.html">
+        <span class="sidebar-icon">⊕</span> Novo caso de teste
+      </a>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Gestão</div>
+      <a class="sidebar-link" href="permissions.html">
+        <span class="sidebar-icon">⬟</span> Permissões
+      </a>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Conta</div>
+      <a class="sidebar-link" href="login.html">
+        <span class="sidebar-icon">→</span> Sair
+      </a>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <div class="page-header" style="padding-top:0;">
+      <div class="page-header-inner">
+        <div>
+          <div class="page-tag">// US-02 — Editar caso de teste</div>
+          <h1 class="page-title">Editar: TC-001</h1>
+          <p class="page-sub">Modifique os campos necessários e salve as alterações.</p>
+        </div>
+        <div style="display:flex;gap:10px;">
+          <a class="btn btn-ghost btn-sm" href="test-detail.html">← Ver detalhes</a>
+          <a class="btn btn-ghost btn-sm" href="dashboard.html">← Dashboard</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="edit-banner">
+      <span>◈</span>
+      Editando TC-001 · Última alteração por Admin Silva em 20 Jun 2025, 14:32
+    </div>
+
+    <div class="card fade-in">
+      <div class="form-row-3">
+        <div class="form-group">
+          <label class="form-label">ID do caso</label>
+          <input class="form-input" type="text" value="TC-001" readonly style="color:var(--muted);" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tipo de teste</label>
+          <select class="form-select">
+            <option selected>Unitário</option>
+            <option>Integração</option>
+            <option>E2E</option>
+            <option>Regressão</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Prioridade</label>
+          <select class="form-select">
+            <option selected>Alta</option>
+            <option>Média</option>
+            <option>Baixa</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Título do caso de teste</label>
+        <input class="form-input" type="text" value="Login com credenciais válidas" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Descrição</label>
+        <textarea class="form-textarea">Verificar que o sistema permite o acesso de um usuário registrado com e-mail e senha válidos, redirecionando-o corretamente ao dashboard após a autenticação bem-sucedida.</textarea>
+      </div>
+
+      <hr class="section-divider" />
+      <div class="subsection-title">// Pré-condições</div>
+      <div class="form-group">
+        <textarea class="form-textarea" style="min-height:80px;">Usuário deve estar cadastrado no sistema com status ativo. O e-mail teste@a2gtest.com deve existir na base de dados. Sistema de autenticação deve estar disponível e operacional.</textarea>
+      </div>
+
+      <hr class="section-divider" />
+      <div class="subsection-title">// Passos de execução</div>
+      <div class="steps-editor" id="steps-container">
+        <div class="step-row">
+          <div class="step-num">01</div>
+          <input class="step-input" type="text" value="Acessar a página de login em /login" />
+          <button class="step-del" onclick="this.parentElement.remove()">×</button>
+        </div>
+        <div class="step-row">
+          <div class="step-num">02</div>
+          <input class="step-input" type="text" value="Inserir o e-mail válido no campo E-mail" />
+          <button class="step-del" onclick="this.parentElement.remove()">×</button>
+        </div>
+        <div class="step-row">
+          <div class="step-num">03</div>
+          <input class="step-input" type="text" value="Inserir a senha correta no campo Senha" />
+          <button class="step-del" onclick="this.parentElement.remove()">×</button>
+        </div>
+        <div class="step-row">
+          <div class="step-num">04</div>
+          <input class="step-input" type="text" value="Clicar no botão Entrar" />
+          <button class="step-del" onclick="this.parentElement.remove()">×</button>
+        </div>
+        <div class="step-row">
+          <div class="step-num">05</div>
+          <input class="step-input" type="text" value="Aguardar o processamento da requisição de autenticação" />
+          <button class="step-del" onclick="this.parentElement.remove()">×</button>
+        </div>
+        <div class="step-row">
+          <div class="step-num">06</div>
+          <input class="step-input" type="text" value="Verificar o redirecionamento para o dashboard" />
+          <button class="step-del" onclick="this.parentElement.remove()">×</button>
+        </div>
+      </div>
+      <button class="add-step-btn" onclick="addStep()">+ Adicionar passo</button>
+
+      <hr class="section-divider" />
+      <div class="subsection-title">// Resultado esperado</div>
+      <div class="form-group">
+        <textarea class="form-textarea" style="min-height:80px;">O usuário é autenticado com sucesso e redirecionado para o dashboard. O token JWT é gerado e armazenado. A sessão é iniciada corretamente e o nome do usuário é exibido na barra de navegação.</textarea>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Responsável</label>
+          <select class="form-select">
+            <option selected>Admin Silva</option>
+            <option>João Tester</option>
+            <option>Maria QA</option>
+            <option>Carlos Dev</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Status</label>
+          <select class="form-select">
+            <option>Rascunho</option>
+            <option>Em revisão</option>
+            <option selected>Aprovado</option>
+            <option>Falho</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Tags (separadas por vírgula)</label>
+        <input class="form-input" type="text" value="auth, login, sessão" />
+      </div>
+
+      <div class="form-footer">
+        <a class="btn btn-danger btn-sm" href="dashboard.html">Excluir caso</a>
+        <div style="display:flex;gap:10px;">
+          <a class="btn btn-ghost" href="test-detail.html">Cancelar</a>
+          <a class="btn btn-outline" href="test-detail.html">Salvar alterações →</a>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+  let stepCount = 6;
+  function addStep() {
+    stepCount++;
+    const num = stepCount.toString().padStart(2, '0');
+    const container = document.getElementById('steps-container');
+    const row = document.createElement('div');
+    row.className = 'step-row';
+    row.innerHTML = `<div class="step-num">${num}</div><input class="step-input" type="text" placeholder="Descreva o passo ${stepCount}..." /><button class="step-del" onclick="this.parentElement.remove()">×</button>`;
+    container.appendChild(row);
+  }
+</script>
+</body>
+</html>

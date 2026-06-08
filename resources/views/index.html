@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>A2G TEST — Gestão de Casos de Teste</title>
+<link rel="stylesheet" href="styles.css" />
+<style>
+  nav { padding: 20px 48px; }
+  .hero {
+    min-height: 100vh;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    text-align: center;
+    padding: 120px 32px 80px;
+    position: relative; overflow: hidden;
+  }
+  .hero-grid {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(108,99,255,0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(108,99,255,0.06) 1px, transparent 1px);
+    background-size: 64px 64px;
+    mask-image: radial-gradient(ellipse 80% 60% at 50% 40%, black 40%, transparent 100%);
+    -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 40%, black 40%, transparent 100%);
+  }
+  .hero-glow {
+    position: absolute;
+    width: 600px; height: 600px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(108,99,255,0.14) 0%, transparent 70%);
+    top: 50%; left: 50%; transform: translate(-50%, -60%); pointer-events: none;
+  }
+  .hero-badge {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; color: var(--accent2);
+    border: 1px solid rgba(0,229,192,0.3); padding: 6px 14px; border-radius: 100px;
+    margin-bottom: 32px; display: inline-block; text-transform: uppercase;
+    animation: fadeIn 0.6s ease both;
+  }
+  .hero h1 {
+    font-size: clamp(52px, 9vw, 96px); font-weight: 800; line-height: 0.95;
+    letter-spacing: -0.03em; margin-bottom: 24px;
+    animation: fadeIn 0.6s ease 0.1s both;
+  }
+  .hero h1 em { font-style: normal; color: var(--accent); }
+  .hero h1 .a2 { color: var(--accent2); }
+  .hero-sub {
+    font-family: var(--mono); font-size: 15px; color: var(--muted);
+    max-width: 520px; line-height: 1.7; margin-bottom: 48px;
+    animation: fadeIn 0.6s ease 0.2s both;
+  }
+  .hero-actions {
+    display: flex; gap: 16px; flex-wrap: wrap; justify-content: center;
+    animation: fadeIn 0.6s ease 0.3s both;
+  }
+  .btn-lg { font-size: 15px; padding: 14px 32px; border-radius: 8px; }
+  .stats {
+    display: flex; gap: 0;
+    border: 0.5px solid var(--border); border-radius: 12px;
+    margin: 72px auto 0; max-width: 680px; width: 100%; overflow: hidden;
+    animation: fadeIn 0.6s ease 0.4s both;
+  }
+  .stat-item {
+    flex: 1; padding: 24px; text-align: center;
+    border-right: 0.5px solid var(--border);
+  }
+  .stat-item:last-child { border-right: none; }
+  .stat-num { font-family: var(--mono); font-size: 22px; font-weight: 700; color: var(--accent); margin-bottom: 4px; }
+  .stat-label { font-size: 11px; color: var(--muted); font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.08em; }
+
+  .features-section { padding: 96px 48px; max-width: 1100px; margin: 0 auto; }
+  .section-tag { font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em; color: var(--accent2); text-transform: uppercase; margin-bottom: 16px; }
+  .section-title { font-size: 40px; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 12px; line-height: 1.1; }
+  .section-sub { font-family: var(--mono); font-size: 14px; color: var(--muted); max-width: 500px; line-height: 1.7; margin-bottom: 56px; }
+  .features-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 1px; background: var(--border);
+    border: 0.5px solid var(--border); border-radius: 12px; overflow: hidden;
+  }
+  .feature-card { background: var(--surface); padding: 32px; transition: background 0.2s; }
+  .feature-card:hover { background: #13131d; }
+  .feature-icon {
+    width: 40px; height: 40px; border-radius: 8px;
+    background: rgba(108,99,255,0.15); border: 1px solid rgba(108,99,255,0.25);
+    display: flex; align-items: center; justify-content: center; margin-bottom: 20px; font-size: 18px;
+  }
+  .feature-icon.teal { background: rgba(0,229,192,0.1); border-color: rgba(0,229,192,0.2); }
+  .feature-title { font-size: 16px; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.01em; }
+  .feature-desc { font-family: var(--mono); font-size: 12px; color: var(--muted); line-height: 1.7; }
+
+  .cta-section {
+    margin: 0 48px 96px; max-width: 1004px; margin-left: auto; margin-right: auto;
+    border: 0.5px solid var(--border); border-radius: 16px; padding: 72px; text-align: center;
+    position: relative; overflow: hidden; background: var(--surface);
+  }
+  .cta-glow {
+    position: absolute; width: 400px; height: 300px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(108,99,255,0.12) 0%, transparent 70%);
+    top: 50%; left: 50%; transform: translate(-50%, -50%); pointer-events: none;
+  }
+  .cta-section h2 { font-size: 40px; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 16px; position: relative; }
+  .cta-section p { font-family: var(--mono); font-size: 14px; color: var(--muted); margin-bottom: 36px; position: relative; }
+  .cta-btns { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; position: relative; }
+
+  footer {
+    border-top: 0.5px solid var(--border); padding: 32px 48px;
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;
+  }
+  .footer-logo { font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--muted); text-decoration: none; }
+  .footer-logo span { color: var(--accent); }
+  .footer-links { display: flex; gap: 24px; list-style: none; }
+  .footer-links a { font-family: var(--mono); font-size: 12px; color: var(--muted); text-decoration: none; transition: color 0.2s; }
+  .footer-links a:hover { color: var(--text); }
+  .footer-copy { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="logo" href="index.html">
+    <span class="logo-dot"></span>
+    A2G<span>&nbsp;TEST</span>
+  </a>
+  <div class="nav-actions">
+    <a class="btn btn-ghost" href="login.html">Entrar</a>
+    <a class="btn btn-primary" href="register.html">Criar conta</a>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="hero-badge">// Plataforma de gestão de testes</div>
+  <h1>Testes sob<br/><em>controle</em> total<span class="a2">.</span></h1>
+  <p class="hero-sub">
+    Gerencie casos de teste unitários e de integração com rastreabilidade completa, permissões granulares e fluxos ágeis de equipe.
+  </p>
+  <div class="hero-actions">
+    <a class="btn btn-primary btn-lg" href="register.html">Criar conta grátis →</a>
+    <a class="btn btn-outline btn-lg" href="login.html">Já tenho uma conta</a>
+  </div>
+  <div class="stats">
+    <div class="stat-item">
+      <div class="stat-num">US-01</div>
+      <div class="stat-label">Criar casos de teste</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num">US-02</div>
+      <div class="stat-label">Editar caso de teste</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num">US-03</div>
+      <div class="stat-label">Visualizar detalhes</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num">US-21</div>
+      <div class="stat-label">Permissões</div>
+    </div>
+  </div>
+</section>
+
+<section class="features-section">
+  <div class="section-tag">// funcionalidades</div>
+  <h2 class="section-title">Tudo que você precisa<br/>para testar com confiança.</h2>
+  <p class="section-sub">Da criação ao detalhe, cada etapa do ciclo de teste em um único lugar centralizado.</p>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon">⬡</div>
+      <div class="feature-title">Criar casos de teste</div>
+      <p class="feature-desc">Defina cenários com título, descrição, pré-condições, passos e resultado esperado de forma estruturada.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon teal">◈</div>
+      <div class="feature-title">Editar e versionar</div>
+      <p class="feature-desc">Atualize qualquer campo do caso de teste a qualquer momento mantendo rastreabilidade.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">◉</div>
+      <div class="feature-title">Visualizar detalhes</div>
+      <p class="feature-desc">Acesse todos os detalhes do caso de teste em uma tela dedicada, clara e bem organizada.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon teal">⬟</div>
+      <div class="feature-title">Gestão de permissões</div>
+      <p class="feature-desc">Controle quem pode criar, editar ou visualizar casos de teste dentro da equipe.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">◐</div>
+      <div class="feature-title">Cadastro e autenticação</div>
+      <p class="feature-desc">Crie sua conta e acesse a plataforma com segurança em um fluxo simples e direto.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon teal">⬙</div>
+      <div class="feature-title">Painel centralizado</div>
+      <p class="feature-desc">Visualize todos os casos de teste com filtros por status, tipo e prioridade.</p>
+    </div>
+  </div>
+</section>
+
+<div class="cta-section">
+  <div class="cta-glow"></div>
+  <h2>Pronto para começar?</h2>
+  <p>Crie sua conta gratuitamente e comece a gerenciar seus testes agora.</p>
+  <div class="cta-btns">
+    <a class="btn btn-primary btn-lg" href="register.html">Criar conta →</a>
+    <a class="btn btn-ghost btn-lg" href="login.html">Fazer login</a>
+  </div>
+</div>
+
+<footer>
+  <a class="footer-logo" href="index.html"><span>A2G</span> TEST</a>
+  <ul class="footer-links">
+    <li><a href="register.html">Criar conta</a></li>
+    <li><a href="login.html">Login</a></li>
+    <li><a href="dashboard.html">Dashboard</a></li>
+  </ul>
+  <span class="footer-copy">© 2025 A2G TEST. Todos os direitos reservados.</span>
+</footer>
+
+</body>
+</html>

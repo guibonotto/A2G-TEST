@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Dashboard — A2G TEST</title>
+<link rel="stylesheet" href="styles.css" />
+<style>
+  .metric-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 32px; }
+  .metric-card {
+    background: var(--surface); border: 0.5px solid var(--border); border-radius: 10px; padding: 20px 22px;
+  }
+  .metric-label { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 10px; }
+  .metric-val { font-family: var(--mono); font-size: 28px; font-weight: 700; letter-spacing: -0.02em; }
+  .metric-val.purple { color: var(--accent); }
+  .metric-val.teal { color: var(--accent2); }
+  .metric-val.green { color: var(--success); }
+  .metric-val.red { color: var(--danger); }
+  .metric-sub { font-family: var(--mono); font-size: 10px; color: var(--muted); margin-top: 6px; }
+
+  .filter-bar {
+    display: flex; gap: 10px; align-items: center; margin-bottom: 20px; flex-wrap: wrap;
+  }
+  .filter-bar input {
+    background: var(--surface); border: 0.5px solid var(--border); border-radius: 8px;
+    padding: 9px 14px; color: var(--text); font-family: var(--mono); font-size: 12px;
+    outline: none; flex: 1; min-width: 200px; max-width: 320px;
+  }
+  .filter-bar input:focus { border-color: var(--accent); }
+  .filter-bar select {
+    background: var(--surface); border: 0.5px solid var(--border); border-radius: 8px;
+    padding: 9px 14px; color: var(--text); font-family: var(--mono); font-size: 12px;
+    outline: none; cursor: pointer; appearance: none;
+  }
+
+  .tc-id { font-family: var(--mono); font-size: 11px; color: var(--accent); font-weight: 700; }
+  .tc-title { font-size: 13px; font-weight: 600; color: var(--text); }
+  .tc-title a { color: inherit; text-decoration: none; }
+  .tc-title a:hover { color: var(--accent); }
+  .action-link { font-family: var(--mono); font-size: 11px; color: var(--muted); text-decoration: none; padding: 4px 8px; border-radius: 4px; transition: all 0.15s; }
+  .action-link:hover { color: var(--accent); background: rgba(108,99,255,0.1); }
+  .action-link.edit:hover { color: var(--accent2); background: rgba(0,229,192,0.08); }
+
+  .section-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 12px; }
+  .section-bar-title { font-size: 16px; font-weight: 700; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="logo" href="index.html">
+    <span class="logo-dot"></span>
+    A2G<span>&nbsp;TEST</span>
+  </a>
+  <div class="nav-right">
+    <div class="nav-user">
+      <div class="avatar">AS</div>
+      Admin Silva
+    </div>
+    <a class="btn btn-ghost btn-sm" href="login.html">Sair</a>
+  </div>
+</nav>
+
+<div class="app-layout">
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Principal</div>
+      <a class="sidebar-link active" href="dashboard.html">
+        <span class="sidebar-icon">◈</span> Dashboard
+      </a>
+      <a class="sidebar-link" href="test-create.html">
+        <span class="sidebar-icon">⊕</span> Novo caso de teste
+      </a>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Gestão</div>
+      <a class="sidebar-link" href="permissions.html">
+        <span class="sidebar-icon">⬟</span> Permissões
+      </a>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Conta</div>
+      <a class="sidebar-link" href="login.html">
+        <span class="sidebar-icon">→</span> Sair
+      </a>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <div class="page-header" style="padding-top:0;">
+      <div class="page-header-inner">
+        <div>
+          <div class="page-tag">// Dashboard</div>
+          <h1 class="page-title">Casos de Teste</h1>
+          <p class="page-sub">Gerencie todos os casos de teste da sua equipe.</p>
+        </div>
+        <a class="btn btn-primary" href="test-create.html">+ Novo caso de teste</a>
+      </div>
+    </div>
+
+    <div class="metric-grid">
+      <div class="metric-card">
+        <div class="metric-label">Total de testes</div>
+        <div class="metric-val purple">24</div>
+        <div class="metric-sub">↑ 4 esta semana</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Aprovados</div>
+        <div class="metric-val teal">18</div>
+        <div class="metric-sub">75% do total</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Em revisão</div>
+        <div class="metric-val green">4</div>
+        <div class="metric-sub">pendentes de review</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Falhos</div>
+        <div class="metric-val red">2</div>
+        <div class="metric-sub">requerem atenção</div>
+      </div>
+    </div>
+
+    <div class="section-bar">
+      <div class="section-bar-title">Todos os casos</div>
+      <div class="filter-bar">
+        <input type="text" placeholder="Buscar por título ou ID..." />
+        <select>
+          <option>Todos os tipos</option>
+          <option>Unitário</option>
+          <option>Integração</option>
+        </select>
+        <select>
+          <option>Todos os status</option>
+          <option>Aprovado</option>
+          <option>Em revisão</option>
+          <option>Falho</option>
+          <option>Rascunho</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="card" style="padding:0; overflow:hidden;">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Título</th>
+              <th>Tipo</th>
+              <th>Prioridade</th>
+              <th>Status</th>
+              <th>Criado por</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="tc-id">TC-001</td>
+              <td class="tc-title"><a href="test-detail.html">Login com credenciais válidas</a></td>
+              <td><span class="badge badge-purple">Unitário</span></td>
+              <td><span class="badge badge-red">Alta</span></td>
+              <td><span class="badge badge-teal">Aprovado</span></td>
+              <td style="color:var(--muted);">Admin Silva</td>
+              <td style="display:flex;gap:4px;">
+                <a class="action-link" href="test-detail.html">ver</a>
+                <a class="action-link edit" href="test-edit.html">editar</a>
+              </td>
+            </tr>
+            <tr>
+              <td class="tc-id">TC-002</td>
+              <td class="tc-title"><a href="test-detail.html">Login com senha incorreta</a></td>
+              <td><span class="badge badge-purple">Unitário</span></td>
+              <td><span class="badge badge-red">Alta</span></td>
+              <td><span class="badge badge-teal">Aprovado</span></td>
+              <td style="color:var(--muted);">João Tester</td>
+              <td style="display:flex;gap:4px;">
+                <a class="action-link" href="test-detail.html">ver</a>
+                <a class="action-link edit" href="test-edit.html">editar</a>
+              </td>
+            </tr>
+            <tr>
+              <td class="tc-id">TC-003</td>
+              <td class="tc-title"><a href="test-detail.html">Cadastro de novo usuário</a></td>
+              <td><span class="badge badge-amber">Integração</span></td>
+              <td><span class="badge badge-amber">Média</span></td>
+              <td><span class="badge badge-amber">Em revisão</span></td>
+              <td style="color:var(--muted);">Maria QA</td>
+              <td style="display:flex;gap:4px;">
+                <a class="action-link" href="test-detail.html">ver</a>
+                <a class="action-link edit" href="test-edit.html">editar</a>
+              </td>
+            </tr>
+            <tr>
+              <td class="tc-id">TC-004</td>
+              <td class="tc-title"><a href="test-detail.html">Fluxo de checkout completo</a></td>
+              <td><span class="badge badge-amber">Integração</span></td>
+              <td><span class="badge badge-red">Alta</span></td>
+              <td><span class="badge badge-red">Falho</span></td>
+              <td style="color:var(--muted);">Carlos Dev</td>
+              <td style="display:flex;gap:4px;">
+                <a class="action-link" href="test-detail.html">ver</a>
+                <a class="action-link edit" href="test-edit.html">editar</a>
+              </td>
+            </tr>
+            <tr>
+              <td class="tc-id">TC-005</td>
+              <td class="tc-title"><a href="test-detail.html">Validação de campos do formulário</a></td>
+              <td><span class="badge badge-purple">Unitário</span></td>
+              <td><span class="badge badge-green">Baixa</span></td>
+              <td><span class="badge badge-teal">Aprovado</span></td>
+              <td style="color:var(--muted);">João Tester</td>
+              <td style="display:flex;gap:4px;">
+                <a class="action-link" href="test-detail.html">ver</a>
+                <a class="action-link edit" href="test-edit.html">editar</a>
+              </td>
+            </tr>
+            <tr>
+              <td class="tc-id">TC-006</td>
+              <td class="tc-title"><a href="test-detail.html">API de autenticação JWT</a></td>
+              <td><span class="badge badge-amber">Integração</span></td>
+              <td><span class="badge badge-amber">Média</span></td>
+              <td><span class="badge badge-teal">Aprovado</span></td>
+              <td style="color:var(--muted);">Admin Silva</td>
+              <td style="display:flex;gap:4px;">
+                <a class="action-link" href="test-detail.html">ver</a>
+                <a class="action-link edit" href="test-edit.html">editar</a>
+              </td>
+            </tr>
+            <tr>
+              <td class="tc-id">TC-007</td>
+              <td class="tc-title"><a href="test-detail.html">Timeout de sessão inativa</a></td>
+              <td><span class="badge badge-purple">Unitário</span></td>
+              <td><span class="badge badge-amber">Média</span></td>
+              <td><span class="badge badge-amber">Em revisão</span></td>
+              <td style="color:var(--muted);">Maria QA</td>
+              <td style="display:flex;gap:4px;">
+                <a class="action-link" href="test-detail.html">ver</a>
+                <a class="action-link edit" href="test-edit.html">editar</a>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+</body>
+</html>

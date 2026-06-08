@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Detalhes do Caso — A2G TEST</title>
+<link rel="stylesheet" href="styles.css" />
+<style>
+  .detail-header {
+    display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; flex-wrap: wrap;
+    margin-bottom: 28px;
+  }
+  .detail-title-area { flex: 1; }
+  .detail-id { font-family: var(--mono); font-size: 12px; color: var(--accent); margin-bottom: 8px; display: flex; gap: 10px; align-items: center; }
+  .detail-main-title { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 10px; }
+  .detail-badges { display: flex; gap: 8px; flex-wrap: wrap; }
+  .detail-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+  .detail-section { margin-bottom: 28px; }
+  .detail-section-title {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--accent2); margin-bottom: 14px; padding-bottom: 10px; border-bottom: 0.5px solid var(--border);
+  }
+  .meta-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 28px; }
+  .meta-item { background: var(--surface2); border-radius: 8px; padding: 14px 16px; border: 0.5px solid var(--border); }
+  .meta-label { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 6px; }
+  .meta-value { font-family: var(--mono); font-size: 13px; font-weight: 700; }
+  .history-item {
+    display: flex; gap: 14px; align-items: flex-start; padding: 12px 0;
+    border-bottom: 0.5px solid var(--border);
+  }
+  .history-item:last-child { border-bottom: none; }
+  .history-avatar { width: 28px; height: 28px; border-radius: 50%; background: rgba(108,99,255,0.2); border: 1px solid rgba(108,99,255,0.3); display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: 9px; color: var(--accent); flex-shrink: 0; font-weight: 700; }
+  .history-content { flex: 1; }
+  .history-action { font-family: var(--mono); font-size: 12px; color: var(--text); margin-bottom: 3px; }
+  .history-meta { font-family: var(--mono); font-size: 10px; color: var(--muted); }
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="logo" href="index.html">
+    <span class="logo-dot"></span>
+    A2G<span>&nbsp;TEST</span>
+  </a>
+  <div class="nav-right">
+    <div class="nav-user">
+      <div class="avatar">AS</div>
+      Admin Silva
+    </div>
+    <a class="btn btn-ghost btn-sm" href="login.html">Sair</a>
+  </div>
+</nav>
+
+<div class="app-layout">
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Principal</div>
+      <a class="sidebar-link active" href="dashboard.html">
+        <span class="sidebar-icon">◈</span> Dashboard
+      </a>
+      <a class="sidebar-link" href="test-create.html">
+        <span class="sidebar-icon">⊕</span> Novo caso de teste
+      </a>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Gestão</div>
+      <a class="sidebar-link" href="permissions.html">
+        <span class="sidebar-icon">⬟</span> Permissões
+      </a>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Conta</div>
+      <a class="sidebar-link" href="login.html">
+        <span class="sidebar-icon">→</span> Sair
+      </a>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <a class="btn btn-ghost btn-sm" href="dashboard.html" style="margin-bottom:24px;display:inline-flex;">← Voltar para lista</a>
+
+    <div class="card fade-in">
+      <div class="detail-header">
+        <div class="detail-title-area">
+          <div class="detail-id">
+            <span>TC-001</span>
+            <span style="color:var(--muted);">·</span>
+            <span style="color:var(--muted);font-size:11px;">criado em 18 Jun 2025</span>
+          </div>
+          <div class="detail-main-title">Login com credenciais válidas</div>
+          <div class="detail-badges">
+            <span class="badge badge-purple">Unitário</span>
+            <span class="badge badge-red">Alta prioridade</span>
+            <span class="badge badge-teal">Aprovado</span>
+          </div>
+        </div>
+        <div class="detail-actions">
+          <a class="btn btn-outline btn-sm" href="test-edit.html">Editar</a>
+          <a class="btn btn-danger btn-sm" href="dashboard.html">Excluir</a>
+        </div>
+      </div>
+
+      <div class="meta-grid">
+        <div class="meta-item">
+          <div class="meta-label">Responsável</div>
+          <div class="meta-value">Admin Silva</div>
+        </div>
+        <div class="meta-item">
+          <div class="meta-label">Última atualização</div>
+          <div class="meta-value">20 Jun 2025</div>
+        </div>
+        <div class="meta-item">
+          <div class="meta-label">Tags</div>
+          <div class="meta-value" style="color:var(--muted);font-weight:400;">auth, login, sessão</div>
+        </div>
+      </div>
+
+      <div class="detail-section">
+        <div class="detail-section-title">// Descrição</div>
+        <div class="detail-row" style="padding-top:0;border-bottom:none;">
+          <div class="detail-value">
+            Verificar que o sistema permite o acesso de um usuário registrado com e-mail e senha válidos, redirecionando-o corretamente ao dashboard após a autenticação bem-sucedida.
+          </div>
+        </div>
+      </div>
+
+      <div class="detail-section">
+        <div class="detail-section-title">// Pré-condições</div>
+        <div class="detail-value" style="font-family:var(--mono);font-size:13px;line-height:1.7;">
+          — Usuário deve estar cadastrado no sistema com status ativo.<br/>
+          — O e-mail <code style="background:rgba(108,99,255,0.1);color:var(--accent);padding:2px 6px;border-radius:4px;">teste@a2gtest.com</code> deve existir na base de dados.<br/>
+          — Sistema de autenticação deve estar disponível e operacional.
+        </div>
+      </div>
+
+      <div class="detail-section">
+        <div class="detail-section-title">// Passos de execução</div>
+        <ol class="steps-list">
+          <li>Acessar a página de login em <code style="background:rgba(108,99,255,0.1);color:var(--accent);padding:2px 6px;border-radius:4px;">/login</code></li>
+          <li>Inserir o e-mail válido no campo "E-mail": <code style="background:rgba(108,99,255,0.1);color:var(--accent);padding:2px 6px;border-radius:4px;">teste@a2gtest.com</code></li>
+          <li>Inserir a senha correta no campo "Senha"</li>
+          <li>Clicar no botão "Entrar"</li>
+          <li>Aguardar o processamento da requisição de autenticação</li>
+          <li>Verificar o redirecionamento para o dashboard</li>
+        </ol>
+      </div>
+
+      <div class="detail-section">
+        <div class="detail-section-title">// Resultado esperado</div>
+        <div class="alert alert-success">
+          <span>✓</span>
+          O usuário é autenticado com sucesso e redirecionado para o dashboard. O token JWT é gerado e armazenado. A sessão é iniciada corretamente e o nome do usuário é exibido na barra de navegação.
+        </div>
+      </div>
+
+      <div class="detail-section" style="margin-bottom:0;">
+        <div class="detail-section-title">// Histórico de alterações</div>
+        <div class="history-item">
+          <div class="history-avatar">AS</div>
+          <div class="history-content">
+            <div class="history-action">Status alterado de <span style="color:var(--warning);">Em revisão</span> para <span style="color:var(--success);">Aprovado</span></div>
+            <div class="history-meta">Admin Silva · 20 Jun 2025, 14:32</div>
+          </div>
+        </div>
+        <div class="history-item">
+          <div class="history-avatar">JT</div>
+          <div class="history-content">
+            <div class="history-action">Passos de execução atualizados — adicionado passo 6</div>
+            <div class="history-meta">João Tester · 19 Jun 2025, 10:15</div>
+          </div>
+        </div>
+        <div class="history-item">
+          <div class="history-avatar">AS</div>
+          <div class="history-content">
+            <div class="history-action">Caso de teste criado</div>
+            <div class="history-meta">Admin Silva · 18 Jun 2025, 09:00</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+</body>
+</html>

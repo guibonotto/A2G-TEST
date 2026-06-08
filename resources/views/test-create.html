@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Novo Caso de Teste — A2G TEST</title>
+<link rel="stylesheet" href="styles.css" />
+<style>
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  .steps-editor { display: flex; flex-direction: column; gap: 8px; }
+  .step-row {
+    display: flex; align-items: flex-start; gap: 10px;
+  }
+  .step-num {
+    width: 28px; height: 28px; border-radius: 6px;
+    background: rgba(108,99,255,0.12); border: 1px solid rgba(108,99,255,0.2);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-size: 10px; color: var(--accent);
+    flex-shrink: 0; margin-top: 4px;
+  }
+  .step-input {
+    flex: 1; background: var(--surface2); border: 0.5px solid var(--border); border-radius: 8px;
+    padding: 10px 14px; color: var(--text); font-family: var(--mono); font-size: 12px;
+    outline: none; transition: border-color 0.2s;
+  }
+  .step-input:focus { border-color: var(--accent); }
+  .step-input::placeholder { color: var(--muted2); }
+  .add-step-btn {
+    display: flex; align-items: center; gap: 8px;
+    font-family: var(--mono); font-size: 12px; color: var(--muted);
+    background: none; border: 0.5px dashed var(--border); border-radius: 8px;
+    padding: 10px 16px; cursor: pointer; width: 100%; margin-top: 4px; transition: all 0.15s;
+  }
+  .add-step-btn:hover { color: var(--accent); border-color: rgba(108,99,255,0.3); }
+  .form-footer {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding-top: 24px; border-top: 0.5px solid var(--border); margin-top: 8px; flex-wrap: wrap;
+  }
+  .section-divider { border: none; border-top: 0.5px solid var(--border); margin: 28px 0; }
+  .subsection-title { font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 14px; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="logo" href="index.html">
+    <span class="logo-dot"></span>
+    A2G<span>&nbsp;TEST</span>
+  </a>
+  <div class="nav-right">
+    <div class="nav-user">
+      <div class="avatar">AS</div>
+      Admin Silva
+    </div>
+    <a class="btn btn-ghost btn-sm" href="login.html">Sair</a>
+  </div>
+</nav>
+
+<div class="app-layout">
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Principal</div>
+      <a class="sidebar-link" href="dashboard.html">
+        <span class="sidebar-icon">◈</span> Dashboard
+      </a>
+      <a class="sidebar-link active" href="test-create.html">
+        <span class="sidebar-icon">⊕</span> Novo caso de teste
+      </a>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Gestão</div>
+      <a class="sidebar-link" href="permissions.html">
+        <span class="sidebar-icon">⬟</span> Permissões
+      </a>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Conta</div>
+      <a class="sidebar-link" href="login.html">
+        <span class="sidebar-icon">→</span> Sair
+      </a>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <div class="page-header" style="padding-top:0;">
+      <div class="page-header-inner">
+        <div>
+          <div class="page-tag">// US-01 — Criar caso de teste</div>
+          <h1 class="page-title">Novo Caso de Teste</h1>
+          <p class="page-sub">Preencha as informações para criar um novo caso de teste.</p>
+        </div>
+        <a class="btn btn-ghost btn-sm" href="dashboard.html">← Voltar</a>
+      </div>
+    </div>
+
+    <div class="card fade-in">
+      <div class="form-row-3">
+        <div class="form-group">
+          <label class="form-label">ID do caso</label>
+          <input class="form-input" type="text" value="TC-025" readonly style="color:var(--muted);" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tipo de teste</label>
+          <select class="form-select">
+            <option>Unitário</option>
+            <option>Integração</option>
+            <option>E2E</option>
+            <option>Regressão</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Prioridade</label>
+          <select class="form-select">
+            <option>Alta</option>
+            <option>Média</option>
+            <option>Baixa</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Título do caso de teste</label>
+        <input class="form-input" type="text" placeholder="Ex: Verificar autenticação com token expirado" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Descrição</label>
+        <textarea class="form-textarea" placeholder="Descreva o objetivo e o contexto deste caso de teste..."></textarea>
+      </div>
+
+      <hr class="section-divider" />
+      <div class="subsection-title">// Pré-condições</div>
+      <div class="form-group">
+        <textarea class="form-textarea" style="min-height:80px;" placeholder="Liste as condições que devem ser verdadeiras antes da execução do teste..."></textarea>
+      </div>
+
+      <hr class="section-divider" />
+      <div class="subsection-title">// Passos de execução</div>
+      <div class="steps-editor" id="steps-container">
+        <div class="step-row">
+          <div class="step-num">01</div>
+          <input class="step-input" type="text" placeholder="Descreva o primeiro passo..." />
+        </div>
+        <div class="step-row">
+          <div class="step-num">02</div>
+          <input class="step-input" type="text" placeholder="Descreva o segundo passo..." />
+        </div>
+        <div class="step-row">
+          <div class="step-num">03</div>
+          <input class="step-input" type="text" placeholder="Descreva o terceiro passo..." />
+        </div>
+      </div>
+      <button class="add-step-btn" onclick="addStep()">+ Adicionar passo</button>
+
+      <hr class="section-divider" />
+      <div class="subsection-title">// Resultado esperado</div>
+      <div class="form-group">
+        <textarea class="form-textarea" style="min-height:80px;" placeholder="Descreva o que deve acontecer após a execução correta dos passos..."></textarea>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Responsável</label>
+          <select class="form-select">
+            <option>Admin Silva</option>
+            <option>João Tester</option>
+            <option>Maria QA</option>
+            <option>Carlos Dev</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Status inicial</label>
+          <select class="form-select">
+            <option>Rascunho</option>
+            <option>Em revisão</option>
+            <option>Aprovado</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Tags (separadas por vírgula)</label>
+        <input class="form-input" type="text" placeholder="auth, login, segurança" />
+      </div>
+
+      <div class="form-footer">
+        <a class="btn btn-ghost" href="dashboard.html">Cancelar</a>
+        <div style="display:flex;gap:10px;">
+          <a class="btn btn-ghost" href="dashboard.html">Salvar rascunho</a>
+          <a class="btn btn-primary" href="test-detail.html">Criar caso de teste →</a>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+  let stepCount = 3;
+  function addStep() {
+    stepCount++;
+    const num = stepCount.toString().padStart(2, '0');
+    const container = document.getElementById('steps-container');
+    const row = document.createElement('div');
+    row.className = 'step-row';
+    row.innerHTML = `<div class="step-num">${num}</div><input class="step-input" type="text" placeholder="Descreva o passo ${stepCount}..." />`;
+    container.appendChild(row);
+  }
+</script>
+</body>
+</html>

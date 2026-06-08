@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Permissões — A2G TEST</title>
+<link rel="stylesheet" href="styles.css" />
+<style>
+  .roles-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 28px; }
+  .role-card {
+    background: var(--surface2); border: 0.5px solid var(--border); border-radius: 10px; padding: 20px 22px;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .role-card:hover { border-color: var(--border-hover); }
+  .role-card.selected { border-color: var(--accent); background: rgba(108,99,255,0.06); }
+  .role-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+  .role-card-name { font-size: 15px; font-weight: 700; }
+  .role-card-count { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+  .role-card-desc { font-family: var(--mono); font-size: 11px; color: var(--muted); line-height: 1.6; }
+
+  .perm-section { margin-bottom: 8px; }
+  .perm-section-title {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--accent2); margin-bottom: 12px; padding-bottom: 8px; border-bottom: 0.5px solid var(--border);
+  }
+  .perm-row {
+    display: flex; align-items: center; justify-content: space-between; padding: 14px 0;
+    border-bottom: 0.5px solid var(--border);
+  }
+  .perm-row:last-child { border-bottom: none; }
+  .perm-info { display: flex; flex-direction: column; gap: 3px; }
+  .perm-name { font-size: 14px; font-weight: 600; }
+  .perm-desc { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+
+  .toggle-wrap { display: flex; align-items: center; gap: 10px; }
+  .toggle-label { font-family: var(--mono); font-size: 11px; color: var(--muted); min-width: 36px; text-align: right; }
+  .toggle {
+    width: 44px; height: 24px; border-radius: 100px; border: none;
+    cursor: pointer; position: relative; transition: background 0.2s; flex-shrink: 0;
+  }
+  .toggle.on { background: var(--accent); }
+  .toggle.off { background: rgba(255,255,255,0.12); }
+  .toggle::after {
+    content: ''; position: absolute; top: 3px; width: 18px; height: 18px; border-radius: 50%;
+    background: white; transition: left 0.2s;
+  }
+  .toggle.on::after { left: 23px; }
+  .toggle.off::after { left: 3px; }
+
+  .user-row { display: flex; align-items: center; gap: 14px; padding: 12px 0; border-bottom: 0.5px solid var(--border); }
+  .user-row:last-child { border-bottom: none; }
+  .user-meta { flex: 1; }
+  .user-name { font-size: 14px; font-weight: 600; }
+  .user-email { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+  .role-select {
+    background: var(--surface2); border: 0.5px solid var(--border); border-radius: 6px;
+    padding: 7px 12px; color: var(--text); font-family: var(--mono); font-size: 11px;
+    outline: none; cursor: pointer; appearance: none;
+  }
+  .split-layout { display: grid; grid-template-columns: 1fr 1.4fr; gap: 20px; align-items: start; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="logo" href="index.html">
+    <span class="logo-dot"></span>
+    A2G<span>&nbsp;TEST</span>
+  </a>
+  <div class="nav-right">
+    <div class="nav-user">
+      <div class="avatar">AS</div>
+      Admin Silva
+    </div>
+    <a class="btn btn-ghost btn-sm" href="login.html">Sair</a>
+  </div>
+</nav>
+
+<div class="app-layout">
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Principal</div>
+      <a class="sidebar-link" href="dashboard.html">
+        <span class="sidebar-icon">◈</span> Dashboard
+      </a>
+      <a class="sidebar-link" href="test-create.html">
+        <span class="sidebar-icon">⊕</span> Novo caso de teste
+      </a>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Gestão</div>
+      <a class="sidebar-link active" href="permissions.html">
+        <span class="sidebar-icon">⬟</span> Permissões
+      </a>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Conta</div>
+      <a class="sidebar-link" href="login.html">
+        <span class="sidebar-icon">→</span> Sair
+      </a>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <div class="page-header" style="padding-top:0;">
+      <div class="page-header-inner">
+        <div>
+          <div class="page-tag">// US-21 — Gerenciar permissões</div>
+          <h1 class="page-title">Permissões e Perfis</h1>
+          <p class="page-sub">Configure o que cada perfil pode acessar e fazer no sistema.</p>
+        </div>
+        <a class="btn btn-primary btn-sm" href="#">Salvar configurações</a>
+      </div>
+    </div>
+
+    <div class="split-layout fade-in">
+      <!-- LEFT: Roles -->
+      <div>
+        <div style="margin-bottom:16px;">
+          <div class="page-tag" style="margin-bottom:8px;">// Perfis de acesso</div>
+          <p style="font-family:var(--mono);font-size:12px;color:var(--muted);line-height:1.6;">Selecione um perfil para configurar suas permissões.</p>
+        </div>
+        <div class="roles-grid">
+          <div class="role-card selected" onclick="selectRole(this)">
+            <div class="role-card-header">
+              <span class="role-card-name">Administrador</span>
+              <span class="role-card-count">1 usuário</span>
+            </div>
+            <p class="role-card-desc">Acesso total ao sistema, incluindo gerenciamento de permissões.</p>
+          </div>
+          <div class="role-card" onclick="selectRole(this)">
+            <div class="role-card-header">
+              <span class="role-card-name">QA / Tester</span>
+              <span class="role-card-count">3 usuários</span>
+            </div>
+            <p class="role-card-desc">Pode criar, editar e visualizar casos de teste.</p>
+          </div>
+          <div class="role-card" onclick="selectRole(this)">
+            <div class="role-card-header">
+              <span class="role-card-name">Desenvolvedor</span>
+              <span class="role-card-count">2 usuários</span>
+            </div>
+            <p class="role-card-desc">Visualiza e pode executar casos de teste existentes.</p>
+          </div>
+          <div class="role-card" onclick="selectRole(this)">
+            <div class="role-card-header">
+              <span class="role-card-name">Visualizador</span>
+              <span class="role-card-count">1 usuário</span>
+            </div>
+            <p class="role-card-desc">Somente leitura — sem permissão para criar ou editar.</p>
+          </div>
+        </div>
+
+        <!-- Users in role -->
+        <div class="card" style="margin-top:0;">
+          <div class="perm-section-title">// Usuários: Administrador</div>
+          <div class="user-row">
+            <div class="avatar">AS</div>
+            <div class="user-meta">
+              <div class="user-name">Admin Silva</div>
+              <div class="user-email">admin@a2gtest.com</div>
+            </div>
+            <select class="role-select">
+              <option selected>Administrador</option>
+              <option>QA / Tester</option>
+              <option>Desenvolvedor</option>
+              <option>Visualizador</option>
+            </select>
+          </div>
+          <div class="user-row">
+            <div class="avatar" style="background:rgba(0,229,192,0.15);color:var(--accent2);border-color:rgba(0,229,192,0.3);">JT</div>
+            <div class="user-meta">
+              <div class="user-name">João Tester</div>
+              <div class="user-email">joao@a2gtest.com</div>
+            </div>
+            <select class="role-select">
+              <option>Administrador</option>
+              <option selected>QA / Tester</option>
+              <option>Desenvolvedor</option>
+              <option>Visualizador</option>
+            </select>
+          </div>
+          <div class="user-row">
+            <div class="avatar" style="background:rgba(245,166,35,0.15);color:var(--warning);border-color:rgba(245,166,35,0.3);">MQ</div>
+            <div class="user-meta">
+              <div class="user-name">Maria QA</div>
+              <div class="user-email">maria@a2gtest.com</div>
+            </div>
+            <select class="role-select">
+              <option>Administrador</option>
+              <option selected>QA / Tester</option>
+              <option>Desenvolvedor</option>
+              <option>Visualizador</option>
+            </select>
+          </div>
+          <div class="user-row">
+            <div class="avatar" style="background:rgba(0,200,150,0.15);color:var(--success);border-color:rgba(0,200,150,0.3);">CD</div>
+            <div class="user-meta">
+              <div class="user-name">Carlos Dev</div>
+              <div class="user-email">carlos@a2gtest.com</div>
+            </div>
+            <select class="role-select">
+              <option>Administrador</option>
+              <option>QA / Tester</option>
+              <option selected>Desenvolvedor</option>
+              <option>Visualizador</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: Permissions -->
+      <div class="card">
+        <div class="perm-section-title">// Permissões: Administrador</div>
+
+        <div class="perm-section">
+          <div style="font-family:var(--mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;">Casos de teste</div>
+          <div class="perm-row">
+            <div class="perm-info">
+              <div class="perm-name">Criar casos de teste</div>
+              <div class="perm-desc">Permite criar novos casos de teste no sistema</div>
+            </div>
+            <div class="toggle-wrap">
+              <span class="toggle-label" id="lbl-c">Sim</span>
+              <button class="toggle on" id="tog-c" onclick="togglePerm(this,'lbl-c')"></button>
+            </div>
+          </div>
+          <div class="perm-row">
+            <div class="perm-info">
+              <div class="perm-name">Editar casos de teste</div>
+              <div class="perm-desc">Permite modificar casos de teste existentes</div>
+            </div>
+            <div class="toggle-wrap">
+              <span class="toggle-label" id="lbl-e">Sim</span>
+              <button class="toggle on" id="tog-e" onclick="togglePerm(this,'lbl-e')"></button>
+            </div>
+          </div>
+          <div class="perm-row">
+            <div class="perm-info">
+              <div class="perm-name">Visualizar casos de teste</div>
+              <div class="perm-desc">Permite ver detalhes de todos os casos de teste</div>
+            </div>
+            <div class="toggle-wrap">
+              <span class="toggle-label" id="lbl-v">Sim</span>
+              <button class="toggle on" id="tog-v" onclick="togglePerm(this,'lbl-v')"></button>
+            </div>
+          </div>
+          <div class="perm-row">
+            <div class="perm-info">
+              <div class="perm-name">Excluir casos de teste</div>
+              <div class="perm-desc">Permite remover permanentemente casos de teste</div>
+            </div>
+            <div class="toggle-wrap">
+              <span class="toggle-label" id="lbl-d">Sim</span>
+              <button class="toggle on" id="tog-d" onclick="togglePerm(this,'lbl-d')"></button>
+            </div>
+          </div>
+        </div>
+
+        <hr style="border:none;border-top:0.5px solid var(--border);margin:16px 0;" />
+
+        <div class="perm-section">
+          <div style="font-family:var(--mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;">Execução</div>
+          <div class="perm-row">
+            <div class="perm-info">
+              <div class="perm-name">Executar casos de teste</div>
+              <div class="perm-desc">Permite registrar execuções e resultados</div>
+            </div>
+            <div class="toggle-wrap">
+              <span class="toggle-label" id="lbl-r">Sim</span>
+              <button class="toggle on" id="tog-r" onclick="togglePerm(this,'lbl-r')"></button>
+            </div>
+          </div>
+          <div class="perm-row">
+            <div class="perm-info">
+              <div class="perm-name">Aprovar casos de teste</div>
+              <div class="perm-desc">Permite alterar o status para Aprovado</div>
+            </div>
+            <div class="toggle-wrap">
+              <span class="toggle-label" id="lbl-a">Sim</span>
+              <button class="toggle on" id="tog-a" onclick="togglePerm(this,'lbl-a')"></button>
+            </div>
+          </div>
+        </div>
+
+        <hr style="border:none;border-top:0.5px solid var(--border);margin:16px 0;" />
+
+        <div class="perm-section">
+          <div style="font-family:var(--mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;">Administração</div>
+          <div class="perm-row">
+            <div class="perm-info">
+              <div class="perm-name">Gerenciar usuários</div>
+              <div class="perm-desc">Permite convidar e remover membros da equipe</div>
+            </div>
+            <div class="toggle-wrap">
+              <span class="toggle-label" id="lbl-u">Sim</span>
+              <button class="toggle on" id="tog-u" onclick="togglePerm(this,'lbl-u')"></button>
+            </div>
+          </div>
+          <div class="perm-row">
+            <div class="perm-info">
+              <div class="perm-name">Gerenciar permissões</div>
+              <div class="perm-desc">Permite alterar permissões de outros perfis</div>
+            </div>
+            <div class="toggle-wrap">
+              <span class="toggle-label" id="lbl-p">Sim</span>
+              <button class="toggle on" id="tog-p" onclick="togglePerm(this,'lbl-p')"></button>
+            </div>
+          </div>
+          <div class="perm-row" style="border-bottom:none;">
+            <div class="perm-info">
+              <div class="perm-name">Exportar relatórios</div>
+              <div class="perm-desc">Permite exportar dados e relatórios do sistema</div>
+            </div>
+            <div class="toggle-wrap">
+              <span class="toggle-label" id="lbl-x">Sim</span>
+              <button class="toggle on" id="tog-x" onclick="togglePerm(this,'lbl-x')"></button>
+            </div>
+          </div>
+        </div>
+
+        <div style="padding-top:20px;border-top:0.5px solid var(--border);margin-top:8px;display:flex;justify-content:flex-end;gap:10px;">
+          <a class="btn btn-ghost btn-sm" href="#">Resetar padrões</a>
+          <a class="btn btn-primary btn-sm" href="#">Salvar permissões →</a>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+  function togglePerm(btn, lblId) {
+    const isOn = btn.classList.contains('on');
+    btn.classList.toggle('on', !isOn);
+    btn.classList.toggle('off', isOn);
+    document.getElementById(lblId).textContent = isOn ? 'Não' : 'Sim';
+  }
+  function selectRole(card) {
+    document.querySelectorAll('.role-card').forEach(c => c.classList.remove('selected'));
+    card.classList.add('selected');
+  }
+</script>
+</body>
+</html>
