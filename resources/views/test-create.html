@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Novo Caso de Teste — A2G TEST</title>
+<title>Criar caso de teste — A2G TEST</title>
 <link rel="stylesheet" href="styles.css" />
 <style>
   .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
@@ -39,6 +39,7 @@
   }
   .section-divider { border: none; border-top: 0.5px solid var(--border); margin: 28px 0; }
   .subsection-title { font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 14px; }
+  .steps-toggle-area { display:flex; justify-content: space-between; width: 100%; }
 </style>
 </head>
 <body>
@@ -65,7 +66,7 @@
         <span class="sidebar-icon">◈</span> Dashboard
       </a>
       <a class="sidebar-link active" href="test-create.html">
-        <span class="sidebar-icon">⊕</span> Novo caso de teste
+        <span class="sidebar-icon">⊕</span> Criar caso de teste
       </a>
     </div>
     <div class="sidebar-section">
@@ -87,8 +88,8 @@
       <div class="page-header-inner">
         <div>
           <div class="page-tag">// US-01 — Criar caso de teste</div>
-          <h1 class="page-title">Novo Caso de Teste</h1>
-          <p class="page-sub">Preencha as informações para criar um novo caso de teste.</p>
+          <h1 class="page-title">Criar caso de teste</h1>
+          <p class="page-sub">Preencha as informações para criar um Criar caso de teste.</p>
         </div>
         <a class="btn btn-ghost btn-sm" href="dashboard.html">← Voltar</a>
       </div>
@@ -105,18 +106,18 @@
           <select class="form-select">
             <option>Unitário</option>
             <option>Integração</option>
-            <option>E2E</option>
-            <option>Regressão</option>
+            <!-- <option>E2E</option>
+            <option>Regressão</option> -->
           </select>
         </div>
-        <div class="form-group">
+<!--         <div class="form-group">
           <label class="form-label">Prioridade</label>
           <select class="form-select">
             <option>Alta</option>
             <option>Média</option>
             <option>Baixa</option>
           </select>
-        </div>
+        </div> -->
       </div>
 
       <div class="form-group">
@@ -130,31 +131,56 @@
       </div>
 
       <hr class="section-divider" />
-      <div class="subsection-title">// Pré-condições</div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+        <div class="subsection-title" style="margin-bottom:0">// Pré condições</div>
+        <span style="font-family:var(--mono);font-size:11px;color:var(--muted2)">— opcional</span>
+      </div>
+
       <div class="form-group">
         <textarea class="form-textarea" style="min-height:80px;" placeholder="Liste as condições que devem ser verdadeiras antes da execução do teste..."></textarea>
       </div>
 
-      <hr class="section-divider" />
-      <div class="subsection-title">// Passos de execução</div>
-      <div class="steps-editor" id="steps-container">
-        <div class="step-row">
-          <div class="step-num">01</div>
-          <input class="step-input" type="text" placeholder="Descreva o primeiro passo..." />
-        </div>
-        <div class="step-row">
-          <div class="step-num">02</div>
-          <input class="step-input" type="text" placeholder="Descreva o segundo passo..." />
-        </div>
-        <div class="step-row">
-          <div class="step-num">03</div>
-          <input class="step-input" type="text" placeholder="Descreva o terceiro passo..." />
-        </div>
+<hr class="section-divider" />
+
+<div class="steps-toggle-area">
+  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+    <div class="subsection-title" style="margin-bottom:0">// Passos de execução</div>
+    <span style="font-family:var(--mono);font-size:11px;color:var(--muted2)">— opcional</span>
+  </div>
+  <div style="display:flex;gap:8px">
+    <button class="btn btn-ghost btn-sm" id="btn-add-steps" onclick="showSteps()">
+      + Adicionar passos de execução
+    </button>
+    <button class="btn btn-danger btn-sm" id="btn-remove-steps" onclick="hideSteps()" style="display:none">
+      × Remover passos de execução
+    </button>
+  </div>
+</div>
+
+  <div id="steps-panel" style="display:none;margin-top:14px">
+    <div class="steps-editor" id="steps-container">
+      <div class="step-row">
+        <div class="step-num">01</div>
+        <input class="step-input" type="text" placeholder="Descreva o primeiro passo..." />
       </div>
-      <button class="add-step-btn" onclick="addStep()">+ Adicionar passo</button>
+      <div class="step-row">
+        <div class="step-num">02</div>
+        <input class="step-input" type="text" placeholder="Descreva o segundo passo..." />
+      </div>
+      <div class="step-row">
+        <div class="step-num">03</div>
+        <input class="step-input" type="text" placeholder="Descreva o terceiro passo..." />
+      </div>
+    </div>
+    <button class="add-step-btn" onclick="addStep()">+ Adicionar passo</button>
+  </div>
 
       <hr class="section-divider" />
-      <div class="subsection-title">// Resultado esperado</div>
+      <div class="subsection-title">// Entrada esperada</div>
+      <div class="form-group">
+        <textarea class="form-textarea" style="min-height:80px;" placeholder="Descreva a(s) entrada(s) esperada(s) para a inicialização dos passos..."></textarea>
+      </div>
+      <div class="subsection-title">// Saída esperado</div>
       <div class="form-group">
         <textarea class="form-textarea" style="min-height:80px;" placeholder="Descreva o que deve acontecer após a execução correta dos passos..."></textarea>
       </div>
@@ -196,16 +222,36 @@
 </div>
 
 <script>
-  let stepCount = 3;
-  function addStep() {
-    stepCount++;
-    const num = stepCount.toString().padStart(2, '0');
-    const container = document.getElementById('steps-container');
-    const row = document.createElement('div');
-    row.className = 'step-row';
-    row.innerHTML = `<div class="step-num">${num}</div><input class="step-input" type="text" placeholder="Descreva o passo ${stepCount}..." />`;
-    container.appendChild(row);
-  }
+let stepCount = 3;
+
+function showSteps() {
+  document.getElementById('steps-panel').style.display = 'block';
+  document.getElementById('btn-add-steps').style.display = 'none';
+  document.getElementById('btn-remove-steps').style.display = 'inline-flex';
+}
+
+function hideSteps() {
+  document.getElementById('steps-panel').style.display = 'none';
+  document.getElementById('btn-add-steps').style.display = 'inline-flex';
+  document.getElementById('btn-remove-steps').style.display = 'none';
+  // Limpa os passos e volta ao estado inicial
+  document.getElementById('steps-container').innerHTML = `
+    <div class="step-row"><div class="step-num">01</div><input class="step-input" type="text" placeholder="Descreva o primeiro passo..." /></div>
+    <div class="step-row"><div class="step-num">02</div><input class="step-input" type="text" placeholder="Descreva o segundo passo..." /></div>
+    <div class="step-row"><div class="step-num">03</div><input class="step-input" type="text" placeholder="Descreva o terceiro passo..." /></div>
+  `;
+  stepCount = 3;
+}
+
+function addStep() {
+  stepCount++;
+  const num = stepCount.toString().padStart(2, '0');
+  const container = document.getElementById('steps-container');
+  const row = document.createElement('div');
+  row.className = 'step-row';
+  row.innerHTML = `<div class="step-num">${num}</div><input class="step-input" type="text" placeholder="Descreva o passo ${stepCount}..." />`;
+  container.appendChild(row);
+}
 </script>
 </body>
 </html>
