@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Registrar Execução — A2G TEST</title>
+<link rel="stylesheet" href="styles.css" />
+<style>
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .section-divider { border: none; border-top: 0.5px solid var(--border); margin: 28px 0; }
+  .subsection-title { font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 14px; }
+  .form-footer {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding-top: 24px; border-top: 0.5px solid var(--border); margin-top: 8px; flex-wrap: wrap;
+  }
+
+  /* Case info banner */
+  .case-banner {
+    background: var(--surface2); border: 0.5px solid var(--border); border-radius: 10px;
+    padding: 16px 20px; margin-bottom: 28px; display: flex; align-items: center; gap: 16px;
+  }
+  .case-banner-id { font-family: var(--mono); font-size: 12px; color: var(--accent); font-weight: 700; flex-shrink: 0; }
+  .case-banner-title { font-size: 14px; font-weight: 700; }
+  .case-banner-meta { font-family: var(--mono); font-size: 11px; color: var(--muted); margin-top: 3px; }
+  .case-banner-sep { width: 0.5px; height: 36px; background: var(--border); flex-shrink: 0; }
+
+  /* Result selector (US-05) */
+  .result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 28px; }
+  .result-card {
+    border-radius: 10px; padding: 24px 20px; text-align: center; cursor: pointer;
+    border: 1.5px solid var(--border); background: var(--surface2);
+    transition: all 0.2s; position: relative;
+  }
+  .result-card:hover { transform: translateY(-2px); }
+  .result-card.approved { border-color: rgba(0,200,150,0.4); }
+  .result-card.approved:hover, .result-card.approved.selected {
+    background: rgba(0,200,150,0.08); border-color: var(--success);
+    box-shadow: 0 0 0 3px rgba(0,200,150,0.15);
+  }
+  .result-card.failed { border-color: rgba(255,92,92,0.4); }
+  .result-card.failed:hover, .result-card.failed.selected {
+    background: rgba(255,92,92,0.08); border-color: var(--danger);
+    box-shadow: 0 0 0 3px rgba(255,92,92,0.15);
+  }
+  .result-icon { font-size: 32px; margin-bottom: 10px; }
+  .result-label { font-size: 16px; font-weight: 800; letter-spacing: -0.01em; }
+  .result-desc { font-family: var(--mono); font-size: 11px; color: var(--muted); margin-top: 6px; }
+  .result-check {
+    position: absolute; top: 12px; right: 14px;
+    width: 18px; height: 18px; border-radius: 50%;
+    display: none; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 700;
+  }
+  .result-card.selected .result-check { display: flex; }
+  .result-card.approved.selected .result-check { background: var(--success); color: #000; }
+  .result-card.failed.selected .result-check { background: var(--danger); color: #fff; }
+
+  /* Steps checklist */
+  .step-check-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 0; border-bottom: 0.5px solid var(--border);
+    font-family: var(--mono); font-size: 12px; color: var(--text);
+  }
+  .step-check-row:last-child { border-bottom: none; }
+  .step-num-sm {
+    width: 24px; height: 24px; border-radius: 4px; flex-shrink: 0;
+    background: rgba(108,99,255,0.12); border: 1px solid rgba(108,99,255,0.2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px; color: var(--accent);
+  }
+  .step-check-text { flex: 1; line-height: 1.5; }
+  .step-result-btns { display: flex; gap: 6px; flex-shrink: 0; }
+  .step-result-btn {
+    font-family: var(--mono); font-size: 10px; padding: 4px 10px; border-radius: 100px;
+    border: 1px solid var(--border); background: none; color: var(--muted); cursor: pointer;
+    transition: all 0.15s;
+  }
+  .step-result-btn.ok.active { background: rgba(0,200,150,0.15); border-color: var(--success); color: var(--success); }
+  .step-result-btn.fail.active { background: rgba(255,92,92,0.12); border-color: var(--danger); color: var(--danger); }
+  .step-result-btn:not(.active):hover { border-color: var(--border-hover); color: var(--text); }
+
+  /* Success state */
+  .success-state { display: none; text-align: center; padding: 48px 0 32px; }
+  .success-state .success-icon { font-size: 48px; margin-bottom: 16px; }
+  .success-state .success-title { font-size: 24px; font-weight: 800; margin-bottom: 8px; }
+  .success-state .success-sub { font-family: var(--mono); font-size: 12px; color: var(--muted); margin-bottom: 28px; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="logo" href="index.html">
+    <span class="logo-dot"></span>
+    A2G<span>&nbsp;TEST</span>
+  </a>
+  <div class="nav-right">
+    <div class="nav-user">
+      <div class="avatar">AS</div>
+      Admin Silva
+    </div>
+    <a class="btn btn-ghost btn-sm" href="login.html">Sair</a>
+  </div>
+</nav>
+
+<div class="app-layout">
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Principal</div>
+      <a class="sidebar-link active" href="dashboard.html">
+        <span class="sidebar-icon">◈</span> Dashboard
+      </a>
+      <a class="sidebar-link" href="test-create.html">
+        <span class="sidebar-icon">⊕</span> Criar caso de teste
+      </a>
+      <a class="sidebar-link" href="dashboard.html">
+        <span class="sidebar-icon">◎</span> Meus testes
+      </a>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Gestão</div>
+      <a class="sidebar-link" href="permissions.html">
+        <span class="sidebar-icon">⬟</span> Permissões
+      </a>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Conta</div>
+      <a class="sidebar-link" href="login.html">
+        <span class="sidebar-icon">→</span> Sair
+      </a>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <div class="page-header" style="padding-top:0;">
+      <div class="page-header-inner">
+        <div>
+          <div class="page-tag">// US-05 — Registrar execução</div>
+          <h1 class="page-title">Registrar execução</h1>
+          <p class="page-sub">Informe o resultado, data e observações da execução.</p>
+        </div>
+        <a class="btn btn-ghost btn-sm" href="test-detail.html">← Ver detalhes</a>
+      </div>
+    </div>
+
+    <!-- Formulário de execução -->
+    <div class="card fade-in" id="run-form">
+
+      <!-- Info do caso -->
+      <div class="case-banner">
+        <div class="case-banner-id">TC-001</div>
+        <div class="case-banner-sep"></div>
+        <div>
+          <div class="case-banner-title">Login com credenciais válidas</div>
+          <div class="case-banner-meta">Unitário · Responsável: Admin Silva</div>
+        </div>
+      </div>
+
+      <!-- US-05: Resultado -->
+      <div class="subsection-title">// Resultado da execução</div>
+      <div class="result-grid">
+        <div class="result-card approved" id="card-approved" onclick="selectResult('aprovado')">
+          <div class="result-check">✓</div>
+          <div class="result-icon">✓</div>
+          <div class="result-label" style="color:var(--success);">Aprovado</div>
+          <div class="result-desc">Todos os critérios<br/>foram atendidos</div>
+        </div>
+        <div class="result-card failed" id="card-failed" onclick="selectResult('reprovado')">
+          <div class="result-check">✗</div>
+          <div class="result-icon">✗</div>
+          <div class="result-label" style="color:var(--danger);">Reprovado</div>
+          <div class="result-desc">Um ou mais critérios<br/>não foram atendidos</div>
+        </div>
+      </div>
+
+      <!-- US-07: Data, responsável e comentários -->
+      <hr class="section-divider" />
+      <div class="subsection-title">// Dados da execução</div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Data e hora da execução</label>
+          <input class="form-input" type="datetime-local" id="exec-date" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Executado por</label>
+          <select class="form-select" id="exec-resp">
+            <option selected>Admin Silva</option>
+            <option>João Tester</option>
+            <option>Maria QA</option>
+            <option>Carlos Dev</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Comentários da execução</label>
+        <textarea class="form-textarea" id="exec-comments" style="min-height:100px;" placeholder="Descreva observações, erros encontrados, ambiente de teste, versão testada..."></textarea>
+      </div>
+
+      <!-- Checklist dos passos -->
+      <hr class="section-divider" />
+      <div class="subsection-title">// Verificação dos passos</div>
+      <div>
+        <div class="step-check-row">
+          <div class="step-num-sm">01</div>
+          <div class="step-check-text">Acessar a página de login em /login</div>
+          <div class="step-result-btns">
+            <button class="step-result-btn ok" onclick="markStep(this,'ok')">✓ OK</button>
+            <button class="step-result-btn fail" onclick="markStep(this,'fail')">✗ Falhou</button>
+          </div>
+        </div>
+        <div class="step-check-row">
+          <div class="step-num-sm">02</div>
+          <div class="step-check-text">Inserir o e-mail válido no campo E-mail: teste@a2gtest.com</div>
+          <div class="step-result-btns">
+            <button class="step-result-btn ok" onclick="markStep(this,'ok')">✓ OK</button>
+            <button class="step-result-btn fail" onclick="markStep(this,'fail')">✗ Falhou</button>
+          </div>
+        </div>
+        <div class="step-check-row">
+          <div class="step-num-sm">03</div>
+          <div class="step-check-text">Inserir a senha correta no campo Senha</div>
+          <div class="step-result-btns">
+            <button class="step-result-btn ok" onclick="markStep(this,'ok')">✓ OK</button>
+            <button class="step-result-btn fail" onclick="markStep(this,'fail')">✗ Falhou</button>
+          </div>
+        </div>
+        <div class="step-check-row">
+          <div class="step-num-sm">04</div>
+          <div class="step-check-text">Clicar no botão "Entrar"</div>
+          <div class="step-result-btns">
+            <button class="step-result-btn ok" onclick="markStep(this,'ok')">✓ OK</button>
+            <button class="step-result-btn fail" onclick="markStep(this,'fail')">✗ Falhou</button>
+          </div>
+        </div>
+        <div class="step-check-row">
+          <div class="step-num-sm">05</div>
+          <div class="step-check-text">Aguardar o processamento da requisição de autenticação</div>
+          <div class="step-result-btns">
+            <button class="step-result-btn ok" onclick="markStep(this,'ok')">✓ OK</button>
+            <button class="step-result-btn fail" onclick="markStep(this,'fail')">✗ Falhou</button>
+          </div>
+        </div>
+        <div class="step-check-row">
+          <div class="step-num-sm">06</div>
+          <div class="step-check-text">Verificar o redirecionamento para o dashboard</div>
+          <div class="step-result-btns">
+            <button class="step-result-btn ok" onclick="markStep(this,'ok')">✓ OK</button>
+            <button class="step-result-btn fail" onclick="markStep(this,'fail')">✗ Falhou</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-footer">
+        <a class="btn btn-ghost" href="test-detail.html">Cancelar</a>
+        <button class="btn btn-primary" onclick="submitRun()">Registrar execução →</button>
+      </div>
+    </div>
+
+    <!-- Estado de sucesso -->
+    <div class="card fade-in success-state" id="success-state">
+      <div class="success-icon" id="success-icon">✓</div>
+      <div class="success-title" id="success-title">Execução registrada!</div>
+      <div class="success-sub" id="success-sub">O resultado foi salvo com sucesso.</div>
+      <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+        <a class="btn btn-ghost" href="dashboard.html">← Voltar ao dashboard</a>
+        <a class="btn btn-outline" href="test-detail.html">Ver detalhes do caso</a>
+        <a class="btn btn-primary" href="test-run.html">Registrar nova execução</a>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+  let selectedResult = null;
+
+  // Pré-preenche data/hora atual
+  (function() {
+    const now = new Date();
+    const pad = n => String(n).padStart(2,'0');
+    const local = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+    document.getElementById('exec-date').value = local;
+  })();
+
+  function selectResult(result) {
+    selectedResult = result;
+    document.getElementById('card-approved').classList.toggle('selected', result === 'aprovado');
+    document.getElementById('card-failed').classList.toggle('selected', result === 'reprovado');
+  }
+
+  function markStep(btn, type) {
+    const row = btn.closest('.step-result-btns');
+    row.querySelectorAll('.step-result-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+
+  function submitRun() {
+    if (!selectedResult) {
+      alert('Selecione o resultado da execução (Aprovado ou Reprovado).');
+      return;
+    }
+
+    const resp = document.getElementById('exec-resp').value;
+    const date = document.getElementById('exec-date').value;
+    const dateFormatted = date ? new Date(date).toLocaleString('pt-BR', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '—';
+
+    document.getElementById('run-form').style.display = 'none';
+
+    const isApproved = selectedResult === 'aprovado';
+    const icon = document.getElementById('success-icon');
+    const title = document.getElementById('success-title');
+    const sub = document.getElementById('success-sub');
+
+    icon.textContent = isApproved ? '✓' : '✗';
+    icon.style.color = isApproved ? 'var(--success)' : 'var(--danger)';
+    title.textContent = isApproved ? 'Execução aprovada!' : 'Execução reprovada registrada';
+    title.style.color = isApproved ? 'var(--success)' : 'var(--danger)';
+    sub.textContent = `Registrado por ${resp} em ${dateFormatted}`;
+
+    document.getElementById('success-state').style.display = 'block';
+  }
+</script>
+</body>
+</html>

@@ -33,6 +33,44 @@
   .history-content { flex: 1; }
   .history-action { font-family: var(--mono); font-size: 12px; color: var(--text); margin-bottom: 3px; }
   .history-meta { font-family: var(--mono); font-size: 10px; color: var(--muted); }
+
+  /* US-08: Histórico de execuções */
+  .exec-summary { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-bottom: 20px; }
+  .exec-summary-item { background: var(--surface2); border: 0.5px solid var(--border); border-radius: 8px; padding: 14px 16px; }
+  .exec-summary-label { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 6px; }
+  .exec-summary-val { font-family: var(--mono); font-size: 20px; font-weight: 700; }
+
+  .exec-card { border: 0.5px solid var(--border); border-radius: 10px; overflow: hidden; margin-bottom: 10px; transition: border-color 0.2s; }
+  .exec-card:hover { border-color: var(--border-hover); }
+  .exec-card.aprovado { border-left: 3px solid var(--success); }
+  .exec-card.reprovado { border-left: 3px solid var(--danger); }
+  .exec-card-header {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 16px; cursor: pointer; background: var(--surface2);
+    user-select: none;
+  }
+  .exec-card-header:hover { background: rgba(255,255,255,0.02); }
+  .exec-card-meta { flex: 1; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .exec-card-date { font-family: var(--mono); font-size: 11px; color: var(--text); font-weight: 700; }
+  .exec-card-who { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+  .exec-card-arrow { font-family: var(--mono); font-size: 11px; color: var(--muted); margin-left: auto; transition: transform 0.2s; flex-shrink: 0; }
+  .exec-card-arrow.open { transform: rotate(180deg); }
+  .exec-card-body { display: none; padding: 16px; border-top: 0.5px solid var(--border); background: var(--surface); }
+  .exec-card-body.open { display: block; }
+
+  .exec-step-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 0.5px solid var(--border); font-family: var(--mono); font-size: 11px; }
+  .exec-step-row:last-child { border-bottom: none; }
+  .exec-step-num { width: 20px; height: 20px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 9px; flex-shrink: 0; }
+  .exec-step-num.ok { background: rgba(0,200,150,0.15); color: var(--success); }
+  .exec-step-num.fail { background: rgba(255,92,92,0.12); color: var(--danger); }
+  .exec-step-result { margin-left: auto; font-size: 10px; flex-shrink: 0; }
+  .exec-step-result.ok { color: var(--success); }
+  .exec-step-result.fail { color: var(--danger); }
+
+  .exec-filter-bar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+  .exec-filter-btn { font-family: var(--mono); font-size: 11px; padding: 5px 12px; border-radius: 100px; border: 0.5px solid var(--border); background: none; color: var(--muted); cursor: pointer; transition: all 0.15s; }
+  .exec-filter-btn:hover { color: var(--text); border-color: var(--border-hover); }
+  .exec-filter-btn.active { background: rgba(108,99,255,0.12); border-color: rgba(108,99,255,0.3); color: var(--accent); }
 </style>
 </head>
 <body>
@@ -90,11 +128,11 @@
           <div class="detail-main-title">Login com credenciais válidas</div>
           <div class="detail-badges">
             <span class="badge badge-purple">Unitário</span>
-            <span class="badge badge-red">Alta prioridade</span>
             <span class="badge badge-teal">Aprovado</span>
           </div>
         </div>
         <div class="detail-actions">
+          <a class="btn btn-primary btn-sm" href="test-run.html">▶ Registrar execução</a>
           <a class="btn btn-outline btn-sm" href="test-edit.html">Editar</a>
           <a class="btn btn-danger btn-sm" href="dashboard.html">Excluir</a>
         </div>
@@ -117,19 +155,8 @@
 
       <div class="detail-section">
         <div class="detail-section-title">// Descrição</div>
-        <div class="detail-row" style="padding-top:0;border-bottom:none;">
-          <div class="detail-value">
-            Verificar que o sistema permite o acesso de um usuário registrado com e-mail e senha válidos, redirecionando-o corretamente ao dashboard após a autenticação bem-sucedida.
-          </div>
-        </div>
-      </div>
-
-      <div class="detail-section">
-        <div class="detail-section-title">// Pré-condições</div>
-        <div class="detail-value" style="font-family:var(--mono);font-size:13px;line-height:1.7;">
-          — Usuário deve estar cadastrado no sistema com status ativo.<br/>
-          — O e-mail <code style="background:rgba(108,99,255,0.1);color:var(--accent);padding:2px 6px;border-radius:4px;">teste@a2gtest.com</code> deve existir na base de dados.<br/>
-          — Sistema de autenticação deve estar disponível e operacional.
+        <div class="detail-value">
+          Verificar que o sistema permite o acesso de um usuário registrado com e-mail e senha válidos, redirecionando-o corretamente ao dashboard após a autenticação bem-sucedida.
         </div>
       </div>
 
@@ -146,11 +173,197 @@
       </div>
 
       <div class="detail-section">
-        <div class="detail-section-title">// Resultado esperado</div>
+        <div class="detail-section-title">// Entrada esperada</div>
+        <div class="detail-value" style="font-family:var(--mono);font-size:13px;line-height:1.7;">
+          E-mail válido: <code style="background:rgba(108,99,255,0.1);color:var(--accent);padding:2px 6px;border-radius:4px;">teste@a2gtest.com</code> e senha correta fornecidos pelo usuário.
+        </div>
+      </div>
+
+      <div class="detail-section">
+        <div class="detail-section-title">// Saída esperada</div>
         <div class="alert alert-success">
           <span>✓</span>
           O usuário é autenticado com sucesso e redirecionado para o dashboard. O token JWT é gerado e armazenado. A sessão é iniciada corretamente e o nome do usuário é exibido na barra de navegação.
         </div>
+      </div>
+
+      <!-- US-08: Histórico de execuções -->
+      <div class="detail-section">
+        <div class="detail-section-title" style="display:flex;align-items:center;justify-content:space-between;">
+          <span>// Histórico de execuções</span>
+          <a class="btn btn-primary btn-sm" href="test-run.html" style="font-size:10px;padding:5px 12px;">+ Registrar execução</a>
+        </div>
+
+        <!-- Sumário -->
+        <div class="exec-summary">
+          <div class="exec-summary-item">
+            <div class="exec-summary-label">Total de execuções</div>
+            <div class="exec-summary-val" style="color:var(--accent);">3</div>
+          </div>
+          <div class="exec-summary-item">
+            <div class="exec-summary-label">Aprovadas</div>
+            <div class="exec-summary-val" style="color:var(--success);">2 <span style="font-size:12px;color:var(--muted);font-weight:400;">(67%)</span></div>
+          </div>
+          <div class="exec-summary-item">
+            <div class="exec-summary-label">Última execução</div>
+            <div class="exec-summary-val" style="font-size:13px;color:var(--text);">20 Jun 2025</div>
+          </div>
+        </div>
+
+        <!-- Filtros -->
+        <div class="exec-filter-bar">
+          <button class="exec-filter-btn active" onclick="filterExec(this,'all')">Todas</button>
+          <button class="exec-filter-btn" onclick="filterExec(this,'aprovado')">Aprovadas</button>
+          <button class="exec-filter-btn" onclick="filterExec(this,'reprovado')">Reprovadas</button>
+        </div>
+
+        <!-- Execução #3 — Aprovado -->
+        <div class="exec-card aprovado" data-result="aprovado">
+          <div class="exec-card-header" onclick="toggleExec(this)">
+            <span class="badge badge-teal">Aprovado</span>
+            <div class="exec-card-meta">
+              <span class="exec-card-date">20 Jun 2025, 14:32</span>
+              <span class="exec-card-who">Admin Silva</span>
+            </div>
+            <span class="exec-card-arrow">▼</span>
+          </div>
+          <div class="exec-card-body">
+            <div style="font-family:var(--mono);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:10px;">Comentários</div>
+            <div style="font-family:var(--mono);font-size:12px;color:var(--text);margin-bottom:18px;line-height:1.6;">
+              Todos os passos executados com sucesso. Login redirecionou corretamente para o dashboard. Token JWT gerado e validado.
+            </div>
+            <div style="font-family:var(--mono);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:10px;">Verificação dos passos</div>
+            <div class="exec-step-row">
+              <div class="exec-step-num ok">01</div>
+              <span>Acessar a página de login em /login</span>
+              <span class="exec-step-result ok">✓ OK</span>
+            </div>
+            <div class="exec-step-row">
+              <div class="exec-step-num ok">02</div>
+              <span>Inserir o e-mail válido no campo E-mail</span>
+              <span class="exec-step-result ok">✓ OK</span>
+            </div>
+            <div class="exec-step-row">
+              <div class="exec-step-num ok">03</div>
+              <span>Inserir a senha correta no campo Senha</span>
+              <span class="exec-step-result ok">✓ OK</span>
+            </div>
+            <div class="exec-step-row">
+              <div class="exec-step-num ok">04</div>
+              <span>Clicar no botão "Entrar"</span>
+              <span class="exec-step-result ok">✓ OK</span>
+            </div>
+            <div class="exec-step-row">
+              <div class="exec-step-num ok">05</div>
+              <span>Aguardar o processamento da requisição</span>
+              <span class="exec-step-result ok">✓ OK</span>
+            </div>
+            <div class="exec-step-row">
+              <div class="exec-step-num ok">06</div>
+              <span>Verificar o redirecionamento para o dashboard</span>
+              <span class="exec-step-result ok">✓ OK</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Execução #2 — Reprovado -->
+        <div class="exec-card reprovado" data-result="reprovado">
+          <div class="exec-card-header" onclick="toggleExec(this)">
+            <span class="badge badge-red">Reprovado</span>
+            <div class="exec-card-meta">
+              <span class="exec-card-date">19 Jun 2025, 10:15</span>
+              <span class="exec-card-who">João Tester</span>
+            </div>
+            <span class="exec-card-arrow">▼</span>
+          </div>
+          <div class="exec-card-body">
+            <div style="font-family:var(--mono);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:10px;">Comentários</div>
+            <div style="font-family:var(--mono);font-size:12px;color:var(--text);margin-bottom:18px;line-height:1.6;">
+              Passo 4 falhou intermitentemente — botão "Entrar" não respondeu no primeiro clique em ambiente de staging. Possível race condition com o listener de submit.
+            </div>
+            <div style="font-family:var(--mono);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:10px;">Verificação dos passos</div>
+            <div class="exec-step-row">
+              <div class="exec-step-num ok">01</div>
+              <span>Acessar a página de login em /login</span>
+              <span class="exec-step-result ok">✓ OK</span>
+            </div>
+            <div class="exec-step-row">
+              <div class="exec-step-num ok">02</div>
+              <span>Inserir o e-mail válido no campo E-mail</span>
+              <span class="exec-step-result ok">✓ OK</span>
+            </div>
+            <div class="exec-step-row">
+              <div class="exec-step-num ok">03</div>
+              <span>Inserir a senha correta no campo Senha</span>
+              <span class="exec-step-result ok">✓ OK</span>
+            </div>
+            <div class="exec-step-row">
+              <div class="exec-step-num fail">04</div>
+              <span>Clicar no botão "Entrar"</span>
+              <span class="exec-step-result fail">✗ Falhou</span>
+            </div>
+            <div class="exec-step-row" style="color:var(--muted2);">
+              <div class="exec-step-num fail" style="opacity:0.4;">05</div>
+              <span>Aguardar o processamento da requisição</span>
+              <span class="exec-step-result" style="color:var(--muted2);">— Pulado</span>
+            </div>
+            <div class="exec-step-row" style="color:var(--muted2);">
+              <div class="exec-step-num fail" style="opacity:0.4;">06</div>
+              <span>Verificar o redirecionamento para o dashboard</span>
+              <span class="exec-step-result" style="color:var(--muted2);">— Pulado</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Execução #1 — Aprovado -->
+        <div class="exec-card aprovado" data-result="aprovado">
+          <div class="exec-card-header" onclick="toggleExec(this)">
+            <span class="badge badge-teal">Aprovado</span>
+            <div class="exec-card-meta">
+              <span class="exec-card-date">18 Jun 2025, 09:40</span>
+              <span class="exec-card-who">Admin Silva</span>
+            </div>
+            <span class="exec-card-arrow">▼</span>
+          </div>
+          <div class="exec-card-body">
+            <div style="font-family:var(--mono);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:10px;">Comentários</div>
+            <div style="font-family:var(--mono);font-size:12px;color:var(--text);margin-bottom:18px;line-height:1.6;">
+              Execução inicial — caso validado em ambiente de homologação (v1.4.2). Todos os critérios atendidos.
+            </div>
+            <div style="font-family:var(--mono);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:10px;">Verificação dos passos</div>
+            <div class="exec-step-row">
+              <div class="exec-step-num ok">01</div>
+              <span>Acessar a página de login em /login</span>
+              <span class="exec-step-result ok">✓ OK</span>
+            </div>
+            <div class="exec-step-row">
+              <div class="exec-step-num ok">02</div>
+              <span>Inserir o e-mail válido no campo E-mail</span>
+              <span class="exec-step-result ok">✓ OK</span>
+            </div>
+            <div class="exec-step-row">
+              <div class="exec-step-num ok">03</div>
+              <span>Inserir a senha correta no campo Senha</span>
+              <span class="exec-step-result ok">✓ OK</span>
+            </div>
+            <div class="exec-step-row">
+              <div class="exec-step-num ok">04</div>
+              <span>Clicar no botão "Entrar"</span>
+              <span class="exec-step-result ok">✓ OK</span>
+            </div>
+            <div class="exec-step-row">
+              <div class="exec-step-num ok">05</div>
+              <span>Aguardar o processamento da requisição</span>
+              <span class="exec-step-result ok">✓ OK</span>
+            </div>
+            <div class="exec-step-row">
+              <div class="exec-step-num ok">06</div>
+              <span>Verificar o redirecionamento para o dashboard</span>
+              <span class="exec-step-result ok">✓ OK</span>
+            </div>
+          </div>
+        </div>
+
       </div>
 
       <div class="detail-section" style="margin-bottom:0;">
@@ -181,5 +394,23 @@
   </main>
 </div>
 
+<script>
+  function toggleExec(header) {
+    const body = header.nextElementSibling;
+    const arrow = header.querySelector('.exec-card-arrow');
+    const isOpen = body.classList.contains('open');
+    body.classList.toggle('open', !isOpen);
+    arrow.classList.toggle('open', !isOpen);
+  }
+
+  function filterExec(btn, filter) {
+    document.querySelectorAll('.exec-filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.exec-card').forEach(card => {
+      const match = filter === 'all' || card.dataset.result === filter;
+      card.style.display = match ? '' : 'none';
+    });
+  }
+</script>
 </body>
 </html>

@@ -43,6 +43,44 @@
     background: rgba(0,229,192,0.07); border: 0.5px solid rgba(0,229,192,0.2); border-radius: 8px;
     padding: 12px 16px; margin-bottom: 24px; font-family: var(--mono); font-size: 12px; color: var(--accent2);
   }
+
+  /* Sections dropdown */
+  .sections-dropdown-wrap { position: relative; }
+  .sections-btn {
+    display: flex; align-items: center; gap: 8px;
+    font-family: var(--mono); font-size: 12px; color: var(--text);
+    background: var(--surface2); border: 0.5px solid var(--border); border-radius: 8px;
+    padding: 10px 14px; cursor: pointer; width: 100%; transition: border-color 0.2s;
+  }
+  .sections-btn:hover { border-color: var(--accent2); }
+  .sections-btn .arrow { margin-left: auto; color: var(--muted); font-size: 10px; transition: transform 0.2s; }
+  .sections-btn.open .arrow { transform: rotate(180deg); }
+  .sections-menu {
+    display: none; position: absolute; top: calc(100% + 6px); left: 0; right: 0; z-index: 100;
+    background: var(--surface); border: 0.5px solid var(--border); border-radius: 10px;
+    overflow: hidden; box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  }
+  .sections-menu.open { display: block; }
+  .sections-menu-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 16px; font-family: var(--mono); font-size: 12px; color: var(--text);
+    cursor: pointer; transition: background 0.15s; user-select: none;
+    border-bottom: 0.5px solid var(--border);
+  }
+  .sections-menu-item:last-child { border-bottom: none; }
+  .sections-menu-item:hover { background: rgba(0,229,192,0.06); }
+  .sections-menu-item.disabled { color: var(--muted2); cursor: not-allowed; }
+  .sections-menu-item.disabled:hover { background: none; }
+  .sections-check {
+    width: 16px; height: 16px; border-radius: 4px;
+    background: rgba(0,229,192,0.08); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; color: var(--accent2); flex-shrink: 0; transition: all 0.15s;
+  }
+  .sections-check.checked { background: var(--accent2); border-color: var(--accent2); color: #000; }
+  .sections-menu-item.disabled .sections-check { background: rgba(255,255,255,0.03); border-color: var(--border); }
+  .sections-label { flex: 1; }
+  .sections-label small { display: block; color: var(--muted); font-size: 10px; margin-top: 2px; }
 </style>
 </head>
 <body>
@@ -114,20 +152,35 @@
         </div>
         <div class="form-group">
           <label class="form-label">Tipo de teste</label>
-          <select class="form-select">
-            <option selected>Unitário</option>
-            <option>Integração</option>
-            <option>E2E</option>
-            <option>Regressão</option>
+          <select class="form-select" id="tipo-select" onchange="onTipoChange()">
+            <option value="unitario" selected>Unitário</option>
+            <option value="integracao">Integração</option>
           </select>
         </div>
         <div class="form-group">
-          <label class="form-label">Prioridade</label>
-          <select class="form-select">
-            <option selected>Alta</option>
-            <option>Média</option>
-            <option>Baixa</option>
-          </select>
+          <label class="form-label">Seções opcionais</label>
+          <div class="sections-dropdown-wrap">
+            <button class="sections-btn" id="sections-btn" type="button" onclick="toggleSectionsMenu()">
+              <span id="sections-label-text">Passos de execução</span>
+              <span class="arrow">▼</span>
+            </button>
+            <div class="sections-menu" id="sections-menu">
+              <div class="sections-menu-item" id="item-steps" onclick="toggleSection('steps')">
+                <div class="sections-check checked" id="check-steps">✓</div>
+                <div class="sections-label">
+                  Passos de execução
+                  <small>Descreva cada passo do teste</small>
+                </div>
+              </div>
+              <div class="sections-menu-item disabled" id="item-precond" onclick="toggleSection('precond')">
+                <div class="sections-check" id="check-precond"></div>
+                <div class="sections-label">
+                  Pré-condições
+                  <small id="precond-hint">Disponível apenas para tipo Integração</small>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -141,50 +194,61 @@
         <textarea class="form-textarea">Verificar que o sistema permite o acesso de um usuário registrado com e-mail e senha válidos, redirecionando-o corretamente ao dashboard após a autenticação bem-sucedida.</textarea>
       </div>
 
+      <!-- Pré-condições: só para Integração -->
+      <div id="precond-section" style="display:none;">
+        <hr class="section-divider" />
+        <div class="subsection-title">// Pré-condições</div>
+        <div class="form-group">
+          <textarea class="form-textarea" style="min-height:80px;" placeholder="Liste as condições que devem ser verdadeiras antes da execução do teste..."></textarea>
+        </div>
+      </div>
+
+      <!-- Passos de execução: opcional -->
+      <div id="steps-section">
+        <hr class="section-divider" />
+        <div class="subsection-title">// Passos de execução</div>
+        <div class="steps-editor" id="steps-container">
+          <div class="step-row">
+            <div class="step-num">01</div>
+            <input class="step-input" type="text" value="Acessar a página de login em /login" />
+            <button class="step-del" onclick="this.parentElement.remove()">×</button>
+          </div>
+          <div class="step-row">
+            <div class="step-num">02</div>
+            <input class="step-input" type="text" value="Inserir o e-mail válido no campo E-mail" />
+            <button class="step-del" onclick="this.parentElement.remove()">×</button>
+          </div>
+          <div class="step-row">
+            <div class="step-num">03</div>
+            <input class="step-input" type="text" value="Inserir a senha correta no campo Senha" />
+            <button class="step-del" onclick="this.parentElement.remove()">×</button>
+          </div>
+          <div class="step-row">
+            <div class="step-num">04</div>
+            <input class="step-input" type="text" value="Clicar no botão Entrar" />
+            <button class="step-del" onclick="this.parentElement.remove()">×</button>
+          </div>
+          <div class="step-row">
+            <div class="step-num">05</div>
+            <input class="step-input" type="text" value="Aguardar o processamento da requisição de autenticação" />
+            <button class="step-del" onclick="this.parentElement.remove()">×</button>
+          </div>
+          <div class="step-row">
+            <div class="step-num">06</div>
+            <input class="step-input" type="text" value="Verificar o redirecionamento para o dashboard" />
+            <button class="step-del" onclick="this.parentElement.remove()">×</button>
+          </div>
+        </div>
+        <button class="add-step-btn" onclick="addStep()">+ Adicionar passo</button>
+      </div>
+
       <hr class="section-divider" />
-      <div class="subsection-title">// Pré-condições</div>
+      <div class="subsection-title">// Entrada esperada</div>
       <div class="form-group">
-        <textarea class="form-textarea" style="min-height:80px;">Usuário deve estar cadastrado no sistema com status ativo. O e-mail teste@a2gtest.com deve existir na base de dados. Sistema de autenticação deve estar disponível e operacional.</textarea>
+        <textarea class="form-textarea" style="min-height:80px;">E-mail válido: teste@a2gtest.com e senha correta fornecidos pelo usuário.</textarea>
       </div>
 
-      <hr class="section-divider" />
-      <div class="subsection-title">// Passos de execução</div>
-      <div class="steps-editor" id="steps-container">
-        <div class="step-row">
-          <div class="step-num">01</div>
-          <input class="step-input" type="text" value="Acessar a página de login em /login" />
-          <button class="step-del" onclick="this.parentElement.remove()">×</button>
-        </div>
-        <div class="step-row">
-          <div class="step-num">02</div>
-          <input class="step-input" type="text" value="Inserir o e-mail válido no campo E-mail" />
-          <button class="step-del" onclick="this.parentElement.remove()">×</button>
-        </div>
-        <div class="step-row">
-          <div class="step-num">03</div>
-          <input class="step-input" type="text" value="Inserir a senha correta no campo Senha" />
-          <button class="step-del" onclick="this.parentElement.remove()">×</button>
-        </div>
-        <div class="step-row">
-          <div class="step-num">04</div>
-          <input class="step-input" type="text" value="Clicar no botão Entrar" />
-          <button class="step-del" onclick="this.parentElement.remove()">×</button>
-        </div>
-        <div class="step-row">
-          <div class="step-num">05</div>
-          <input class="step-input" type="text" value="Aguardar o processamento da requisição de autenticação" />
-          <button class="step-del" onclick="this.parentElement.remove()">×</button>
-        </div>
-        <div class="step-row">
-          <div class="step-num">06</div>
-          <input class="step-input" type="text" value="Verificar o redirecionamento para o dashboard" />
-          <button class="step-del" onclick="this.parentElement.remove()">×</button>
-        </div>
-      </div>
-      <button class="add-step-btn" onclick="addStep()">+ Adicionar passo</button>
-
-      <hr class="section-divider" />
-      <div class="subsection-title">// Resultado esperado</div>
+      <div class="subsection-title">// Saída esperada</div>
       <div class="form-group">
         <textarea class="form-textarea" style="min-height:80px;">O usuário é autenticado com sucesso e redirecionado para o dashboard. O token JWT é gerado e armazenado. A sessão é iniciada corretamente e o nome do usuário é exibido na barra de navegação.</textarea>
       </div>
@@ -202,7 +266,6 @@
         <div class="form-group">
           <label class="form-label">Status</label>
           <select class="form-select">
-            <option>Rascunho</option>
             <option>Em revisão</option>
             <option selected>Aprovado</option>
             <option>Falho</option>
@@ -227,16 +290,79 @@
 </div>
 
 <script>
-  let stepCount = 6;
-  function addStep() {
-    stepCount++;
-    const num = stepCount.toString().padStart(2, '0');
-    const container = document.getElementById('steps-container');
-    const row = document.createElement('div');
-    row.className = 'step-row';
-    row.innerHTML = `<div class="step-num">${num}</div><input class="step-input" type="text" placeholder="Descreva o passo ${stepCount}..." /><button class="step-del" onclick="this.parentElement.remove()">×</button>`;
-    container.appendChild(row);
+let stepCount = 6;
+let sectionsState = { steps: true, precond: false };
+let tipoAtual = 'unitario';
+
+function onTipoChange() {
+  tipoAtual = document.getElementById('tipo-select').value;
+  const itemPrecond = document.getElementById('item-precond');
+  const hintEl = document.getElementById('precond-hint');
+
+  if (tipoAtual === 'integracao') {
+    itemPrecond.classList.remove('disabled');
+    hintEl.textContent = 'Exigido para testes de integração';
+  } else {
+    itemPrecond.classList.add('disabled');
+    hintEl.textContent = 'Disponível apenas para tipo Integração';
+    if (sectionsState.precond) {
+      sectionsState.precond = false;
+      document.getElementById('check-precond').classList.remove('checked');
+      document.getElementById('check-precond').textContent = '';
+      document.getElementById('precond-section').style.display = 'none';
+    }
   }
+  updateSectionsLabel();
+}
+
+function toggleSectionsMenu() {
+  const btn = document.getElementById('sections-btn');
+  const menu = document.getElementById('sections-menu');
+  btn.classList.toggle('open');
+  menu.classList.toggle('open');
+}
+
+function toggleSection(section) {
+  if (section === 'precond' && tipoAtual !== 'integracao') return;
+
+  sectionsState[section] = !sectionsState[section];
+  const check = document.getElementById('check-' + section);
+  check.classList.toggle('checked', sectionsState[section]);
+  check.textContent = sectionsState[section] ? '✓' : '';
+
+  if (section === 'steps') {
+    document.getElementById('steps-section').style.display = sectionsState[section] ? 'block' : 'none';
+  }
+  if (section === 'precond') {
+    document.getElementById('precond-section').style.display = sectionsState[section] ? 'block' : 'none';
+  }
+  updateSectionsLabel();
+}
+
+function updateSectionsLabel() {
+  const active = [];
+  if (sectionsState.steps) active.push('Passos');
+  if (sectionsState.precond) active.push('Pré-condições');
+  document.getElementById('sections-label-text').textContent = active.length ? active.join(', ') : 'Nenhuma adicionada';
+}
+
+function addStep() {
+  stepCount++;
+  const num = stepCount.toString().padStart(2, '0');
+  const container = document.getElementById('steps-container');
+  const row = document.createElement('div');
+  row.className = 'step-row';
+  row.innerHTML = `<div class="step-num">${num}</div><input class="step-input" type="text" placeholder="Descreva o passo ${stepCount}..." /><button class="step-del" onclick="this.parentElement.remove()">×</button>`;
+  container.appendChild(row);
+}
+
+document.addEventListener('click', function(e) {
+  const wrap = document.querySelector('.sections-dropdown-wrap');
+  if (!wrap.contains(e.target)) {
+    document.getElementById('sections-btn').classList.remove('open');
+    document.getElementById('sections-menu').classList.remove('open');
+  }
+});
 </script>
 </body>
 </html>

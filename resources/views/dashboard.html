@@ -9,40 +9,139 @@
   .metric-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 32px; }
   .metric-card {
     background: var(--surface); border: 0.5px solid var(--border); border-radius: 10px; padding: 20px 22px;
+    cursor: pointer; transition: border-color 0.2s;
   }
+  .metric-card:hover { border-color: var(--border-hover); }
   .metric-label { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 10px; }
   .metric-val { font-family: var(--mono); font-size: 28px; font-weight: 700; letter-spacing: -0.02em; }
   .metric-val.purple { color: var(--accent); }
   .metric-val.teal { color: var(--accent2); }
-  .metric-val.green { color: var(--success); }
+  .metric-val.amber { color: var(--warning); }
   .metric-val.red { color: var(--danger); }
   .metric-sub { font-family: var(--mono); font-size: 10px; color: var(--muted); margin-top: 6px; }
 
+  /* Tabs */
+  .tabs { display: flex; gap: 0; border-bottom: 0.5px solid var(--border); margin-bottom: 20px; }
+  .tab-btn {
+    font-family: var(--mono); font-size: 12px; color: var(--muted);
+    background: none; border: none; border-bottom: 2px solid transparent;
+    padding: 10px 20px; cursor: pointer; transition: all 0.15s; margin-bottom: -1px;
+  }
+  .tab-btn:hover { color: var(--text); }
+  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab-count {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 18px; height: 18px; border-radius: 100px;
+    background: rgba(108,99,255,0.18); color: var(--accent);
+    font-size: 10px; padding: 0 5px; margin-left: 6px;
+  }
+
+  /* Filter bar */
   .filter-bar {
-    display: flex; gap: 10px; align-items: center; margin-bottom: 20px; flex-wrap: wrap;
+    display: flex; gap: 10px; align-items: center; margin-bottom: 16px; flex-wrap: wrap;
   }
-  .filter-bar input {
+  .search-wrap { position: relative; flex: 1; min-width: 200px; max-width: 340px; }
+  .search-wrap .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 13px; pointer-events: none; }
+  .search-input {
+    width: 100%;
     background: var(--surface); border: 0.5px solid var(--border); border-radius: 8px;
-    padding: 9px 14px; color: var(--text); font-family: var(--mono); font-size: 12px;
-    outline: none; flex: 1; min-width: 200px; max-width: 320px;
+    padding: 9px 14px 9px 34px; color: var(--text); font-family: var(--mono); font-size: 12px;
+    outline: none;
   }
-  .filter-bar input:focus { border-color: var(--accent); }
-  .filter-bar select {
+  .search-input:focus { border-color: var(--accent); }
+  .search-input::placeholder { color: var(--muted2); }
+  .filter-select {
     background: var(--surface); border: 0.5px solid var(--border); border-radius: 8px;
     padding: 9px 14px; color: var(--text); font-family: var(--mono); font-size: 12px;
     outline: none; cursor: pointer; appearance: none;
   }
+  .filter-select:focus { border-color: var(--accent); }
+  .no-results {
+    text-align: center; padding: 48px 0;
+    font-family: var(--mono); font-size: 12px; color: var(--muted);
+  }
 
+  /* Table */
   .tc-id { font-family: var(--mono); font-size: 11px; color: var(--accent); font-weight: 700; }
   .tc-title { font-size: 13px; font-weight: 600; color: var(--text); }
   .tc-title a { color: inherit; text-decoration: none; }
   .tc-title a:hover { color: var(--accent); }
-  .action-link { font-family: var(--mono); font-size: 11px; color: var(--muted); text-decoration: none; padding: 4px 8px; border-radius: 4px; transition: all 0.15s; }
+  .action-link { font-family: var(--mono); font-size: 11px; color: var(--muted); text-decoration: none; padding: 4px 8px; border-radius: 4px; transition: all 0.15s; cursor: pointer; background: none; border: none; }
   .action-link:hover { color: var(--accent); background: rgba(108,99,255,0.1); }
   .action-link.edit:hover { color: var(--accent2); background: rgba(0,229,192,0.08); }
+  .action-link.run:hover { color: var(--success); background: rgba(0,200,150,0.08); }
+  .action-link.assign:hover { color: var(--warning); background: rgba(245,166,35,0.08); }
 
-  .section-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 12px; }
+  .section-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; flex-wrap: wrap; gap: 12px; }
   .section-bar-title { font-size: 16px; font-weight: 700; }
+
+  /* US-11: Distribuição por status */
+  .status-dist-card {
+    background: var(--surface); border: 0.5px solid var(--border); border-radius: 10px;
+    padding: 20px 24px; margin-bottom: 28px;
+  }
+  .status-dist-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; flex-wrap: wrap; gap: 8px; }
+  .status-dist-title { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.14em; color: var(--accent2); }
+  .status-dist-total { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+  .status-bar-wrap { height: 10px; border-radius: 100px; overflow: hidden; display: flex; gap: 2px; margin-bottom: 16px; }
+  .status-bar-seg { height: 100%; border-radius: 100px; transition: width 0.6s ease; }
+  .status-bar-seg.aprovado { background: var(--accent2); }
+  .status-bar-seg.revisao { background: var(--warning); }
+  .status-bar-seg.falho { background: var(--danger); }
+  .status-legend { display: flex; gap: 20px; flex-wrap: wrap; }
+  .status-legend-item { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+  .status-legend-item:hover .status-legend-label { color: var(--text); }
+  .status-legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .status-legend-dot.aprovado { background: var(--accent2); }
+  .status-legend-dot.revisao { background: var(--warning); }
+  .status-legend-dot.falho { background: var(--danger); }
+  .status-legend-label { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+  .status-legend-count { font-family: var(--mono); font-size: 11px; font-weight: 700; color: var(--text); }
+  .status-legend-pct { font-family: var(--mono); font-size: 10px; color: var(--muted2); margin-left: 2px; }
+
+  /* Modal */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; z-index: 200;
+    background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+    align-items: center; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface); border: 0.5px solid var(--border); border-radius: 14px;
+    padding: 32px; width: 100%; max-width: 440px; position: relative;
+    animation: fadeIn 0.2s ease both;
+  }
+  .modal-title { font-size: 18px; font-weight: 800; margin-bottom: 6px; }
+  .modal-sub { font-family: var(--mono); font-size: 11px; color: var(--muted); margin-bottom: 24px; }
+  .modal-close {
+    position: absolute; top: 18px; right: 18px;
+    background: none; border: none; color: var(--muted); font-size: 18px; cursor: pointer;
+    padding: 4px 8px; border-radius: 4px; transition: all 0.15s;
+  }
+  .modal-close:hover { color: var(--text); background: rgba(255,255,255,0.05); }
+  .modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; }
+
+  .user-option {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 14px; border-radius: 8px; cursor: pointer;
+    border: 0.5px solid var(--border); margin-bottom: 8px;
+    transition: all 0.15s; background: var(--surface2);
+  }
+  .user-option:hover { border-color: var(--accent); background: rgba(108,99,255,0.05); }
+  .user-option.selected { border-color: var(--accent); background: rgba(108,99,255,0.1); }
+  .user-option.me-badge::after {
+    content: 'eu'; font-family: var(--mono); font-size: 9px; color: var(--accent2);
+    background: rgba(0,229,192,0.1); border: 1px solid rgba(0,229,192,0.2);
+    border-radius: 100px; padding: 1px 6px; margin-left: auto;
+  }
+  .user-av {
+    width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+    background: rgba(108,99,255,0.2); border: 1px solid rgba(108,99,255,0.3);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-size: 10px; color: var(--accent); font-weight: 700;
+  }
+  .user-name { font-size: 13px; font-weight: 600; }
+  .user-role { font-family: var(--mono); font-size: 10px; color: var(--muted); }
 </style>
 </head>
 <body>
@@ -70,6 +169,9 @@
       </a>
       <a class="sidebar-link" href="test-create.html">
         <span class="sidebar-icon">⊕</span> Criar caso de teste
+      </a>
+      <a class="sidebar-link" href="dashboard.html" onclick="switchTab('mine');return false;">
+        <span class="sidebar-icon">◎</span> Meus testes
       </a>
     </div>
     <div class="sidebar-section">
@@ -99,43 +201,89 @@
     </div>
 
     <div class="metric-grid">
-      <div class="metric-card">
+      <div class="metric-card" onclick="clearFilters()">
         <div class="metric-label">Total de testes</div>
         <div class="metric-val purple">24</div>
         <div class="metric-sub">↑ 4 esta semana</div>
       </div>
-      <div class="metric-card">
+      <div class="metric-card" onclick="filterByStatus('Aprovado')">
         <div class="metric-label">Aprovados</div>
         <div class="metric-val teal">18</div>
         <div class="metric-sub">75% do total</div>
       </div>
-      <div class="metric-card">
+      <div class="metric-card" onclick="filterByStatus('Em revisão')">
         <div class="metric-label">Em revisão</div>
-        <div class="metric-val green">4</div>
+        <div class="metric-val amber">4</div>
         <div class="metric-sub">pendentes de review</div>
       </div>
-      <div class="metric-card">
+      <div class="metric-card" onclick="filterByStatus('Falho')">
         <div class="metric-label">Falhos</div>
         <div class="metric-val red">2</div>
         <div class="metric-sub">requerem atenção</div>
       </div>
     </div>
 
+    <!-- US-11: Distribuição por status -->
+    <div class="status-dist-card">
+      <div class="status-dist-header">
+        <div class="status-dist-title">// Distribuição por status</div>
+        <div class="status-dist-total" id="dist-total-label">7 casos no total</div>
+      </div>
+      <div class="status-bar-wrap" id="status-bar">
+        <div class="status-bar-seg aprovado" id="bar-aprovado" style="width:57%"></div>
+        <div class="status-bar-seg revisao"  id="bar-revisao"  style="width:29%"></div>
+        <div class="status-bar-seg falho"    id="bar-falho"    style="width:14%"></div>
+      </div>
+      <div class="status-legend">
+        <div class="status-legend-item" onclick="filterByStatus('Aprovado')">
+          <div class="status-legend-dot aprovado"></div>
+          <span class="status-legend-label">Aprovado</span>
+          <span class="status-legend-count" id="leg-aprovado">4</span>
+          <span class="status-legend-pct" id="leg-aprovado-pct">(57%)</span>
+        </div>
+        <div class="status-legend-item" onclick="filterByStatus('Em revisão')">
+          <div class="status-legend-dot revisao"></div>
+          <span class="status-legend-label">Em revisão</span>
+          <span class="status-legend-count" id="leg-revisao">2</span>
+          <span class="status-legend-pct" id="leg-revisao-pct">(29%)</span>
+        </div>
+        <div class="status-legend-item" onclick="filterByStatus('Falho')">
+          <div class="status-legend-dot falho"></div>
+          <span class="status-legend-label">Falho</span>
+          <span class="status-legend-count" id="leg-falho">1</span>
+          <span class="status-legend-pct" id="leg-falho-pct">(14%)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabs: Todos / Meus testes -->
+    <div class="tabs">
+      <button class="tab-btn active" id="tab-all" onclick="switchTab('all')">
+        Todos os casos <span class="tab-count" id="count-all">7</span>
+      </button>
+      <button class="tab-btn" id="tab-mine" onclick="switchTab('mine')">
+        Meus testes <span class="tab-count" id="count-mine">3</span>
+      </button>
+    </div>
+
     <div class="section-bar">
-      <div class="section-bar-title">Todos os casos</div>
+      <div></div>
       <div class="filter-bar">
-        <input type="text" placeholder="Buscar por título ou ID..." />
-        <select>
-          <option>Todos os tipos</option>
-          <option>Unitário</option>
-          <option>Integração</option>
+        <!-- US-04: Busca por nome ou ID -->
+        <div class="search-wrap">
+          <span class="search-icon">⌕</span>
+          <input class="search-input" type="text" id="search-input" placeholder="Buscar por título ou ID..." oninput="applyFilters()" />
+        </div>
+        <select class="filter-select" id="filter-tipo" onchange="applyFilters()">
+          <option value="">Todos os tipos</option>
+          <option value="Unitário">Unitário</option>
+          <option value="Integração">Integração</option>
         </select>
-        <select>
-          <option>Todos os status</option>
-          <option>Aprovado</option>
-          <option>Em revisão</option>
-          <option>Falho</option>
-          <option>Rascunho</option>
+        <select class="filter-select" id="filter-status" onchange="applyFilters()">
+          <option value="">Todos os status</option>
+          <option value="Aprovado">Aprovado</option>
+          <option value="Em revisão">Em revisão</option>
+          <option value="Falho">Falho</option>
         </select>
       </div>
     </div>
@@ -148,103 +296,305 @@
               <th>ID</th>
               <th>Título</th>
               <th>Tipo</th>
-              <th>Prioridade</th>
               <th>Status</th>
-              <th>Criado por</th>
+              <th>Responsável</th>
               <th>Ações</th>
             </tr>
           </thead>
-          <tbody>
-            <tr>
+          <tbody id="test-tbody">
+            <tr data-id="TC-001" data-title="Login com credenciais válidas" data-tipo="Unitário" data-status="Aprovado" data-resp="Admin Silva">
               <td class="tc-id">TC-001</td>
               <td class="tc-title"><a href="test-detail.html">Login com credenciais válidas</a></td>
               <td><span class="badge badge-purple">Unitário</span></td>
-              <td><span class="badge badge-red">Alta</span></td>
               <td><span class="badge badge-teal">Aprovado</span></td>
               <td style="color:var(--muted);">Admin Silva</td>
               <td style="display:flex;gap:4px;">
                 <a class="action-link" href="test-detail.html">ver</a>
                 <a class="action-link edit" href="test-edit.html">editar</a>
+                <a class="action-link run" href="test-run.html">executar</a>
+                <button class="action-link assign" onclick="openAssign('TC-001','Login com credenciais válidas','Admin Silva')">atribuir</button>
               </td>
             </tr>
-            <tr>
+            <tr data-id="TC-002" data-title="Login com senha incorreta" data-tipo="Unitário" data-status="Aprovado" data-resp="João Tester">
               <td class="tc-id">TC-002</td>
               <td class="tc-title"><a href="test-detail.html">Login com senha incorreta</a></td>
               <td><span class="badge badge-purple">Unitário</span></td>
-              <td><span class="badge badge-red">Alta</span></td>
               <td><span class="badge badge-teal">Aprovado</span></td>
               <td style="color:var(--muted);">João Tester</td>
               <td style="display:flex;gap:4px;">
                 <a class="action-link" href="test-detail.html">ver</a>
                 <a class="action-link edit" href="test-edit.html">editar</a>
+                <a class="action-link run" href="test-run.html">executar</a>
+                <button class="action-link assign" onclick="openAssign('TC-002','Login com senha incorreta','João Tester')">atribuir</button>
               </td>
             </tr>
-            <tr>
+            <tr data-id="TC-003" data-title="Cadastro de novo usuário" data-tipo="Integração" data-status="Em revisão" data-resp="Maria QA">
               <td class="tc-id">TC-003</td>
               <td class="tc-title"><a href="test-detail.html">Cadastro de novo usuário</a></td>
               <td><span class="badge badge-amber">Integração</span></td>
-              <td><span class="badge badge-amber">Média</span></td>
               <td><span class="badge badge-amber">Em revisão</span></td>
               <td style="color:var(--muted);">Maria QA</td>
               <td style="display:flex;gap:4px;">
                 <a class="action-link" href="test-detail.html">ver</a>
                 <a class="action-link edit" href="test-edit.html">editar</a>
+                <a class="action-link run" href="test-run.html">executar</a>
+                <button class="action-link assign" onclick="openAssign('TC-003','Cadastro de novo usuário','Maria QA')">atribuir</button>
               </td>
             </tr>
-            <tr>
+            <tr data-id="TC-004" data-title="Fluxo de checkout completo" data-tipo="Integração" data-status="Falho" data-resp="Carlos Dev">
               <td class="tc-id">TC-004</td>
               <td class="tc-title"><a href="test-detail.html">Fluxo de checkout completo</a></td>
               <td><span class="badge badge-amber">Integração</span></td>
-              <td><span class="badge badge-red">Alta</span></td>
               <td><span class="badge badge-red">Falho</span></td>
               <td style="color:var(--muted);">Carlos Dev</td>
               <td style="display:flex;gap:4px;">
                 <a class="action-link" href="test-detail.html">ver</a>
                 <a class="action-link edit" href="test-edit.html">editar</a>
+                <a class="action-link run" href="test-run.html">executar</a>
+                <button class="action-link assign" onclick="openAssign('TC-004','Fluxo de checkout completo','Carlos Dev')">atribuir</button>
               </td>
             </tr>
-            <tr>
+            <tr data-id="TC-005" data-title="Validação de campos do formulário" data-tipo="Unitário" data-status="Aprovado" data-resp="Admin Silva">
               <td class="tc-id">TC-005</td>
               <td class="tc-title"><a href="test-detail.html">Validação de campos do formulário</a></td>
               <td><span class="badge badge-purple">Unitário</span></td>
-              <td><span class="badge badge-green">Baixa</span></td>
-              <td><span class="badge badge-teal">Aprovado</span></td>
-              <td style="color:var(--muted);">João Tester</td>
-              <td style="display:flex;gap:4px;">
-                <a class="action-link" href="test-detail.html">ver</a>
-                <a class="action-link edit" href="test-edit.html">editar</a>
-              </td>
-            </tr>
-            <tr>
-              <td class="tc-id">TC-006</td>
-              <td class="tc-title"><a href="test-detail.html">API de autenticação JWT</a></td>
-              <td><span class="badge badge-amber">Integração</span></td>
-              <td><span class="badge badge-amber">Média</span></td>
               <td><span class="badge badge-teal">Aprovado</span></td>
               <td style="color:var(--muted);">Admin Silva</td>
               <td style="display:flex;gap:4px;">
                 <a class="action-link" href="test-detail.html">ver</a>
                 <a class="action-link edit" href="test-edit.html">editar</a>
+                <a class="action-link run" href="test-run.html">executar</a>
+                <button class="action-link assign" onclick="openAssign('TC-005','Validação de campos do formulário','Admin Silva')">atribuir</button>
               </td>
             </tr>
-            <tr>
+            <tr data-id="TC-006" data-title="API de autenticação JWT" data-tipo="Integração" data-status="Aprovado" data-resp="Admin Silva">
+              <td class="tc-id">TC-006</td>
+              <td class="tc-title"><a href="test-detail.html">API de autenticação JWT</a></td>
+              <td><span class="badge badge-amber">Integração</span></td>
+              <td><span class="badge badge-teal">Aprovado</span></td>
+              <td style="color:var(--muted);">Admin Silva</td>
+              <td style="display:flex;gap:4px;">
+                <a class="action-link" href="test-detail.html">ver</a>
+                <a class="action-link edit" href="test-edit.html">editar</a>
+                <a class="action-link run" href="test-run.html">executar</a>
+                <button class="action-link assign" onclick="openAssign('TC-006','API de autenticação JWT','Admin Silva')">atribuir</button>
+              </td>
+            </tr>
+            <tr data-id="TC-007" data-title="Timeout de sessão inativa" data-tipo="Unitário" data-status="Em revisão" data-resp="Maria QA">
               <td class="tc-id">TC-007</td>
               <td class="tc-title"><a href="test-detail.html">Timeout de sessão inativa</a></td>
               <td><span class="badge badge-purple">Unitário</span></td>
-              <td><span class="badge badge-amber">Média</span></td>
               <td><span class="badge badge-amber">Em revisão</span></td>
               <td style="color:var(--muted);">Maria QA</td>
               <td style="display:flex;gap:4px;">
                 <a class="action-link" href="test-detail.html">ver</a>
                 <a class="action-link edit" href="test-edit.html">editar</a>
+                <a class="action-link run" href="test-run.html">executar</a>
+                <button class="action-link assign" onclick="openAssign('TC-007','Timeout de sessão inativa','Maria QA')">atribuir</button>
               </td>
             </tr>
           </tbody>
         </table>
+        <div class="no-results" id="no-results" style="display:none;">
+          Nenhum caso encontrado para os filtros aplicados.
+        </div>
       </div>
     </div>
   </main>
 </div>
 
+<!-- Modal: Atribuir teste (US-22) -->
+<div class="modal-overlay" id="assign-modal" onclick="closeAssignOnBackdrop(event)">
+  <div class="modal">
+    <button class="modal-close" onclick="closeAssign()">×</button>
+    <div class="modal-title">Atribuir teste</div>
+    <div class="modal-sub" id="assign-modal-sub">TC-001 · Login com credenciais válidas</div>
+
+    <div style="font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:12px;">
+      Selecione o responsável
+    </div>
+
+    <div id="user-list">
+      <div class="user-option me-badge" data-user="Admin Silva" onclick="selectUser(this)">
+        <div class="user-av">AS</div>
+        <div>
+          <div class="user-name">Admin Silva</div>
+          <div class="user-role">Administrador</div>
+        </div>
+      </div>
+      <div class="user-option" data-user="João Tester" onclick="selectUser(this)">
+        <div class="user-av" style="background:rgba(0,229,192,0.15);border-color:rgba(0,229,192,0.3);color:var(--accent2);">JT</div>
+        <div>
+          <div class="user-name">João Tester</div>
+          <div class="user-role">QA Engineer</div>
+        </div>
+      </div>
+      <div class="user-option" data-user="Maria QA" onclick="selectUser(this)">
+        <div class="user-av" style="background:rgba(245,166,35,0.15);border-color:rgba(245,166,35,0.3);color:var(--warning);">MQ</div>
+        <div>
+          <div class="user-name">Maria QA</div>
+          <div class="user-role">QA Lead</div>
+        </div>
+      </div>
+      <div class="user-option" data-user="Carlos Dev" onclick="selectUser(this)">
+        <div class="user-av" style="background:rgba(255,92,92,0.15);border-color:rgba(255,92,92,0.3);color:var(--danger);">CD</div>
+        <div>
+          <div class="user-name">Carlos Dev</div>
+          <div class="user-role">Desenvolvedor</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="closeAssign()">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="confirmAssign()">Confirmar atribuição</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const CURRENT_USER = 'Admin Silva';
+  let activeTab = 'all';
+  let selectedUser = null;
+  let assignTargetId = null;
+
+  // US-26: Tabs — Todos / Meus testes
+  function switchTab(tab) {
+    activeTab = tab;
+    document.getElementById('tab-all').classList.toggle('active', tab === 'all');
+    document.getElementById('tab-mine').classList.toggle('active', tab === 'mine');
+    applyFilters();
+  }
+
+  // US-04: Busca funcional + filtros combinados
+  function applyFilters() {
+    const query = document.getElementById('search-input').value.toLowerCase().trim();
+    const tipoFilter = document.getElementById('filter-tipo').value;
+    const statusFilter = document.getElementById('filter-status').value;
+    const rows = document.querySelectorAll('#test-tbody tr');
+    let visible = 0;
+
+    rows.forEach(row => {
+      const id = row.dataset.id.toLowerCase();
+      const title = row.dataset.title.toLowerCase();
+      const tipo = row.dataset.tipo;
+      const status = row.dataset.status;
+      const resp = row.dataset.resp;
+
+      const matchSearch = !query || id.includes(query) || title.includes(query);
+      const matchTipo = !tipoFilter || tipo === tipoFilter;
+      const matchStatus = !statusFilter || status === statusFilter;
+      const matchTab = activeTab === 'all' || resp === CURRENT_USER;
+
+      const show = matchSearch && matchTipo && matchStatus && matchTab;
+      row.style.display = show ? '' : 'none';
+      if (show) visible++;
+    });
+
+    document.getElementById('no-results').style.display = visible === 0 ? 'block' : 'none';
+    updateCounts();
+  }
+
+  function updateCounts() {
+    const rows = document.querySelectorAll('#test-tbody tr');
+    let all = 0, mine = 0;
+    rows.forEach(r => {
+      all++;
+      if (r.dataset.resp === CURRENT_USER) mine++;
+    });
+    document.getElementById('count-all').textContent = all;
+    document.getElementById('count-mine').textContent = mine;
+  }
+
+  function filterByStatus(status) {
+    document.getElementById('filter-status').value = status;
+    switchTab('all');
+    applyFilters();
+  }
+
+  function clearFilters() {
+    document.getElementById('search-input').value = '';
+    document.getElementById('filter-tipo').value = '';
+    document.getElementById('filter-status').value = '';
+    switchTab('all');
+    applyFilters();
+  }
+
+  // US-22: Modal de atribuição
+  function openAssign(id, title, currentResp) {
+    assignTargetId = id;
+    selectedUser = currentResp;
+    document.getElementById('assign-modal-sub').textContent = id + ' · ' + title;
+
+    // Marca o responsável atual como selecionado
+    document.querySelectorAll('.user-option').forEach(opt => {
+      opt.classList.toggle('selected', opt.dataset.user === currentResp);
+    });
+
+    document.getElementById('assign-modal').classList.add('open');
+  }
+
+  function closeAssign() {
+    document.getElementById('assign-modal').classList.remove('open');
+    selectedUser = null;
+    assignTargetId = null;
+  }
+
+  function closeAssignOnBackdrop(e) {
+    if (e.target === document.getElementById('assign-modal')) closeAssign();
+  }
+
+  function selectUser(el) {
+    document.querySelectorAll('.user-option').forEach(o => o.classList.remove('selected'));
+    el.classList.add('selected');
+    selectedUser = el.dataset.user;
+  }
+
+  function confirmAssign() {
+    if (!selectedUser || !assignTargetId) return;
+
+    // Atualiza o responsável na linha da tabela
+    const row = document.querySelector(`#test-tbody tr[data-id="${assignTargetId}"]`);
+    if (row) {
+      row.dataset.resp = selectedUser;
+      const respCell = row.cells[4];
+      respCell.textContent = selectedUser;
+      respCell.style.color = 'var(--muted)';
+    }
+
+    closeAssign();
+    applyFilters();
+  }
+
+  // US-11: Atualiza barra de distribuição por status
+  function updateStatusDist() {
+    const rows = document.querySelectorAll('#test-tbody tr');
+    let aprovado = 0, revisao = 0, falho = 0;
+    rows.forEach(r => {
+      const s = r.dataset.status;
+      if (s === 'Aprovado') aprovado++;
+      else if (s === 'Em revisão') revisao++;
+      else if (s === 'Falho') falho++;
+    });
+    const total = aprovado + revisao + falho;
+    const pct = n => total ? Math.round(n / total * 100) : 0;
+
+    document.getElementById('dist-total-label').textContent = total + ' casos no total';
+    document.getElementById('bar-aprovado').style.width = pct(aprovado) + '%';
+    document.getElementById('bar-revisao').style.width  = pct(revisao)  + '%';
+    document.getElementById('bar-falho').style.width    = pct(falho)    + '%';
+
+    document.getElementById('leg-aprovado').textContent     = aprovado;
+    document.getElementById('leg-aprovado-pct').textContent = '(' + pct(aprovado) + '%)';
+    document.getElementById('leg-revisao').textContent      = revisao;
+    document.getElementById('leg-revisao-pct').textContent  = '(' + pct(revisao)  + '%)';
+    document.getElementById('leg-falho').textContent        = falho;
+    document.getElementById('leg-falho-pct').textContent    = '(' + pct(falho)    + '%)';
+  }
+
+  // Init
+  updateCounts();
+  updateStatusDist();
+</script>
 </body>
 </html>
