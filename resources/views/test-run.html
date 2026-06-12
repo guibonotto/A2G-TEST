@@ -25,9 +25,9 @@
   .case-banner-sep { width: 0.5px; height: 36px; background: var(--border); flex-shrink: 0; }
 
   /* Result selector (US-05) */
-  .result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 28px; }
+  .result-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 28px; }
   .result-card {
-    border-radius: 10px; padding: 24px 20px; text-align: center; cursor: pointer;
+    border-radius: 10px; padding: 20px 16px; text-align: center; cursor: pointer;
     border: 1.5px solid var(--border); background: var(--surface2);
     transition: all 0.2s; position: relative;
   }
@@ -42,9 +42,14 @@
     background: rgba(255,92,92,0.08); border-color: var(--danger);
     box-shadow: 0 0 0 3px rgba(255,92,92,0.15);
   }
-  .result-icon { font-size: 32px; margin-bottom: 10px; }
-  .result-label { font-size: 16px; font-weight: 800; letter-spacing: -0.01em; }
-  .result-desc { font-family: var(--mono); font-size: 11px; color: var(--muted); margin-top: 6px; }
+  .result-card.blocked { border-color: rgba(245,166,35,0.4); }
+  .result-card.blocked:hover, .result-card.blocked.selected {
+    background: rgba(245,166,35,0.08); border-color: var(--warning);
+    box-shadow: 0 0 0 3px rgba(245,166,35,0.15);
+  }
+  .result-icon { font-size: 28px; margin-bottom: 10px; }
+  .result-label { font-size: 15px; font-weight: 800; letter-spacing: -0.01em; }
+  .result-desc { font-family: var(--mono); font-size: 10px; color: var(--muted); margin-top: 6px; line-height: 1.5; }
   .result-check {
     position: absolute; top: 12px; right: 14px;
     width: 18px; height: 18px; border-radius: 50%;
@@ -53,7 +58,8 @@
   }
   .result-card.selected .result-check { display: flex; }
   .result-card.approved.selected .result-check { background: var(--success); color: #000; }
-  .result-card.failed.selected .result-check { background: var(--danger); color: #fff; }
+  .result-card.failed.selected .result-check   { background: var(--danger);  color: #fff; }
+  .result-card.blocked.selected .result-check  { background: var(--warning); color: #000; }
 
   /* Steps checklist */
   .step-check-row {
@@ -158,17 +164,23 @@
       <!-- US-05: Resultado -->
       <div class="subsection-title">// Resultado da execução</div>
       <div class="result-grid">
-        <div class="result-card approved" id="card-approved" onclick="selectResult('aprovado')">
+        <div class="result-card approved" id="card-aprovado" onclick="selectResult('aprovado')">
           <div class="result-check">✓</div>
           <div class="result-icon">✓</div>
           <div class="result-label" style="color:var(--success);">Aprovado</div>
-          <div class="result-desc">Todos os critérios<br/>foram atendidos</div>
+          <div class="result-desc">Todos os critérios foram atendidos</div>
         </div>
-        <div class="result-card failed" id="card-failed" onclick="selectResult('reprovado')">
+        <div class="result-card failed" id="card-reprovado" onclick="selectResult('reprovado')">
           <div class="result-check">✗</div>
           <div class="result-icon">✗</div>
           <div class="result-label" style="color:var(--danger);">Reprovado</div>
-          <div class="result-desc">Um ou mais critérios<br/>não foram atendidos</div>
+          <div class="result-desc">Um ou mais critérios não foram atendidos</div>
+        </div>
+        <div class="result-card blocked" id="card-bloqueado" onclick="selectResult('bloqueado')">
+          <div class="result-check">!</div>
+          <div class="result-icon">⊘</div>
+          <div class="result-label" style="color:var(--warning);">Bloqueado</div>
+          <div class="result-desc">Execução impedida por dependência ou ambiente</div>
         </div>
       </div>
 
@@ -285,8 +297,9 @@
 
   function selectResult(result) {
     selectedResult = result;
-    document.getElementById('card-approved').classList.toggle('selected', result === 'aprovado');
-    document.getElementById('card-failed').classList.toggle('selected', result === 'reprovado');
+    ['aprovado', 'reprovado', 'bloqueado'].forEach(r =>
+      document.getElementById('card-' + r).classList.toggle('selected', r === result)
+    );
   }
 
   function markStep(btn, type) {
@@ -297,7 +310,7 @@
 
   function submitRun() {
     if (!selectedResult) {
-      alert('Selecione o resultado da execução (Aprovado ou Reprovado).');
+      alert('Selecione o resultado da execução.');
       return;
     }
 
@@ -307,16 +320,18 @@
 
     document.getElementById('run-form').style.display = 'none';
 
-    const isApproved = selectedResult === 'aprovado';
-    const icon = document.getElementById('success-icon');
-    const title = document.getElementById('success-title');
-    const sub = document.getElementById('success-sub');
+    const map = {
+      aprovado:  { icon: '✓', color: 'var(--success)', title: 'Execução aprovada!'              },
+      reprovado: { icon: '✗', color: 'var(--danger)',  title: 'Execução reprovada registrada'   },
+      bloqueado: { icon: '⊘', color: 'var(--warning)', title: 'Execução bloqueada registrada'   },
+    };
+    const { icon: ic, color, title: ttl } = map[selectedResult];
 
-    icon.textContent = isApproved ? '✓' : '✗';
-    icon.style.color = isApproved ? 'var(--success)' : 'var(--danger)';
-    title.textContent = isApproved ? 'Execução aprovada!' : 'Execução reprovada registrada';
-    title.style.color = isApproved ? 'var(--success)' : 'var(--danger)';
-    sub.textContent = `Registrado por ${resp} em ${dateFormatted}`;
+    document.getElementById('success-icon').textContent  = ic;
+    document.getElementById('success-icon').style.color  = color;
+    document.getElementById('success-title').textContent = ttl;
+    document.getElementById('success-title').style.color = color;
+    document.getElementById('success-sub').textContent   = `Registrado por ${resp} em ${dateFormatted}`;
 
     document.getElementById('success-state').style.display = 'block';
   }

@@ -85,16 +85,20 @@
   .status-dist-total { font-family: var(--mono); font-size: 11px; color: var(--muted); }
   .status-bar-wrap { height: 10px; border-radius: 100px; overflow: hidden; display: flex; gap: 2px; margin-bottom: 16px; }
   .status-bar-seg { height: 100%; border-radius: 100px; transition: width 0.6s ease; }
-  .status-bar-seg.aprovado { background: var(--accent2); }
-  .status-bar-seg.revisao { background: var(--warning); }
-  .status-bar-seg.falho { background: var(--danger); }
+  .status-bar-seg.aprovado     { background: var(--accent2); }
+  .status-bar-seg.em-execucao  { background: var(--accent); }
+  .status-bar-seg.bloqueado    { background: var(--warning); }
+  .status-bar-seg.reprovado    { background: var(--danger); }
+  .status-bar-seg.nao-executado { background: rgba(240,240,255,0.15); }
   .status-legend { display: flex; gap: 20px; flex-wrap: wrap; }
   .status-legend-item { display: flex; align-items: center; gap: 8px; cursor: pointer; }
   .status-legend-item:hover .status-legend-label { color: var(--text); }
   .status-legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-  .status-legend-dot.aprovado { background: var(--accent2); }
-  .status-legend-dot.revisao { background: var(--warning); }
-  .status-legend-dot.falho { background: var(--danger); }
+  .status-legend-dot.aprovado      { background: var(--accent2); }
+  .status-legend-dot.em-execucao   { background: var(--accent); }
+  .status-legend-dot.bloqueado     { background: var(--warning); }
+  .status-legend-dot.reprovado     { background: var(--danger); }
+  .status-legend-dot.nao-executado { background: rgba(240,240,255,0.15); border: 1px solid rgba(240,240,255,0.2); }
   .status-legend-label { font-family: var(--mono); font-size: 11px; color: var(--muted); }
   .status-legend-count { font-family: var(--mono); font-size: 11px; font-weight: 700; color: var(--text); }
   .status-legend-pct { font-family: var(--mono); font-size: 10px; color: var(--muted2); margin-left: 2px; }
@@ -203,23 +207,23 @@
     <div class="metric-grid">
       <div class="metric-card" onclick="clearFilters()">
         <div class="metric-label">Total de testes</div>
-        <div class="metric-val purple">24</div>
+        <div class="metric-val purple" id="mc-total">7</div>
         <div class="metric-sub">↑ 4 esta semana</div>
       </div>
       <div class="metric-card" onclick="filterByStatus('Aprovado')">
         <div class="metric-label">Aprovados</div>
-        <div class="metric-val teal">18</div>
-        <div class="metric-sub">75% do total</div>
+        <div class="metric-val teal" id="mc-aprovado">0</div>
+        <div class="metric-sub" id="mc-aprovado-sub">—</div>
       </div>
-      <div class="metric-card" onclick="filterByStatus('Em revisão')">
-        <div class="metric-label">Em revisão</div>
-        <div class="metric-val amber">4</div>
-        <div class="metric-sub">pendentes de review</div>
-      </div>
-      <div class="metric-card" onclick="filterByStatus('Falho')">
-        <div class="metric-label">Falhos</div>
-        <div class="metric-val red">2</div>
+      <div class="metric-card" onclick="filterByStatus('Reprovado')">
+        <div class="metric-label">Reprovados</div>
+        <div class="metric-val red" id="mc-reprovado">0</div>
         <div class="metric-sub">requerem atenção</div>
+      </div>
+      <div class="metric-card" onclick="filterByStatus('Bloqueado')">
+        <div class="metric-label">Bloqueados</div>
+        <div class="metric-val amber" id="mc-bloqueado">0</div>
+        <div class="metric-sub">impedidos de rodar</div>
       </div>
     </div>
 
@@ -230,28 +234,42 @@
         <div class="status-dist-total" id="dist-total-label">7 casos no total</div>
       </div>
       <div class="status-bar-wrap" id="status-bar">
-        <div class="status-bar-seg aprovado" id="bar-aprovado" style="width:57%"></div>
-        <div class="status-bar-seg revisao"  id="bar-revisao"  style="width:29%"></div>
-        <div class="status-bar-seg falho"    id="bar-falho"    style="width:14%"></div>
+        <div class="status-bar-seg aprovado"     id="bar-aprovado"     style="width:0%"></div>
+        <div class="status-bar-seg em-execucao"  id="bar-em-execucao"  style="width:0%"></div>
+        <div class="status-bar-seg bloqueado"    id="bar-bloqueado"    style="width:0%"></div>
+        <div class="status-bar-seg reprovado"    id="bar-reprovado"    style="width:0%"></div>
+        <div class="status-bar-seg nao-executado" id="bar-nao-executado" style="width:0%"></div>
       </div>
       <div class="status-legend">
         <div class="status-legend-item" onclick="filterByStatus('Aprovado')">
           <div class="status-legend-dot aprovado"></div>
           <span class="status-legend-label">Aprovado</span>
-          <span class="status-legend-count" id="leg-aprovado">4</span>
-          <span class="status-legend-pct" id="leg-aprovado-pct">(57%)</span>
+          <span class="status-legend-count" id="leg-aprovado">0</span>
+          <span class="status-legend-pct" id="leg-aprovado-pct">(0%)</span>
         </div>
-        <div class="status-legend-item" onclick="filterByStatus('Em revisão')">
-          <div class="status-legend-dot revisao"></div>
-          <span class="status-legend-label">Em revisão</span>
-          <span class="status-legend-count" id="leg-revisao">2</span>
-          <span class="status-legend-pct" id="leg-revisao-pct">(29%)</span>
+        <div class="status-legend-item" onclick="filterByStatus('Em execução')">
+          <div class="status-legend-dot em-execucao"></div>
+          <span class="status-legend-label">Em execução</span>
+          <span class="status-legend-count" id="leg-em-execucao">0</span>
+          <span class="status-legend-pct" id="leg-em-execucao-pct">(0%)</span>
         </div>
-        <div class="status-legend-item" onclick="filterByStatus('Falho')">
-          <div class="status-legend-dot falho"></div>
-          <span class="status-legend-label">Falho</span>
-          <span class="status-legend-count" id="leg-falho">1</span>
-          <span class="status-legend-pct" id="leg-falho-pct">(14%)</span>
+        <div class="status-legend-item" onclick="filterByStatus('Bloqueado')">
+          <div class="status-legend-dot bloqueado"></div>
+          <span class="status-legend-label">Bloqueado</span>
+          <span class="status-legend-count" id="leg-bloqueado">0</span>
+          <span class="status-legend-pct" id="leg-bloqueado-pct">(0%)</span>
+        </div>
+        <div class="status-legend-item" onclick="filterByStatus('Reprovado')">
+          <div class="status-legend-dot reprovado"></div>
+          <span class="status-legend-label">Reprovado</span>
+          <span class="status-legend-count" id="leg-reprovado">0</span>
+          <span class="status-legend-pct" id="leg-reprovado-pct">(0%)</span>
+        </div>
+        <div class="status-legend-item" onclick="filterByStatus('Não executado')">
+          <div class="status-legend-dot nao-executado"></div>
+          <span class="status-legend-label">Não executado</span>
+          <span class="status-legend-count" id="leg-nao-executado">0</span>
+          <span class="status-legend-pct" id="leg-nao-executado-pct">(0%)</span>
         </div>
       </div>
     </div>
@@ -282,8 +300,10 @@
         <select class="filter-select" id="filter-status" onchange="applyFilters()">
           <option value="">Todos os status</option>
           <option value="Aprovado">Aprovado</option>
-          <option value="Em revisão">Em revisão</option>
-          <option value="Falho">Falho</option>
+          <option value="Reprovado">Reprovado</option>
+          <option value="Bloqueado">Bloqueado</option>
+          <option value="Em execução">Em execução</option>
+          <option value="Não executado">Não executado</option>
         </select>
       </div>
     </div>
@@ -315,11 +335,11 @@
                 <button class="action-link assign" onclick="openAssign('TC-001','Login com credenciais válidas','Admin Silva')">atribuir</button>
               </td>
             </tr>
-            <tr data-id="TC-002" data-title="Login com senha incorreta" data-tipo="Unitário" data-status="Aprovado" data-resp="João Tester">
+            <tr data-id="TC-002" data-title="Login com senha incorreta" data-tipo="Unitário" data-status="Reprovado" data-resp="João Tester">
               <td class="tc-id">TC-002</td>
               <td class="tc-title"><a href="test-detail.html">Login com senha incorreta</a></td>
               <td><span class="badge badge-purple">Unitário</span></td>
-              <td><span class="badge badge-teal">Aprovado</span></td>
+              <td><span class="badge badge-red">Reprovado</span></td>
               <td style="color:var(--muted);">João Tester</td>
               <td style="display:flex;gap:4px;">
                 <a class="action-link" href="test-detail.html">ver</a>
@@ -328,11 +348,11 @@
                 <button class="action-link assign" onclick="openAssign('TC-002','Login com senha incorreta','João Tester')">atribuir</button>
               </td>
             </tr>
-            <tr data-id="TC-003" data-title="Cadastro de novo usuário" data-tipo="Integração" data-status="Em revisão" data-resp="Maria QA">
+            <tr data-id="TC-003" data-title="Cadastro de novo usuário" data-tipo="Integração" data-status="Bloqueado" data-resp="Maria QA">
               <td class="tc-id">TC-003</td>
               <td class="tc-title"><a href="test-detail.html">Cadastro de novo usuário</a></td>
               <td><span class="badge badge-amber">Integração</span></td>
-              <td><span class="badge badge-amber">Em revisão</span></td>
+              <td><span class="badge badge-amber">Bloqueado</span></td>
               <td style="color:var(--muted);">Maria QA</td>
               <td style="display:flex;gap:4px;">
                 <a class="action-link" href="test-detail.html">ver</a>
@@ -341,11 +361,11 @@
                 <button class="action-link assign" onclick="openAssign('TC-003','Cadastro de novo usuário','Maria QA')">atribuir</button>
               </td>
             </tr>
-            <tr data-id="TC-004" data-title="Fluxo de checkout completo" data-tipo="Integração" data-status="Falho" data-resp="Carlos Dev">
+            <tr data-id="TC-004" data-title="Fluxo de checkout completo" data-tipo="Integração" data-status="Em execução" data-resp="Carlos Dev">
               <td class="tc-id">TC-004</td>
               <td class="tc-title"><a href="test-detail.html">Fluxo de checkout completo</a></td>
               <td><span class="badge badge-amber">Integração</span></td>
-              <td><span class="badge badge-red">Falho</span></td>
+              <td><span class="badge badge-purple">Em execução</span></td>
               <td style="color:var(--muted);">Carlos Dev</td>
               <td style="display:flex;gap:4px;">
                 <a class="action-link" href="test-detail.html">ver</a>
@@ -367,11 +387,11 @@
                 <button class="action-link assign" onclick="openAssign('TC-005','Validação de campos do formulário','Admin Silva')">atribuir</button>
               </td>
             </tr>
-            <tr data-id="TC-006" data-title="API de autenticação JWT" data-tipo="Integração" data-status="Aprovado" data-resp="Admin Silva">
+            <tr data-id="TC-006" data-title="API de autenticação JWT" data-tipo="Integração" data-status="Não executado" data-resp="Admin Silva">
               <td class="tc-id">TC-006</td>
               <td class="tc-title"><a href="test-detail.html">API de autenticação JWT</a></td>
               <td><span class="badge badge-amber">Integração</span></td>
-              <td><span class="badge badge-teal">Aprovado</span></td>
+              <td><span class="badge badge-gray">Não executado</span></td>
               <td style="color:var(--muted);">Admin Silva</td>
               <td style="display:flex;gap:4px;">
                 <a class="action-link" href="test-detail.html">ver</a>
@@ -380,11 +400,11 @@
                 <button class="action-link assign" onclick="openAssign('TC-006','API de autenticação JWT','Admin Silva')">atribuir</button>
               </td>
             </tr>
-            <tr data-id="TC-007" data-title="Timeout de sessão inativa" data-tipo="Unitário" data-status="Em revisão" data-resp="Maria QA">
+            <tr data-id="TC-007" data-title="Timeout de sessão inativa" data-tipo="Unitário" data-status="Não executado" data-resp="Maria QA">
               <td class="tc-id">TC-007</td>
               <td class="tc-title"><a href="test-detail.html">Timeout de sessão inativa</a></td>
               <td><span class="badge badge-purple">Unitário</span></td>
-              <td><span class="badge badge-amber">Em revisão</span></td>
+              <td><span class="badge badge-gray">Não executado</span></td>
               <td style="color:var(--muted);">Maria QA</td>
               <td style="display:flex;gap:4px;">
                 <a class="action-link" href="test-detail.html">ver</a>
@@ -569,27 +589,35 @@
   // US-11: Atualiza barra de distribuição por status
   function updateStatusDist() {
     const rows = document.querySelectorAll('#test-tbody tr');
-    let aprovado = 0, revisao = 0, falho = 0;
-    rows.forEach(r => {
-      const s = r.dataset.status;
-      if (s === 'Aprovado') aprovado++;
-      else if (s === 'Em revisão') revisao++;
-      else if (s === 'Falho') falho++;
-    });
-    const total = aprovado + revisao + falho;
+    const counts = { 'Aprovado': 0, 'Reprovado': 0, 'Bloqueado': 0, 'Em execução': 0, 'Não executado': 0 };
+    rows.forEach(r => { if (counts[r.dataset.status] !== undefined) counts[r.dataset.status]++; });
+
+    const total = Object.values(counts).reduce((a, b) => a + b, 0);
     const pct = n => total ? Math.round(n / total * 100) : 0;
 
     document.getElementById('dist-total-label').textContent = total + ' casos no total';
-    document.getElementById('bar-aprovado').style.width = pct(aprovado) + '%';
-    document.getElementById('bar-revisao').style.width  = pct(revisao)  + '%';
-    document.getElementById('bar-falho').style.width    = pct(falho)    + '%';
+    document.getElementById('mc-total').textContent     = total;
+    document.getElementById('mc-aprovado').textContent  = counts['Aprovado'];
+    document.getElementById('mc-aprovado-sub').textContent = pct(counts['Aprovado']) + '% do total';
+    document.getElementById('mc-reprovado').textContent = counts['Reprovado'];
+    document.getElementById('mc-bloqueado').textContent = counts['Bloqueado'];
 
-    document.getElementById('leg-aprovado').textContent     = aprovado;
-    document.getElementById('leg-aprovado-pct').textContent = '(' + pct(aprovado) + '%)';
-    document.getElementById('leg-revisao').textContent      = revisao;
-    document.getElementById('leg-revisao-pct').textContent  = '(' + pct(revisao)  + '%)';
-    document.getElementById('leg-falho').textContent        = falho;
-    document.getElementById('leg-falho-pct').textContent    = '(' + pct(falho)    + '%)';
+    document.getElementById('bar-aprovado').style.width      = pct(counts['Aprovado'])      + '%';
+    document.getElementById('bar-em-execucao').style.width   = pct(counts['Em execução'])   + '%';
+    document.getElementById('bar-bloqueado').style.width     = pct(counts['Bloqueado'])     + '%';
+    document.getElementById('bar-reprovado').style.width     = pct(counts['Reprovado'])     + '%';
+    document.getElementById('bar-nao-executado').style.width = pct(counts['Não executado']) + '%';
+
+    [
+      ['aprovado',      'Aprovado'],
+      ['em-execucao',   'Em execução'],
+      ['bloqueado',     'Bloqueado'],
+      ['reprovado',     'Reprovado'],
+      ['nao-executado', 'Não executado'],
+    ].forEach(([key, label]) => {
+      document.getElementById('leg-' + key).textContent     = counts[label];
+      document.getElementById('leg-' + key + '-pct').textContent = '(' + pct(counts[label]) + '%)';
+    });
   }
 
   // Init
