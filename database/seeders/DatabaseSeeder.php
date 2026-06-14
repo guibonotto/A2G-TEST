@@ -2,9 +2,11 @@
 
 namespace Database\Seeders;
 
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Str;
 
 class DatabaseSeeder extends Seeder
 {
@@ -15,11 +17,18 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
+        $roles = [
+            ['name' => 'QA / Tester',   'slug' => 'qa'],
+            ['name' => 'Desenvolvedor',  'slug' => 'developer'],
+            ['name' => 'Administrador',  'slug' => 'admin'],
+            ['name' => 'Visualizador',   'slug' => 'viewer'],
+        ];
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
+        foreach ($roles as $role) {
+            Role::firstOrCreate(
+                ['slug' => $role['slug']],
+                ['uuid' => Str::uuid(), 'name' => $role['name']]
+            );
+        }
     }
 }
