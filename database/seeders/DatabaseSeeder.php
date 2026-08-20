@@ -2,9 +2,11 @@
 
 namespace Database\Seeders;
 
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Str;
 
 class DatabaseSeeder extends Seeder
 {
@@ -15,11 +17,36 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
+        $roles = [
+            ['name' => 'QA / Tester',   'slug' => 'qa'],
+            ['name' => 'Desenvolvedor',  'slug' => 'developer'],
+            ['name' => 'Administrador',  'slug' => 'admin'],
+            ['name' => 'Visualizador',   'slug' => 'viewer'],
+        ];
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
+        foreach ($roles as $role) {
+            Role::firstOrCreate(
+                ['slug' => $role['slug']],
+                ['uuid' => Str::uuid(), 'name' => $role['name']]
+            );
+        }
+
+        $demoUsers = [
+            ['name' => 'Administrador Demo', 'email' => 'admin@a2gtest.com', 'role' => 'admin'],
+            ['name' => 'QA Demo', 'email' => 'qa@a2gtest.com', 'role' => 'qa'],
+            ['name' => 'Visualizador Demo', 'email' => 'viewer@a2gtest.com', 'role' => 'viewer'],
+        ];
+
+        foreach ($demoUsers as $demoUser) {
+            User::firstOrCreate(
+                ['email' => $demoUser['email']],
+                [
+                    'name' => $demoUser['name'],
+                    'password' => 'password',
+                    'email_verified_at' => now(),
+                    'role_id' => Role::where('slug', $demoUser['role'])->value('id'),
+                ]
+            );
+        }
     }
 }

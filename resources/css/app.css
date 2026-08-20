@@ -2,6 +2,8 @@
 
 @import 'tw-animate-css';
 
+@import '../views/styles.css';
+
 @source '../views';
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 
@@ -141,3 +143,87 @@
         @apply bg-background text-foreground;
     }
 }
+
+/* Auth pages */
+.bg-grid {
+    position: fixed; inset: 0; z-index: -1;
+    background-image: linear-gradient(rgba(108,99,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(108,99,255,0.04) 1px, transparent 1px);
+    background-size: 48px 48px;
+}
+.auth-wrap {
+    width: 100%; max-width: 440px;
+    margin: 0 auto;
+    display: flex; flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 32px;
+}
+.auth-logo { text-align: center; margin-bottom: 40px; }
+.auth-logo a {
+    font-family: var(--mono); font-size: 22px; font-weight: 700;
+    color: var(--text); text-decoration: none; letter-spacing: 0.04em;
+}
+.auth-logo a span { color: var(--accent); }
+.auth-logo .dot { color: var(--accent2); }
+.auth-card {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: 14px;
+    padding: 36px 40px;
+    width: 100%;
+}
+.auth-header { margin-bottom: 28px; }
+.auth-tag {
+    font-family: var(--mono); font-size: 10px;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--accent2); margin-bottom: 10px;
+}
+.auth-title { font-size: 24px; font-weight: 800; letter-spacing: -0.02em; }
+.auth-sub {
+    font-family: var(--mono); font-size: 12px;
+    color: var(--muted); margin-top: 6px; line-height: 1.6;
+}
+.btn-full { width: 100%; justify-content: center; padding: 13px 20px; font-size: 14px; border-radius: 8px; margin-top: 4px; }
+.auth-footer {
+    text-align: center; margin-top: 24px;
+    font-family: var(--mono); font-size: 12px; color: var(--muted);
+}
+.auth-footer a { color: var(--accent); text-decoration: none; }
+.auth-footer a:hover { text-decoration: underline; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.divider-or { display: flex; align-items: center; gap: 12px; margin: 20px 0; }
+.divider-or::before, .divider-or::after { content: ''; flex: 1; height: 0.5px; background: var(--border); }
+.divider-or span { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+.step-indicator { display: flex; gap: 6px; margin-bottom: 24px; }
+.step-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--border); }
+.step-dot.active { background: var(--accent); width: 20px; border-radius: 3px; }
+.role-options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.role-option { position: relative; }
+.role-option input[type="radio"] { position: absolute; opacity: 0; width: 0; height: 0; }
+.role-label {
+    display: flex; flex-direction: column; gap: 4px;
+    padding: 14px 16px; border-radius: 8px;
+    border: 0.5px solid var(--border); background: var(--surface2);
+    cursor: pointer; transition: all 0.15s;
+}
+.role-label:hover { border-color: var(--border-hover); }
+.role-option input:checked + .role-label { border-color: var(--accent); background: rgba(108,99,255,0.08); }
+.role-name { font-size: 13px; font-weight: 700; }
+.role-desc { font-family: var(--mono); font-size: 10px; color: var(--muted); }
+
+/* Login */
+.forgot {
+    font-family: var(--mono); font-size: 11px; color: var(--muted);
+    text-decoration: none; text-align: right; display: block;
+    margin-top: -12px; margin-bottom: 20px;
+}
+.forgot:hover { color: var(--text); }
+.demo-accounts {
+    background: rgba(108,99,255,0.07); border: 0.5px solid rgba(108,99,255,0.15);
+    border-radius: 8px; padding: 14px 16px; margin-bottom: 20px;
+}
+.demo-title { font-family: var(--mono); font-size: 10px; color: var(--accent); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 10px; }
+.demo-item { font-family: var(--mono); font-size: 11px; color: var(--muted); margin-bottom: 4px; display: flex; gap: 8px; }
+.demo-item:last-child { margin-bottom: 0; }
+.demo-badge { background: rgba(108,99,255,0.2); color: var(--accent); border-radius: 3px; padding: 1px 6px; font-size: 10px; flex-shrink: 0; }

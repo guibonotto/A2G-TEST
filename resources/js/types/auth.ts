@@ -1,9 +1,17 @@
+export type Role = {
+    id: number;
+    name: string;
+    slug: string;
+    permissions: string[] | null;
+};
+
 export type User = {
     id: number;
     name: string;
     email: string;
     avatar?: string;
     email_verified_at: string | null;
+    role: Role | null;
     created_at: string;
     updated_at: string;
     [key: string]: unknown;

@@ -4,10 +4,14 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 
 #[Fillable([
+    'uuid',
     'name',
-    'description',
+    'slug',
+    'permissions',
 ])]
 class Role extends Model
 {
@@ -17,7 +21,26 @@ class Role extends Model
     protected $table = 'roles';
 
     /**
-     * Indicates if the model should have timestamps.
+     * The attributes that should be cast.
+     *
+     * @return array<string, string>
      */
-    public $timestamps = false;
+    protected function casts(): array
+    {
+        return [
+            'permissions' => 'array',
+        ];
+    }
+
+    protected static function booted(): void
+    {
+        static::creating(function (self $role): void {
+            $role->uuid ??= (string) Str::uuid();
+        });
+    }
+
+    public function users(): HasMany
+    {
+        return $this->hasMany(User::class);
+    }
 }
