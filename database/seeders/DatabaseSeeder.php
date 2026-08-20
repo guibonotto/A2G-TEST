@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Classification;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
@@ -47,6 +48,14 @@ class DatabaseSeeder extends Seeder
                     'role_id' => Role::where('slug', $demoUser['role'])->value('id'),
                 ]
             );
+        }
+
+        $classifications = [
+            ['name' => 'Unitário', 'description' => 'Testes de unidade verificam o comportamento de componentes individuais do sistema.'],
+            ['name' => 'Integração', 'description' => 'Testes de integração avaliam a interação entre diferentes módulos ou serviços.'],
+        ];
+        foreach ($classifications as $classification) {
+            Classification::firstOrCreate(['name' => $classification['name']], $classification);
         }
     }
 }

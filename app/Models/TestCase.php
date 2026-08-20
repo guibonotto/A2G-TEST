@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'title',
@@ -29,5 +31,25 @@ class TestCase extends Model
         return [
             'created_at' => 'datetime',
         ];
+    }
+
+    public function classification(): BelongsTo
+    {
+        return $this->belongsTo(Classification::class);
+    }
+
+    public function template(): BelongsTo
+    {
+        return $this->belongsTo(TestTemplate::class, 'template_id');
+    }
+
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function steps(): HasMany
+    {
+        return $this->hasMany(TestStep::class)->orderBy('order');
     }
 }
