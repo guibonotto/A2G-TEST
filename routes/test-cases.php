@@ -10,4 +10,5 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('test-cases/{testCase}', [TestCaseController::class, 'show'])->name('test-cases.show');
     Route::get('test-cases/{testCase}/edit', [TestCaseController::class, 'edit'])->name('test-cases.edit');
     Route::put('test-cases/{testCase}', [TestCaseController::class, 'update'])->name('test-cases.update');
+    Route::delete('test-cases/{testCase}', [TestCaseController::class, 'deleteTestCase'])->name('test-cases.delete');
 });

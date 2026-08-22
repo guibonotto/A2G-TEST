@@ -125,4 +125,21 @@ class TestCaseController extends Controller
 
         return to_route('test-cases.show', $testCase);
     }
+
+    /**
+     * Remove the specified test case from storage.
+     */
+    public function deleteTestCase(TestCase $testCase): RedirectResponse
+    {
+        $title = $testCase->title;
+
+        $testCase->delete();
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => __('Test case ":title" deleted.', ['title' => $title]),
+        ]);
+
+        return to_route('test-cases.index');
+    }
 }

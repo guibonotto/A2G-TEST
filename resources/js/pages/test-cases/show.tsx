@@ -1,9 +1,19 @@
-import { Head, Link, setLayoutProps } from '@inertiajs/react';
+import { Form, Head, Link, setLayoutProps } from '@inertiajs/react';
 import { ArrowLeft } from 'lucide-react';
+import TestCaseController from '@/actions/App/Http/Controllers/TestCaseController';
 import Heading from '@/components/heading';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    Dialog,
+    DialogClose,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogTitle,
+    DialogTrigger,
+} from '@/components/ui/dialog';
 import { edit, index, show } from '@/routes/test-cases';
 import type { TestCaseDetail } from '@/types';
 
@@ -38,6 +48,37 @@ export default function ShowTestCase({ testCase }: Props) {
                         <Button asChild variant="outline" size="sm">
                             <Link href={edit(testCase.id)}>Editar</Link>
                         </Button>
+
+                        <Dialog>
+                            <DialogTrigger asChild>
+                                <Button variant="destructive" size="sm">
+                                    Excluir
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                                <DialogTitle>Excluir caso de teste?</DialogTitle>
+                                <DialogDescription>
+                                    Esta ação não pode ser desfeita. O caso de teste "{testCase.title}" e
+                                    todos os seus passos serão excluídos permanentemente.
+                                </DialogDescription>
+
+                                <Form {...TestCaseController.deleteTestCase.form(testCase)}>
+                                    {({ processing }) => (
+                                        <DialogFooter className="gap-2">
+                                            <DialogClose asChild>
+                                                <Button type="button" variant="secondary">
+                                                    Cancelar
+                                                </Button>
+                                            </DialogClose>
+                                            <Button type="submit" variant="destructive" disabled={processing}>
+                                                Excluir
+                                            </Button>
+                                        </DialogFooter>
+                                    )}
+                                </Form>
+                            </DialogContent>
+                        </Dialog>
+
                         {testCase.classification && (
                             <Badge variant="secondary">{testCase.classification.name}</Badge>
                         )}

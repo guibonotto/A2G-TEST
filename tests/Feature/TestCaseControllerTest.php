@@ -27,6 +27,7 @@ class TestCaseControllerTest extends TestCase
         $this->get(route('test-cases.create'))->assertRedirect(route('login'));
         $this->get(route('test-cases.show', $testCase))->assertRedirect(route('login'));
         $this->get(route('test-cases.edit', $testCase))->assertRedirect(route('login'));
+        $this->delete(route('test-cases.delete', $testCase))->assertRedirect(route('login'));
     }
 
     public function test_index_lists_existing_test_cases(): void
@@ -237,5 +238,24 @@ class TestCaseControllerTest extends TestCase
 
         $response->assertSessionHasErrors('classification_id');
         $this->assertDatabaseHas('test_cases', ['id' => $testCase->id, 'title' => 'Login com credenciais válidas']);
+    }
+
+    public function test_a_test_case_can_be_deleted(): void
+    {
+        $user = User::factory()->create();
+        $classification = Classification::create(['name' => 'Funcional']);
+
+        $testCase = TestCaseModel::create([
+            'title' => 'Login com credenciais válidas',
+            'classification_id' => $classification->id,
+            'created_by' => $user->id,
+        ]);
+        $testCase->steps()->create(['order' => 1, 'description' => 'Acessar tela de login']);
+
+        $response = $this->actingAs($user)->delete(route('test-cases.delete', $testCase));
+
+        $response->assertRedirect(route('test-cases.index'));
+        $this->assertDatabaseMissing('test_cases', ['id' => $testCase->id]);
+        $this->assertDatabaseMissing('test_steps', ['test_case_id' => $testCase->id]);
     }
 }
