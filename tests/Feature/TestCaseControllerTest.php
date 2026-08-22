@@ -26,6 +26,7 @@ class TestCaseControllerTest extends TestCase
         $this->get(route('test-cases.index'))->assertRedirect(route('login'));
         $this->get(route('test-cases.create'))->assertRedirect(route('login'));
         $this->get(route('test-cases.show', $testCase))->assertRedirect(route('login'));
+        $this->get(route('test-cases.edit', $testCase))->assertRedirect(route('login'));
     }
 
     public function test_index_lists_existing_test_cases(): void
@@ -156,5 +157,85 @@ class TestCaseControllerTest extends TestCase
 
         $response->assertSessionHasErrors('steps');
         $this->assertDatabaseMissing('test_cases', ['title' => 'Login com credenciais válidas']);
+    }
+
+    public function test_edit_screen_can_be_rendered(): void
+    {
+        $user = User::factory()->create();
+        $classification = Classification::create(['name' => 'Funcional']);
+
+        $testCase = TestCaseModel::create([
+            'title' => 'Login com credenciais válidas',
+            'classification_id' => $classification->id,
+            'created_by' => $user->id,
+        ]);
+        $testCase->steps()->create(['order' => 1, 'description' => 'Acessar tela de login']);
+
+        $response = $this->actingAs($user)->get(route('test-cases.edit', $testCase));
+
+        $response->assertInertia(fn (Assert $page) => $page
+            ->component('test-cases/edit')
+            ->where('testCase.title', 'Login com credenciais válidas')
+            ->has('classifications', 1)
+        );
+    }
+
+    public function test_a_test_case_can_be_updated_with_steps(): void
+    {
+        $user = User::factory()->create();
+        $classification = Classification::create(['name' => 'Funcional']);
+        $otherClassification = Classification::create(['name' => 'Regressão']);
+
+        $testCase = TestCaseModel::create([
+            'title' => 'Login com credenciais válidas',
+            'classification_id' => $classification->id,
+            'created_by' => $user->id,
+        ]);
+        $testCase->steps()->create(['order' => 1, 'description' => 'Passo antigo']);
+
+        $response = $this->actingAs($user)->put(route('test-cases.update', $testCase), [
+            'title' => 'Login com credenciais inválidas',
+            'description' => 'Garante que o login falha com dados incorretos.',
+            'classification_id' => $otherClassification->id,
+            'steps' => [
+                ['description' => 'Acessar a tela de login', 'expected_result' => 'Tela carregada'],
+                ['description' => 'Preencher credenciais inválidas', 'expected_result' => 'Erro exibido'],
+            ],
+        ]);
+
+        $response->assertRedirect(route('test-cases.show', $testCase));
+
+        $this->assertDatabaseHas('test_cases', [
+            'id' => $testCase->id,
+            'title' => 'Login com credenciais inválidas',
+            'classification_id' => $otherClassification->id,
+        ]);
+
+        $testCase->refresh();
+        $this->assertCount(2, $testCase->steps);
+        $this->assertSame('Acessar a tela de login', $testCase->steps->first()->description);
+    }
+
+    public function test_update_fails_without_a_classification(): void
+    {
+        $user = User::factory()->create();
+        $classification = Classification::create(['name' => 'Funcional']);
+
+        $testCase = TestCaseModel::create([
+            'title' => 'Login com credenciais válidas',
+            'classification_id' => $classification->id,
+            'created_by' => $user->id,
+        ]);
+        $testCase->steps()->create(['order' => 1, 'description' => 'Passo antigo']);
+
+        $response = $this->actingAs($user)->put(route('test-cases.update', $testCase), [
+            'title' => 'Título alterado',
+            'steps' => [
+                ['description' => 'Acessar a tela de login'],
+            ],
+        ]);
+
+        $response->assertSessionHasErrors('classification_id');
+        $this->assertDatabaseHas('test_cases', ['id' => $testCase->id, 'title' => 'Login com credenciais válidas']);
     }
 }

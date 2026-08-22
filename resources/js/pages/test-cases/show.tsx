@@ -4,7 +4,7 @@ import Heading from '@/components/heading';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { index, show } from '@/routes/test-cases';
+import { edit, index, show } from '@/routes/test-cases';
 import type { TestCaseDetail } from '@/types';
 
 type Props = {
@@ -34,9 +34,14 @@ export default function ShowTestCase({ testCase }: Props) {
                         <Heading title={testCase.title} description={testCase.description ?? undefined} />
                     </div>
 
-                    {testCase.classification && (
-                        <Badge variant="secondary">{testCase.classification.name}</Badge>
-                    )}
+                    <div className="flex items-center gap-2">
+                        <Button asChild variant="outline" size="sm">
+                            <Link href={edit(testCase.id)}>Editar</Link>
+                        </Button>
+                        {testCase.classification && (
+                            <Badge variant="secondary">{testCase.classification.name}</Badge>
+                        )}
+                    </div>
                 </div>
 
                 <Card>

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\TestCases\StoreTestCaseRequest;
+use App\Http\Requests\TestCases\UpdateTestCaseRequest;
 use App\Models\Classification;
 use App\Models\TestCase;
 use App\Models\TestTemplate;
@@ -80,5 +81,48 @@ class TestCaseController extends Controller
         return Inertia::render('test-cases/show', [
             'testCase' => $testCase,
         ]);
+    }
+
+    /**
+     * Show the form for editing the specified test case.
+     */
+    public function edit(TestCase $testCase): Response
+    {
+        $testCase->load('steps');
+
+        return Inertia::render('test-cases/edit', [
+            'testCase' => $testCase,
+            'classifications' => Classification::query()->orderBy('name')->get(['id', 'name']),
+            'templates' => TestTemplate::query()->orderBy('title')->get(['id', 'title']),
+        ]);
+    }
+
+    /**
+     * Update the specified test case in storage.
+     */
+    public function update(UpdateTestCaseRequest $request, TestCase $testCase): RedirectResponse
+    {
+        DB::transaction(function () use ($request, $testCase) {
+            $testCase->update(
+                $request->safe()->only(['title', 'description', 'classification_id', 'template_id'])
+            );
+
+            $testCase->steps()->delete();
+
+            foreach ($request->safe()->array('steps') as $index => $step) {
+                $testCase->steps()->create([
+                    'order' => $index + 1,
+                    'description' => $step['description'],
+                    'expected_result' => $step['expected_result'] ?? null,
+                ]);
+            }
+        });
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => __('Test case ":title" updated.', ['title' => $testCase->title]),
+        ]);
+
+        return to_route('test-cases.show', $testCase);
     }
 }
