@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Classification;
 use App\Models\Role;
+use App\Models\TestCaseStatus;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -56,6 +57,17 @@ class DatabaseSeeder extends Seeder
         ];
         foreach ($classifications as $classification) {
             Classification::firstOrCreate(['name' => $classification['name']], $classification);
+        }
+
+        $statuses = [
+            ['name' => 'Aprovado', 'color' => 'success'],
+            ['name' => 'Reprovado', 'color' => 'destructive'],
+            ['name' => 'Pendente', 'color' => 'warning'],
+            ['name' => 'Cancelado', 'color' => 'secondary'],
+            ['name' => 'Regressão', 'color' => 'info'],
+        ];
+        foreach ($statuses as $status) {
+            TestCaseStatus::firstOrCreate(['name' => $status['name']], $status);
         }
     }
 }

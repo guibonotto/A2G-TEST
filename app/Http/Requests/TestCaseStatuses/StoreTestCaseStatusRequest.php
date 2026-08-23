@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Http\Requests\TestCases;
+namespace App\Http\Requests\TestCaseStatuses;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
-class BulkUpdateTestCaseStatusRequest extends FormRequest
+class StoreTestCaseStatusRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -23,9 +23,8 @@ class BulkUpdateTestCaseStatusRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'ids' => ['required', 'array', 'min:1'],
-            'ids.*' => ['integer', 'distinct', 'exists:test_cases,id'],
-            'status_id' => ['required', 'integer', 'exists:test_case_statuses,id'],
+            'name' => ['required', 'string', 'max:255', 'unique:test_case_statuses,name'],
+            'color' => ['required', 'string', 'in:success,destructive,warning,secondary,info'],
         ];
     }
 }

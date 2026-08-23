@@ -15,7 +15,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { testCaseStatusBadgeVariant } from '@/lib/test-case-status';
 import { bulkStatus, create, index, show } from '@/routes/test-cases';
 import type { Classification, TestCaseFilters, TestCaseListItem, TestCaseStatus } from '@/types';
 
@@ -46,7 +45,7 @@ export default function TestCaseIndex({ testCases, classifications, statuses, fi
                 {
                     search,
                     classification_id: filters.classification_id,
-                    status: filters.status,
+                    status_id: filters.status_id,
                     assigned_to_me: filters.assigned_to_me,
                 },
                 { preserveState: true, replace: true, preserveScroll: true },
@@ -64,7 +63,7 @@ export default function TestCaseIndex({ testCases, classifications, statuses, fi
             {
                 search,
                 classification_id: value === 'all' ? null : Number(value),
-                status: filters.status,
+                status_id: filters.status_id,
                 assigned_to_me: filters.assigned_to_me,
             },
             { preserveState: true, replace: true, preserveScroll: true },
@@ -78,7 +77,7 @@ export default function TestCaseIndex({ testCases, classifications, statuses, fi
             {
                 search,
                 classification_id: filters.classification_id,
-                status: value === 'all' ? null : value,
+                status_id: value === 'all' ? null : Number(value),
                 assigned_to_me: filters.assigned_to_me,
             },
             { preserveState: true, replace: true, preserveScroll: true },
@@ -92,7 +91,7 @@ export default function TestCaseIndex({ testCases, classifications, statuses, fi
             {
                 search,
                 classification_id: filters.classification_id,
-                status: filters.status,
+                status_id: filters.status_id,
                 assigned_to_me: checked,
             },
             { preserveState: true, replace: true, preserveScroll: true },
@@ -109,11 +108,11 @@ export default function TestCaseIndex({ testCases, classifications, statuses, fi
         );
     }
 
-    function handleBulkStatusChange(status: string) {
+    function handleBulkStatusChange(value: string) {
         setApplyingBulkStatus(true);
         router.patch(
             bulkStatus.url(),
-            { ids: selectedIds, status },
+            { ids: selectedIds, status_id: Number(value) },
             {
                 preserveScroll: true,
                 onSuccess: () => setSelectedIds([]),
@@ -163,7 +162,7 @@ export default function TestCaseIndex({ testCases, classifications, statuses, fi
                         </SelectContent>
                     </Select>
                     <Select
-                        value={filters.status ?? 'all'}
+                        value={filters.status_id ? String(filters.status_id) : 'all'}
                         onValueChange={handleStatusChange}
                     >
                         <SelectTrigger className="sm:w-52">
@@ -172,8 +171,8 @@ export default function TestCaseIndex({ testCases, classifications, statuses, fi
                         <SelectContent>
                             <SelectItem value="all">Todos os status</SelectItem>
                             {statuses.map((status) => (
-                                <SelectItem key={status} value={status}>
-                                    {status}
+                                <SelectItem key={status.id} value={String(status.id)}>
+                                    {status.name}
                                 </SelectItem>
                             ))}
                         </SelectContent>
@@ -203,8 +202,8 @@ export default function TestCaseIndex({ testCases, classifications, statuses, fi
                             </SelectTrigger>
                             <SelectContent>
                                 {statuses.map((status) => (
-                                    <SelectItem key={status} value={status}>
-                                        {status}
+                                    <SelectItem key={status.id} value={String(status.id)}>
+                                        {status.name}
                                     </SelectItem>
                                 ))}
                             </SelectContent>
@@ -236,7 +235,7 @@ export default function TestCaseIndex({ testCases, classifications, statuses, fi
                                     <th className="px-4 py-3 font-medium">Título</th>
                                     <th className="px-4 py-3 font-medium">Classificação</th>
                                     <th className="px-4 py-3 font-medium">Status</th>
-                                    <th className="px-4 py-3 font-medium">Atribuído a</th>
+                                    <th className="px-4 py-3 font-medium">Responsável</th>
                                     <th className="px-4 py-3 font-medium">Passos</th>
                                     <th className="px-4 py-3 font-medium">Criado por</th>
                                     <th className="px-4 py-3 font-medium">Criado em</th>
@@ -269,9 +268,11 @@ export default function TestCaseIndex({ testCases, classifications, statuses, fi
                                             {testCase.classification?.name ?? '—'}
                                         </td>
                                         <td className="px-4 py-3">
-                                            <Badge variant={testCaseStatusBadgeVariant(testCase.status)}>
-                                                {testCase.status}
-                                            </Badge>
+                                            {testCase.status ? (
+                                                <Badge variant={testCase.status.color}>{testCase.status.name}</Badge>
+                                            ) : (
+                                                '—'
+                                            )}
                                         </td>
                                         <td className="px-4 py-3">{testCase.assignee?.name ?? '—'}</td>
                                         <td className="px-4 py-3">{testCase.steps_count}</td>

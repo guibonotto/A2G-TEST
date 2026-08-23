@@ -1,5 +1,5 @@
-import { Link } from '@inertiajs/react';
-import { BookOpen, ClipboardList, FolderGit2, LayoutGrid } from 'lucide-react';
+import { Link, usePage } from '@inertiajs/react';
+import { BookOpen, ClipboardList, FolderGit2, LayoutGrid, ShieldCheck, Tags, Users } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
@@ -14,6 +14,7 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
+import { index as testCaseStatusesIndex } from '@/routes/test-case-statuses';
 import { index as testCasesIndex } from '@/routes/test-cases';
 import type { NavItem } from '@/types';
 
@@ -27,6 +28,24 @@ const mainNavItems: NavItem[] = [
         title: 'Casos de teste',
         href: testCasesIndex(),
         icon: ClipboardList,
+    },
+];
+
+const managementNavItems: NavItem[] = [
+    {
+        title: 'Gerenciar Contas',
+        href: '/management/accounts',
+        icon: Users,
+    },
+    {
+        title: 'Gerenciar Permissões',
+        href: '/management/permissions',
+        icon: ShieldCheck,
+    },
+    {
+        title: 'Gerenciar Status',
+        href: testCaseStatusesIndex(),
+        icon: Tags,
     },
 ];
 
@@ -44,6 +63,9 @@ const footerNavItems: NavItem[] = [
 ];
 
 export function AppSidebar() {
+    const { auth } = usePage().props;
+    const isQa = auth.user.role?.slug === 'qa';
+
     return (
         <Sidebar collapsible="icon" variant="inset">
             <SidebarHeader>
@@ -60,6 +82,7 @@ export function AppSidebar() {
 
             <SidebarContent>
                 <NavMain items={mainNavItems} />
+                {isQa && <NavMain items={managementNavItems} label="Gerenciamento" />}
             </SidebarContent>
 
             <SidebarFooter>

@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Enums\TestCaseStatus;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -14,7 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'classification_id',
     'created_by',
     'template_id',
-    'status',
+    'status_id',
     'assigned_to',
 ])]
 class TestCase extends Model
@@ -33,13 +32,17 @@ class TestCase extends Model
     {
         return [
             'created_at' => 'datetime',
-            'status' => TestCaseStatus::class,
         ];
     }
 
     public function classification(): BelongsTo
     {
         return $this->belongsTo(Classification::class);
+    }
+
+    public function status(): BelongsTo
+    {
+        return $this->belongsTo(TestCaseStatus::class, 'status_id');
     }
 
     public function template(): BelongsTo

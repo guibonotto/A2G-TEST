@@ -8,7 +8,13 @@ export type TestTemplate = {
     title: string;
 };
 
-export type TestCaseStatus = 'APROVADO' | 'REPROVADO' | 'PENDENTE' | 'CANCELADO' | 'REGRESSÃO';
+export type TestCaseStatusColor = 'success' | 'destructive' | 'warning' | 'secondary' | 'info';
+
+export type TestCaseStatus = {
+    id: number;
+    name: string;
+    color: TestCaseStatusColor;
+};
 
 export type AssignableUser = {
     id: number;
@@ -19,7 +25,7 @@ export type TestCaseListItem = {
     id: number;
     title: string;
     classification: Classification | null;
-    status: TestCaseStatus;
+    status: TestCaseStatus | null;
     creator: { id: number; name: string } | null;
     assignee: AssignableUser | null;
     steps_count: number;
@@ -39,7 +45,7 @@ export type TestCaseDetail = {
     description: string | null;
     classification: Classification | null;
     template: TestTemplate | null;
-    status: TestCaseStatus;
+    status: TestCaseStatus | null;
     creator: { id: number; name: string } | null;
     assignee: AssignableUser | null;
     steps: TestStep[];
@@ -49,6 +55,6 @@ export type TestCaseDetail = {
 export type TestCaseFilters = {
     search: string;
     classification_id: number | null;
-    status: TestCaseStatus | null;
+    status_id: number | null;
     assigned_to_me: boolean;
 };

@@ -38,7 +38,7 @@ export default function EditTestCase({ testCase, classifications, templates, sta
         description: testCase.description ?? '',
         classification_id: testCase.classification ? String(testCase.classification.id) : '',
         template_id: testCase.template ? String(testCase.template.id) : '',
-        status: testCase.status,
+        status_id: testCase.status ? String(testCase.status.id) : '',
         steps: (testCase.steps.length > 0
             ? testCase.steps.map((step) => ({
                   description: step.description,
@@ -159,23 +159,23 @@ export default function EditTestCase({ testCase, classifications, templates, sta
                                 </div>
 
                                 <div className="grid gap-2">
-                                    <Label htmlFor="status">Status</Label>
+                                    <Label htmlFor="status_id">Status</Label>
                                     <Select
-                                        value={data.status}
-                                        onValueChange={(value) => setData('status', value as TestCaseStatus)}
+                                        value={data.status_id}
+                                        onValueChange={(value) => setData('status_id', value)}
                                     >
-                                        <SelectTrigger id="status" className="w-full">
+                                        <SelectTrigger id="status_id" className="w-full">
                                             <SelectValue placeholder="Selecione um status" />
                                         </SelectTrigger>
                                         <SelectContent>
                                             {statuses.map((status) => (
-                                                <SelectItem key={status} value={status}>
-                                                    {status}
+                                                <SelectItem key={status.id} value={String(status.id)}>
+                                                    {status.name}
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
-                                    <InputError message={errors.status} />
+                                    <InputError message={errors.status_id} />
                                 </div>
                             </div>
                         </CardContent>

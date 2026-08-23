@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\TestCaseStatus;
 use App\Http\Requests\TestCases\AssignTestCaseRequest;
 use App\Http\Requests\TestCases\BulkUpdateTestCaseStatusRequest;
 use App\Http\Requests\TestCases\StoreTestCaseRequest;
 use App\Http\Requests\TestCases\UpdateTestCaseRequest;
 use App\Models\Classification;
 use App\Models\TestCase;
+use App\Models\TestCaseStatus;
 use App\Models\TestTemplate;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
@@ -26,11 +26,11 @@ class TestCaseController extends Controller
     {
         $search = $request->string('search')->trim()->toString();
         $classificationId = $request->integer('classification_id') ?: null;
-        $status = $request->enum('status', TestCaseStatus::class);
+        $statusId = $request->integer('status_id') ?: null;
         $assignedToMe = $request->boolean('assigned_to_me');
 
         $testCases = TestCase::query()
-            ->with(['classification:id,name', 'creator:id,name', 'assignee:id,name'])
+            ->with(['classification:id,name', 'status:id,name,color', 'creator:id,name', 'assignee:id,name'])
             ->withCount('steps')
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($query) use ($search) {
@@ -41,19 +41,19 @@ class TestCaseController extends Controller
                 });
             })
             ->when($classificationId, fn ($query) => $query->where('classification_id', $classificationId))
-            ->when($status, fn ($query) => $query->where('status', $status))
+            ->when($statusId, fn ($query) => $query->where('status_id', $statusId))
             ->when($assignedToMe, fn ($query) => $query->where('assigned_to', $request->user()->id))
             ->latest()
-            ->get(['id', 'title', 'classification_id', 'status', 'assigned_to', 'created_by', 'created_at']);
+            ->get(['id', 'title', 'classification_id', 'status_id', 'assigned_to', 'created_by', 'created_at']);
 
         return Inertia::render('test-cases/index', [
             'testCases' => $testCases,
             'classifications' => Classification::query()->orderBy('name')->get(['id', 'name']),
-            'statuses' => TestCaseStatus::cases(),
+            'statuses' => TestCaseStatus::query()->orderBy('name')->get(['id', 'name', 'color']),
             'filters' => [
                 'search' => $search,
                 'classification_id' => $classificationId,
-                'status' => $status,
+                'status_id' => $statusId,
                 'assigned_to_me' => $assignedToMe,
             ],
         ]);
@@ -67,7 +67,7 @@ class TestCaseController extends Controller
         return Inertia::render('test-cases/create', [
             'classifications' => Classification::query()->orderBy('name')->get(['id', 'name']),
             'templates' => TestTemplate::query()->orderBy('title')->get(['id', 'title']),
-            'statuses' => TestCaseStatus::cases(),
+            'statuses' => TestCaseStatus::query()->orderBy('name')->get(['id', 'name', 'color']),
         ]);
     }
 
@@ -78,7 +78,7 @@ class TestCaseController extends Controller
     {
         $testCase = DB::transaction(function () use ($request) {
             $testCase = TestCase::create([
-                ...$request->safe()->only(['title', 'description', 'classification_id', 'template_id', 'status']),
+                ...$request->safe()->only(['title', 'description', 'classification_id', 'template_id', 'status_id']),
                 'created_by' => $request->user()->id,
             ]);
 
@@ -106,7 +106,7 @@ class TestCaseController extends Controller
      */
     public function show(Request $request, TestCase $testCase): Response
     {
-        $testCase->load(['classification:id,name', 'template:id,title', 'creator:id,name', 'assignee:id,name', 'steps']);
+        $testCase->load(['classification:id,name', 'template:id,title', 'status:id,name,color', 'creator:id,name', 'assignee:id,name', 'steps']);
 
         return Inertia::render('test-cases/show', [
             'testCase' => $testCase,
@@ -130,7 +130,7 @@ class TestCaseController extends Controller
             'testCase' => $testCase,
             'classifications' => Classification::query()->orderBy('name')->get(['id', 'name']),
             'templates' => TestTemplate::query()->orderBy('title')->get(['id', 'title']),
-            'statuses' => TestCaseStatus::cases(),
+            'statuses' => TestCaseStatus::query()->orderBy('name')->get(['id', 'name', 'color']),
         ]);
     }
 
@@ -141,7 +141,7 @@ class TestCaseController extends Controller
     {
         DB::transaction(function () use ($request, $testCase) {
             $testCase->update(
-                $request->safe()->only(['title', 'description', 'classification_id', 'template_id', 'status'])
+                $request->safe()->only(['title', 'description', 'classification_id', 'template_id', 'status_id'])
             );
 
             $testCase->steps()->delete();
@@ -170,7 +170,7 @@ class TestCaseController extends Controller
     {
         $count = TestCase::query()
             ->whereIn('id', $request->validated('ids'))
-            ->update(['status' => $request->validated('status')]);
+            ->update(['status_id' => $request->validated('status_id')]);
 
         Inertia::flash('toast', [
             'type' => 'success',

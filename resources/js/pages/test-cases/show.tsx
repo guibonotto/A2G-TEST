@@ -23,7 +23,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { testCaseStatusBadgeVariant } from '@/lib/test-case-status';
 import { assign, edit, index, show } from '@/routes/test-cases';
 import type { AssignableUser, TestCaseDetail } from '@/types';
 
@@ -154,9 +153,9 @@ export default function ShowTestCase({ testCase, assignableUsers }: Props) {
                         {testCase.classification && (
                             <Badge variant="secondary">{testCase.classification.name}</Badge>
                         )}
-                        <Badge variant={testCaseStatusBadgeVariant(testCase.status)}>
-                            {testCase.status}
-                        </Badge>
+                        {testCase.status && (
+                            <Badge variant={testCase.status.color}>{testCase.status.name}</Badge>
+                        )}
                     </div>
                 </div>
 

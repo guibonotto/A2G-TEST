@@ -18,6 +18,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { index, store } from '@/routes/test-cases';
 import type { Classification, TestCaseStatus, TestTemplate } from '@/types';
 
+
 type Props = {
     classifications: Classification[];
     templates: TestTemplate[];
@@ -37,7 +38,7 @@ export default function CreateTestCase({ classifications, templates, statuses }:
         description: '',
         classification_id: '',
         template_id: '',
-        status: 'PENDENTE' as TestCaseStatus,
+        status_id: '',
         steps: [{ ...emptyStep }] as StepForm[],
     });
 
@@ -145,23 +146,23 @@ export default function CreateTestCase({ classifications, templates, statuses }:
                                 </div>
 
                                 <div className="grid gap-2">
-                                    <Label htmlFor="status">Status</Label>
+                                    <Label htmlFor="status_id">Status</Label>
                                     <Select
-                                        value={data.status}
-                                        onValueChange={(value) => setData('status', value as TestCaseStatus)}
+                                        value={data.status_id}
+                                        onValueChange={(value) => setData('status_id', value)}
                                     >
-                                        <SelectTrigger id="status" className="w-full">
+                                        <SelectTrigger id="status_id" className="w-full">
                                             <SelectValue placeholder="Selecione um status" />
                                         </SelectTrigger>
                                         <SelectContent>
                                             {statuses.map((status) => (
-                                                <SelectItem key={status} value={status}>
-                                                    {status}
+                                                <SelectItem key={status.id} value={String(status.id)}>
+                                                    {status.name}
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
-                                    <InputError message={errors.status} />
+                                    <InputError message={errors.status_id} />
                                 </div>
                             </div>
                         </CardContent>

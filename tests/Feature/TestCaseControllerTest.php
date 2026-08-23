@@ -2,10 +2,10 @@
 
 namespace Tests\Feature;
 
-use App\Enums\TestCaseStatus;
 use App\Models\Classification;
 use App\Models\Role;
 use App\Models\TestCase as TestCaseModel;
+use App\Models\TestCaseStatus;
 use App\Models\TestTemplate;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -21,6 +21,11 @@ class TestCaseControllerTest extends TestCase
         $role = Role::firstOrCreate(['slug' => $slug], ['name' => $slug]);
 
         return User::factory()->create(['role_id' => $role->id]);
+    }
+
+    private function createStatus(string $name, string $color = 'secondary'): TestCaseStatus
+    {
+        return TestCaseStatus::firstOrCreate(['name' => $name], ['color' => $color]);
     }
 
     public function test_guests_cannot_access_test_cases(): void
@@ -141,21 +146,23 @@ class TestCaseControllerTest extends TestCase
     {
         $user = User::factory()->create();
         $classification = Classification::create(['name' => 'Funcional']);
+        $approvedStatus = $this->createStatus('Aprovado', 'success');
+        $pendingStatus = $this->createStatus('Pendente', 'warning');
 
         $approved = TestCaseModel::create([
             'title' => 'Login com credenciais válidas',
             'classification_id' => $classification->id,
             'created_by' => $user->id,
-            'status' => TestCaseStatus::Aprovado,
+            'status_id' => $approvedStatus->id,
         ]);
         TestCaseModel::create([
             'title' => 'Cadastro de usuário',
             'classification_id' => $classification->id,
             'created_by' => $user->id,
-            'status' => TestCaseStatus::Pendente,
+            'status_id' => $pendingStatus->id,
         ]);
 
-        $response = $this->actingAs($user)->get(route('test-cases.index', ['status' => TestCaseStatus::Aprovado->value]));
+        $response = $this->actingAs($user)->get(route('test-cases.index', ['status_id' => $approvedStatus->id]));
 
         $response->assertInertia(fn (Assert $page) => $page
             ->component('test-cases/index')
@@ -190,7 +197,7 @@ class TestCaseControllerTest extends TestCase
         );
     }
 
-    public function test_index_defaults_new_test_cases_to_pending_status(): void
+    public function test_a_new_test_case_has_no_status_by_default(): void
     {
         $user = User::factory()->create();
         $classification = Classification::create(['name' => 'Funcional']);
@@ -203,7 +210,7 @@ class TestCaseControllerTest extends TestCase
 
         $this->assertDatabaseHas('test_cases', [
             'title' => 'Login com credenciais válidas',
-            'status' => TestCaseStatus::Pendente->value,
+            'status_id' => null,
         ]);
     }
 
@@ -261,11 +268,12 @@ class TestCaseControllerTest extends TestCase
     {
         $user = User::factory()->create();
         $classification = Classification::create(['name' => 'Funcional']);
+        $status = $this->createStatus('Regressão', 'info');
 
         $this->actingAs($user)->post(route('test-cases.store'), [
             'title' => 'Login com credenciais válidas',
             'classification_id' => $classification->id,
-            'status' => TestCaseStatus::Regressao->value,
+            'status_id' => $status->id,
             'steps' => [
                 ['description' => 'Acessar a tela de login'],
             ],
@@ -273,7 +281,7 @@ class TestCaseControllerTest extends TestCase
 
         $this->assertDatabaseHas('test_cases', [
             'title' => 'Login com credenciais válidas',
-            'status' => TestCaseStatus::Regressao->value,
+            'status_id' => $status->id,
         ]);
     }
 
@@ -423,19 +431,21 @@ class TestCaseControllerTest extends TestCase
     {
         $user = User::factory()->create();
         $classification = Classification::create(['name' => 'Funcional']);
+        $pendingStatus = $this->createStatus('Pendente', 'warning');
+        $rejectedStatus = $this->createStatus('Reprovado', 'destructive');
 
         $testCase = TestCaseModel::create([
             'title' => 'Login com credenciais válidas',
             'classification_id' => $classification->id,
             'created_by' => $user->id,
-            'status' => TestCaseStatus::Pendente,
+            'status_id' => $pendingStatus->id,
         ]);
         $testCase->steps()->create(['order' => 1, 'description' => 'Passo antigo']);
 
         $this->actingAs($user)->put(route('test-cases.update', $testCase), [
             'title' => $testCase->title,
             'classification_id' => $classification->id,
-            'status' => TestCaseStatus::Reprovado->value,
+            'status_id' => $rejectedStatus->id,
             'steps' => [
                 ['description' => 'Acessar a tela de login'],
             ],
@@ -443,7 +453,7 @@ class TestCaseControllerTest extends TestCase
 
         $this->assertDatabaseHas('test_cases', [
             'id' => $testCase->id,
-            'status' => TestCaseStatus::Reprovado->value,
+            'status_id' => $rejectedStatus->id,
         ]);
     }
 
@@ -573,44 +583,47 @@ class TestCaseControllerTest extends TestCase
     {
         $user = User::factory()->create();
         $classification = Classification::create(['name' => 'Funcional']);
+        $pendingStatus = $this->createStatus('Pendente', 'warning');
+        $approvedStatus = $this->createStatus('Aprovado', 'success');
 
         $first = TestCaseModel::create([
             'title' => 'Login com credenciais válidas',
             'classification_id' => $classification->id,
             'created_by' => $user->id,
-            'status' => TestCaseStatus::Pendente,
+            'status_id' => $pendingStatus->id,
         ]);
         $second = TestCaseModel::create([
             'title' => 'Cadastro de usuário',
             'classification_id' => $classification->id,
             'created_by' => $user->id,
-            'status' => TestCaseStatus::Pendente,
+            'status_id' => $pendingStatus->id,
         ]);
         $untouched = TestCaseModel::create([
             'title' => 'Logout',
             'classification_id' => $classification->id,
             'created_by' => $user->id,
-            'status' => TestCaseStatus::Pendente,
+            'status_id' => $pendingStatus->id,
         ]);
 
         $response = $this->actingAs($user)->patch(route('test-cases.bulk-status'), [
             'ids' => [$first->id, $second->id],
-            'status' => TestCaseStatus::Aprovado->value,
+            'status_id' => $approvedStatus->id,
         ]);
 
         $response->assertRedirect();
-        $this->assertDatabaseHas('test_cases', ['id' => $first->id, 'status' => TestCaseStatus::Aprovado->value]);
-        $this->assertDatabaseHas('test_cases', ['id' => $second->id, 'status' => TestCaseStatus::Aprovado->value]);
-        $this->assertDatabaseHas('test_cases', ['id' => $untouched->id, 'status' => TestCaseStatus::Pendente->value]);
+        $this->assertDatabaseHas('test_cases', ['id' => $first->id, 'status_id' => $approvedStatus->id]);
+        $this->assertDatabaseHas('test_cases', ['id' => $second->id, 'status_id' => $approvedStatus->id]);
+        $this->assertDatabaseHas('test_cases', ['id' => $untouched->id, 'status_id' => $pendingStatus->id]);
     }
 
     public function test_bulk_status_update_fails_without_ids(): void
     {
         $user = User::factory()->create();
+        $status = $this->createStatus('Aprovado', 'success');
 
         $response = $this->actingAs($user)->patch(route('test-cases.bulk-status'), [
             'ids' => [],
-            'status' => TestCaseStatus::Aprovado->value,
+            'status_id' => $status->id,
         ]);
 
         $response->assertSessionHasErrors('ids');
@@ -620,21 +633,22 @@ class TestCaseControllerTest extends TestCase
     {
         $user = User::factory()->create();
         $classification = Classification::create(['name' => 'Funcional']);
+        $pendingStatus = $this->createStatus('Pendente', 'warning');
 
         $testCase = TestCaseModel::create([
             'title' => 'Login com credenciais válidas',
             'classification_id' => $classification->id,
             'created_by' => $user->id,
-            'status' => TestCaseStatus::Pendente,
+            'status_id' => $pendingStatus->id,
         ]);
 
         $response = $this->actingAs($user)->patch(route('test-cases.bulk-status'), [
             'ids' => [$testCase->id],
-            'status' => 'NAO_EXISTE',
+            'status_id' => 999999,
         ]);
 
-        $response->assertSessionHasErrors('status');
-        $this->assertDatabaseHas('test_cases', ['id' => $testCase->id, 'status' => TestCaseStatus::Pendente->value]);
+        $response->assertSessionHasErrors('status_id');
+        $this->assertDatabaseHas('test_cases', ['id' => $testCase->id, 'status_id' => $pendingStatus->id]);
     }
 
     public function test_a_test_case_can_be_deleted(): void
