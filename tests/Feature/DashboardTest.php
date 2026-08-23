@@ -32,15 +32,28 @@ class DashboardTest extends TestCase
     public function test_dashboard_exposes_aggregated_metrics(): void
     {
         $user = User::factory()->create();
-        $status = TestCaseStatus::firstOrCreate(['name' => 'Aprovado'], ['color' => 'success']);
+        $approvedStatus = TestCaseStatus::firstOrCreate(['name' => 'Aprovado'], ['color' => 'success']);
+        $pendingStatus = TestCaseStatus::firstOrCreate(['name' => 'Pendente'], ['color' => 'warning']);
         $classification = Classification::firstOrCreate(['name' => 'Unitário']);
 
         TestCaseModel::create([
             'title' => 'Login válido',
             'classification_id' => $classification->id,
-            'status_id' => $status->id,
+            'status_id' => $approvedStatus->id,
             'created_by' => $user->id,
             'assigned_to' => $user->id,
+        ]);
+        TestCaseModel::create([
+            'title' => 'Cadastro válido',
+            'classification_id' => $classification->id,
+            'status_id' => $pendingStatus->id,
+            'created_by' => $user->id,
+        ]);
+        TestCaseModel::create([
+            'title' => 'Logout válido',
+            'classification_id' => $classification->id,
+            'status_id' => $pendingStatus->id,
+            'created_by' => $user->id,
         ]);
 
         $this->actingAs($user);
@@ -49,9 +62,15 @@ class DashboardTest extends TestCase
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->component('dashboard')
-                ->has('stats')
-                ->has('statusBreakdown', 1)
-                ->has('classificationBreakdown', 1)
+                ->where('stats.total', 3)
+                ->where('stats.unassigned', 2)
+                ->where('stats.statusesInUse', 2)
+                ->has('statusBreakdown', 2)
+                ->where('statusBreakdown.0.name', 'Pendente')
+                ->where('statusBreakdown.0.total', 2)
+                ->where('statusBreakdown.1.name', 'Aprovado')
+                ->where('statusBreakdown.1.total', 1)
+                ->where('classificationBreakdown.0.total', 3)
                 ->has('workload', 1)
                 ->has('creationTrend')
             );
