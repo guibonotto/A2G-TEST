@@ -37,7 +37,7 @@ export default function CreateTestCase({ classifications, templates, statuses }:
         description: '',
         classification_id: '',
         template_id: '',
-        status: 'PENDENTE' as TestCaseStatus,
+        status: 'PENDING' as TestCaseStatus,
         steps: [{ ...emptyStep }] as StepForm[],
     });
 
@@ -68,19 +68,19 @@ export default function CreateTestCase({ classifications, templates, statuses }:
 
     return (
         <>
-            <Head title="Criar caso de teste" />
+            <Head title="Create test case" />
 
             <div className="flex flex-col gap-6 p-4">
                 <Heading
-                    title="Criar caso de teste"
-                    description="Defina os dados gerais e os passos de execução do caso de teste."
+                    title="Create test case"
+                    description="Define the general information and execution steps for the test case."
                 />
 
                 <form onSubmit={submit} className="flex flex-col gap-6">
                     <Card>
                         <CardContent className="flex flex-col gap-4">
                             <div className="grid gap-2">
-                                <Label htmlFor="title">Título</Label>
+                                <Label htmlFor="title">Title</Label>
                                 <Input
                                     id="title"
                                     value={data.title}
@@ -91,7 +91,7 @@ export default function CreateTestCase({ classifications, templates, statuses }:
                             </div>
 
                             <div className="grid gap-2">
-                                <Label htmlFor="description">Descrição</Label>
+                                <Label htmlFor="description">Description</Label>
                                 <Textarea
                                     id="description"
                                     value={data.description}
@@ -102,13 +102,15 @@ export default function CreateTestCase({ classifications, templates, statuses }:
 
                             <div className="grid gap-4 sm:grid-cols-3">
                                 <div className="grid gap-2">
-                                    <Label htmlFor="classification_id">Classificação</Label>
+                                    <Label htmlFor="classification_id">Classification</Label>
                                     <Select
                                         value={data.classification_id}
-                                        onValueChange={(value) => setData('classification_id', value)}
+                                        onValueChange={(value) =>
+                                            setData('classification_id', value)
+                                        }
                                     >
                                         <SelectTrigger id="classification_id" className="w-full">
-                                            <SelectValue placeholder="Selecione uma classificação" />
+                                            <SelectValue placeholder="Select a classification" />
                                         </SelectTrigger>
                                         <SelectContent>
                                             {classifications.map((classification) => (
@@ -125,17 +127,24 @@ export default function CreateTestCase({ classifications, templates, statuses }:
                                 </div>
 
                                 <div className="grid gap-2">
-                                    <Label htmlFor="template_id">Template (opcional)</Label>
+                                    <Label htmlFor="template_id">
+                                        Template (optional)
+                                    </Label>
                                     <Select
                                         value={data.template_id}
-                                        onValueChange={(value) => setData('template_id', value)}
+                                        onValueChange={(value) =>
+                                            setData('template_id', value)
+                                        }
                                     >
                                         <SelectTrigger id="template_id" className="w-full">
-                                            <SelectValue placeholder="Nenhum template" />
+                                            <SelectValue placeholder="No template" />
                                         </SelectTrigger>
                                         <SelectContent>
                                             {templates.map((template) => (
-                                                <SelectItem key={template.id} value={String(template.id)}>
+                                                <SelectItem
+                                                    key={template.id}
+                                                    value={String(template.id)}
+                                                >
                                                     {template.title}
                                                 </SelectItem>
                                             ))}
@@ -148,10 +157,12 @@ export default function CreateTestCase({ classifications, templates, statuses }:
                                     <Label htmlFor="status">Status</Label>
                                     <Select
                                         value={data.status}
-                                        onValueChange={(value) => setData('status', value as TestCaseStatus)}
+                                        onValueChange={(value) =>
+                                            setData('status', value as TestCaseStatus)
+                                        }
                                     >
                                         <SelectTrigger id="status" className="w-full">
-                                            <SelectValue placeholder="Selecione um status" />
+                                            <SelectValue placeholder="Select a status" />
                                         </SelectTrigger>
                                         <SelectContent>
                                             {statuses.map((status) => (
@@ -170,18 +181,34 @@ export default function CreateTestCase({ classifications, templates, statuses }:
                     <Card>
                         <CardContent className="flex flex-col gap-4">
                             <div className="flex items-center justify-between">
-                                <Heading variant="small" title="Passos" description="Adicione ao menos um passo." />
-                                <Button type="button" variant="outline" size="sm" onClick={addStep}>
-                                    <Plus /> Adicionar passo
+                                <Heading
+                                    variant="small"
+                                    title="Steps"
+                                    description="Add at least one step."
+                                />
+
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={addStep}
+                                >
+                                    <Plus /> Add step
                                 </Button>
                             </div>
 
                             <InputError message={errors.steps} />
 
                             {data.steps.map((step, stepIndex) => (
-                                <div key={stepIndex} className="flex flex-col gap-3 rounded-lg border p-4">
+                                <div
+                                    key={stepIndex}
+                                    className="flex flex-col gap-3 rounded-lg border p-4"
+                                >
                                     <div className="flex items-center justify-between">
-                                        <span className="text-sm font-medium">Passo {stepIndex + 1}</span>
+                                        <span className="text-sm font-medium">
+                                            Step {stepIndex + 1}
+                                        </span>
+
                                         {data.steps.length > 1 && (
                                             <Button
                                                 type="button"
@@ -195,25 +222,55 @@ export default function CreateTestCase({ classifications, templates, statuses }:
                                     </div>
 
                                     <div className="grid gap-2">
-                                        <Label htmlFor={`step-description-${stepIndex}`}>Ação</Label>
+                                        <Label htmlFor={`step-description-${stepIndex}`}>
+                                            Action
+                                        </Label>
+
                                         <Textarea
                                             id={`step-description-${stepIndex}`}
                                             value={step.description}
-                                            onChange={(e) => updateStep(stepIndex, 'description', e.target.value)}
+                                            onChange={(e) =>
+                                                updateStep(
+                                                    stepIndex,
+                                                    'description',
+                                                    e.target.value,
+                                                )
+                                            }
                                         />
-                                        <InputError message={stepErrors[`steps.${stepIndex}.description`]} />
+
+                                        <InputError
+                                            message={
+                                                stepErrors[
+                                                    `steps.${stepIndex}.description`
+                                                ]
+                                            }
+                                        />
                                     </div>
 
                                     <div className="grid gap-2">
-                                        <Label htmlFor={`step-expected-${stepIndex}`}>Resultado esperado</Label>
+                                        <Label htmlFor={`step-expected-${stepIndex}`}>
+                                            Expected result
+                                        </Label>
+
                                         <Textarea
                                             id={`step-expected-${stepIndex}`}
                                             value={step.expected_result}
                                             onChange={(e) =>
-                                                updateStep(stepIndex, 'expected_result', e.target.value)
+                                                updateStep(
+                                                    stepIndex,
+                                                    'expected_result',
+                                                    e.target.value,
+                                                )
                                             }
                                         />
-                                        <InputError message={stepErrors[`steps.${stepIndex}.expected_result`]} />
+
+                                        <InputError
+                                            message={
+                                                stepErrors[
+                                                    `steps.${stepIndex}.expected_result`
+                                                ]
+                                            }
+                                        />
                                     </div>
                                 </div>
                             ))}
@@ -222,7 +279,7 @@ export default function CreateTestCase({ classifications, templates, statuses }:
 
                     <div className="flex items-center gap-4">
                         <Button type="submit" disabled={processing}>
-                            Criar caso de teste
+                            Create test case
                         </Button>
                     </div>
                 </form>
@@ -233,7 +290,7 @@ export default function CreateTestCase({ classifications, templates, statuses }:
 
 CreateTestCase.layout = {
     breadcrumbs: [
-        { title: 'Casos de teste', href: index() },
-        { title: 'Criar', href: '#' },
+        { title: 'Test cases', href: index() },
+        { title: 'Create', href: '#' },
     ],
 };

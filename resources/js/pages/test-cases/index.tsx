@@ -17,7 +17,12 @@ import {
 } from '@/components/ui/select';
 import { testCaseStatusBadgeVariant } from '@/lib/test-case-status';
 import { bulkStatus, create, index, show } from '@/routes/test-cases';
-import type { Classification, TestCaseFilters, TestCaseListItem, TestCaseStatus } from '@/types';
+import type {
+    Classification,
+    TestCaseFilters,
+    TestCaseListItem,
+    TestCaseStatus,
+} from '@/types';
 
 type Props = {
     testCases: TestCaseListItem[];
@@ -26,7 +31,12 @@ type Props = {
     filters: TestCaseFilters;
 };
 
-export default function TestCaseIndex({ testCases, classifications, statuses, filters }: Props) {
+export default function TestCaseIndex({
+    testCases,
+    classifications,
+    statuses,
+    filters,
+}: Props) {
     const [search, setSearch] = useState(filters.search);
     const [selectedIds, setSelectedIds] = useState<number[]>([]);
     const [applyingBulkStatus, setApplyingBulkStatus] = useState(false);
@@ -41,6 +51,7 @@ export default function TestCaseIndex({ testCases, classifications, statuses, fi
 
         const timeout = setTimeout(() => {
             setSelectedIds([]);
+
             router.get(
                 index.url(),
                 {
@@ -49,7 +60,11 @@ export default function TestCaseIndex({ testCases, classifications, statuses, fi
                     status: filters.status,
                     assigned_to_me: filters.assigned_to_me,
                 },
-                { preserveState: true, replace: true, preserveScroll: true },
+                {
+                    preserveState: true,
+                    replace: true,
+                    preserveScroll: true,
+                },
             );
         }, 300);
 
@@ -59,6 +74,7 @@ export default function TestCaseIndex({ testCases, classifications, statuses, fi
 
     function handleClassificationChange(value: string) {
         setSelectedIds([]);
+
         router.get(
             index.url(),
             {
@@ -67,12 +83,17 @@ export default function TestCaseIndex({ testCases, classifications, statuses, fi
                 status: filters.status,
                 assigned_to_me: filters.assigned_to_me,
             },
-            { preserveState: true, replace: true, preserveScroll: true },
+            {
+                preserveState: true,
+                replace: true,
+                preserveScroll: true,
+            },
         );
     }
 
     function handleStatusChange(value: string) {
         setSelectedIds([]);
+
         router.get(
             index.url(),
             {
@@ -81,12 +102,17 @@ export default function TestCaseIndex({ testCases, classifications, statuses, fi
                 status: value === 'all' ? null : value,
                 assigned_to_me: filters.assigned_to_me,
             },
-            { preserveState: true, replace: true, preserveScroll: true },
+            {
+                preserveState: true,
+                replace: true,
+                preserveScroll: true,
+            },
         );
     }
 
     function handleAssignedToMeChange(checked: boolean) {
         setSelectedIds([]);
+
         router.get(
             index.url(),
             {
@@ -95,22 +121,31 @@ export default function TestCaseIndex({ testCases, classifications, statuses, fi
                 status: filters.status,
                 assigned_to_me: checked,
             },
-            { preserveState: true, replace: true, preserveScroll: true },
+            {
+                preserveState: true,
+                replace: true,
+                preserveScroll: true,
+            },
         );
     }
 
     function toggleAll(checked: boolean) {
-        setSelectedIds(checked ? testCases.map((testCase) => testCase.id) : []);
+        setSelectedIds(
+            checked ? testCases.map((testCase) => testCase.id) : [],
+        );
     }
 
     function toggleOne(id: number, checked: boolean) {
         setSelectedIds((current) =>
-            checked ? [...current, id] : current.filter((selectedId) => selectedId !== id),
+            checked
+                ? [...current, id]
+                : current.filter((selectedId) => selectedId !== id),
         );
     }
 
     function handleBulkStatusChange(status: string) {
         setApplyingBulkStatus(true);
+
         router.patch(
             bulkStatus.url(),
             { ids: selectedIds, status },
@@ -124,17 +159,18 @@ export default function TestCaseIndex({ testCases, classifications, statuses, fi
 
     return (
         <>
-            <Head title="Casos de teste" />
+            <Head title="Test Cases" />
 
             <div className="flex flex-col gap-6 p-4">
                 <div className="flex items-center justify-between">
                     <Heading
-                        title="Casos de teste"
-                        description="Todos os casos de teste cadastrados."
+                        title="Test Cases"
+                        description="All registered test cases."
                     />
+
                     <Button asChild>
                         <Link href={create()}>
-                            <Plus /> Criar caso de teste
+                            <Plus /> Create Test Case
                         </Link>
                     </Button>
                 </div>
@@ -143,25 +179,38 @@ export default function TestCaseIndex({ testCases, classifications, statuses, fi
                     <Input
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        placeholder="Buscar por nome ou ID..."
+                        placeholder="Search by name or ID..."
                         className="sm:max-w-xs"
                     />
+
                     <Select
-                        value={filters.classification_id ? String(filters.classification_id) : 'all'}
+                        value={
+                            filters.classification_id
+                                ? String(filters.classification_id)
+                                : 'all'
+                        }
                         onValueChange={handleClassificationChange}
                     >
                         <SelectTrigger className="sm:w-52">
-                            <SelectValue placeholder="Tipo de caso de teste" />
+                            <SelectValue placeholder="Test case type" />
                         </SelectTrigger>
+
                         <SelectContent>
-                            <SelectItem value="all">Todos os tipos</SelectItem>
+                            <SelectItem value="all">
+                                All types
+                            </SelectItem>
+
                             {classifications.map((classification) => (
-                                <SelectItem key={classification.id} value={String(classification.id)}>
+                                <SelectItem
+                                    key={classification.id}
+                                    value={String(classification.id)}
+                                >
                                     {classification.name}
                                 </SelectItem>
                             ))}
                         </SelectContent>
                     </Select>
+
                     <Select
                         value={filters.status ?? 'all'}
                         onValueChange={handleStatusChange}
@@ -169,8 +218,12 @@ export default function TestCaseIndex({ testCases, classifications, statuses, fi
                         <SelectTrigger className="sm:w-52">
                             <SelectValue placeholder="Status" />
                         </SelectTrigger>
+
                         <SelectContent>
-                            <SelectItem value="all">Todos os status</SelectItem>
+                            <SelectItem value="all">
+                                All statuses
+                            </SelectItem>
+
                             {statuses.map((status) => (
                                 <SelectItem key={status} value={status}>
                                     {status}
@@ -178,39 +231,58 @@ export default function TestCaseIndex({ testCases, classifications, statuses, fi
                             ))}
                         </SelectContent>
                     </Select>
+
                     <div className="flex items-center gap-2">
                         <Checkbox
                             id="assigned_to_me"
                             checked={filters.assigned_to_me}
-                            onCheckedChange={(checked) => handleAssignedToMeChange(checked === true)}
+                            onCheckedChange={(checked) =>
+                                handleAssignedToMeChange(checked === true)
+                            }
                         />
-                        <Label htmlFor="assigned_to_me" className="font-normal">
-                            Meus testes atribuídos
+
+                        <Label
+                            htmlFor="assigned_to_me"
+                            className="font-normal"
+                        >
+                            My assigned tests
                         </Label>
                     </div>
                 </div>
 
                 {selectedIds.length > 0 && (
                     <div className="flex items-center gap-3 rounded-lg border bg-muted/50 px-4 py-2 text-sm">
-                        <span>{selectedIds.length} selecionado(s)</span>
+                        <span>
+                            {selectedIds.length} selected
+                        </span>
+
                         <Select
                             value=""
                             onValueChange={handleBulkStatusChange}
                             disabled={applyingBulkStatus}
                         >
                             <SelectTrigger className="w-56">
-                                <SelectValue placeholder="Alterar status para..." />
+                                <SelectValue placeholder="Change status to..." />
                             </SelectTrigger>
+
                             <SelectContent>
                                 {statuses.map((status) => (
-                                    <SelectItem key={status} value={status}>
+                                    <SelectItem
+                                        key={status}
+                                        value={status}
+                                    >
                                         {status}
                                     </SelectItem>
                                 ))}
                             </SelectContent>
                         </Select>
-                        <Button variant="ghost" size="sm" onClick={() => setSelectedIds([])}>
-                            Limpar seleção
+
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setSelectedIds([])}
+                        >
+                            Clear selection
                         </Button>
                     </div>
                 )}
@@ -218,7 +290,7 @@ export default function TestCaseIndex({ testCases, classifications, statuses, fi
                 <Card className="overflow-hidden py-0">
                     {testCases.length === 0 ? (
                         <p className="p-6 text-sm text-muted-foreground">
-                            Nenhum caso de teste encontrado.
+                            No test cases found.
                         </p>
                     ) : (
                         <table className="w-full text-sm">
@@ -227,21 +299,47 @@ export default function TestCaseIndex({ testCases, classifications, statuses, fi
                                     <th className="w-10 px-4 py-3">
                                         <Checkbox
                                             checked={
-                                                testCases.length > 0 && selectedIds.length === testCases.length
+                                                testCases.length > 0 &&
+                                                selectedIds.length ===
+                                                    testCases.length
                                             }
-                                            onCheckedChange={(checked) => toggleAll(checked === true)}
-                                            aria-label="Selecionar todos"
+                                            onCheckedChange={(checked) =>
+                                                toggleAll(checked === true)
+                                            }
+                                            aria-label="Select all"
                                         />
                                     </th>
-                                    <th className="px-4 py-3 font-medium">Título</th>
-                                    <th className="px-4 py-3 font-medium">Classificação</th>
-                                    <th className="px-4 py-3 font-medium">Status</th>
-                                    <th className="px-4 py-3 font-medium">Atribuído a</th>
-                                    <th className="px-4 py-3 font-medium">Passos</th>
-                                    <th className="px-4 py-3 font-medium">Criado por</th>
-                                    <th className="px-4 py-3 font-medium">Criado em</th>
+
+                                    <th className="px-4 py-3 font-medium">
+                                        Title
+                                    </th>
+
+                                    <th className="px-4 py-3 font-medium">
+                                        Classification
+                                    </th>
+
+                                    <th className="px-4 py-3 font-medium">
+                                        Status
+                                    </th>
+
+                                    <th className="px-4 py-3 font-medium">
+                                        Assigned to
+                                    </th>
+
+                                    <th className="px-4 py-3 font-medium">
+                                        Steps
+                                    </th>
+
+                                    <th className="px-4 py-3 font-medium">
+                                        Created by
+                                    </th>
+
+                                    <th className="px-4 py-3 font-medium">
+                                        Created at
+                                    </th>
                                 </tr>
                             </thead>
+
                             <tbody>
                                 {testCases.map((testCase) => (
                                     <tr
@@ -250,13 +348,19 @@ export default function TestCaseIndex({ testCases, classifications, statuses, fi
                                     >
                                         <td className="px-4 py-3">
                                             <Checkbox
-                                                checked={selectedIds.includes(testCase.id)}
+                                                checked={selectedIds.includes(
+                                                    testCase.id,
+                                                )}
                                                 onCheckedChange={(checked) =>
-                                                    toggleOne(testCase.id, checked === true)
+                                                    toggleOne(
+                                                        testCase.id,
+                                                        checked === true,
+                                                    )
                                                 }
-                                                aria-label={`Selecionar ${testCase.title}`}
+                                                aria-label={`Select ${testCase.title}`}
                                             />
                                         </td>
+
                                         <td className="px-4 py-3">
                                             <Link
                                                 href={show(testCase.id)}
@@ -265,19 +369,38 @@ export default function TestCaseIndex({ testCases, classifications, statuses, fi
                                                 {testCase.title}
                                             </Link>
                                         </td>
+
                                         <td className="px-4 py-3">
-                                            {testCase.classification?.name ?? '—'}
+                                            {testCase.classification?.name ??
+                                                '—'}
                                         </td>
+
                                         <td className="px-4 py-3">
-                                            <Badge variant={testCaseStatusBadgeVariant(testCase.status)}>
+                                            <Badge
+                                                variant={testCaseStatusBadgeVariant(
+                                                    testCase.status,
+                                                )}
+                                            >
                                                 {testCase.status}
                                             </Badge>
                                         </td>
-                                        <td className="px-4 py-3">{testCase.assignee?.name ?? '—'}</td>
-                                        <td className="px-4 py-3">{testCase.steps_count}</td>
-                                        <td className="px-4 py-3">{testCase.creator?.name ?? '—'}</td>
+
                                         <td className="px-4 py-3">
-                                            {new Date(testCase.created_at).toLocaleDateString('pt-BR')}
+                                            {testCase.assignee?.name ?? '—'}
+                                        </td>
+
+                                        <td className="px-4 py-3">
+                                            {testCase.steps_count}
+                                        </td>
+
+                                        <td className="px-4 py-3">
+                                            {testCase.creator?.name ?? '—'}
+                                        </td>
+
+                                        <td className="px-4 py-3">
+                                            {new Date(
+                                                testCase.created_at,
+                                            ).toLocaleDateString('en-US')}
                                         </td>
                                     </tr>
                                 ))}
@@ -291,5 +414,5 @@ export default function TestCaseIndex({ testCases, classifications, statuses, fi
 }
 
 TestCaseIndex.layout = {
-    breadcrumbs: [{ title: 'Casos de teste', href: index() }],
+    breadcrumbs: [{ title: 'Test Cases', href: index() }],
 };

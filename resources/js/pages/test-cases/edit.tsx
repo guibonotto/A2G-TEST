@@ -16,7 +16,12 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { index, show, update } from '@/routes/test-cases';
-import type { Classification, TestCaseDetail, TestCaseStatus, TestTemplate } from '@/types';
+import type {
+    Classification,
+    TestCaseDetail,
+    TestCaseStatus,
+    TestTemplate,
+} from '@/types';
 
 type Props = {
     testCase: TestCaseDetail;
@@ -32,12 +37,21 @@ type StepForm = {
 
 const emptyStep: StepForm = { description: '', expected_result: '' };
 
-export default function EditTestCase({ testCase, classifications, templates, statuses }: Props) {
+export default function EditTestCase({
+    testCase,
+    classifications,
+    templates,
+    statuses,
+}: Props) {
     const { data, setData, put, processing, errors } = useForm({
         title: testCase.title,
         description: testCase.description ?? '',
-        classification_id: testCase.classification ? String(testCase.classification.id) : '',
-        template_id: testCase.template ? String(testCase.template.id) : '',
+        classification_id: testCase.classification
+            ? String(testCase.classification.id)
+            : '',
+        template_id: testCase.template
+            ? String(testCase.template.id)
+            : '',
         status: testCase.status,
         steps: (testCase.steps.length > 0
             ? testCase.steps.map((step) => ({
@@ -49,10 +63,15 @@ export default function EditTestCase({ testCase, classifications, templates, sta
 
     const stepErrors = errors as Record<string, string | undefined>;
 
-    function updateStep(stepIndex: number, field: keyof StepForm, value: string) {
+    function updateStep(
+        stepIndex: number,
+        field: keyof StepForm,
+        value: string,
+    ) {
         const steps = data.steps.map((step, i) =>
             i === stepIndex ? { ...step, [field]: value } : step,
         );
+
         setData('steps', steps);
     }
 
@@ -74,108 +93,180 @@ export default function EditTestCase({ testCase, classifications, templates, sta
 
     setLayoutProps({
         breadcrumbs: [
-            { title: 'Casos de teste', href: index() },
+            { title: 'Test cases', href: index() },
             { title: testCase.title, href: show(testCase.id) },
-            { title: 'Editar', href: '#' },
+            { title: 'Edit', href: '#' },
         ],
     });
 
     return (
         <>
-            <Head title={`Editar ${testCase.title}`} />
+            <Head title={`Edit ${testCase.title}`} />
 
             <div className="flex flex-col gap-6 p-4">
                 <Heading
-                    title="Editar caso de teste"
-                    description="Atualize os dados gerais e os passos de execução do caso de teste."
+                    title="Edit test case"
+                    description="Update the general information and execution steps of the test case."
                 />
 
                 <form onSubmit={submit} className="flex flex-col gap-6">
                     <Card>
                         <CardContent className="flex flex-col gap-4">
                             <div className="grid gap-2">
-                                <Label htmlFor="title">Título</Label>
+                                <Label htmlFor="title">Title</Label>
+
                                 <Input
                                     id="title"
                                     value={data.title}
-                                    onChange={(e) => setData('title', e.target.value)}
+                                    onChange={(e) =>
+                                        setData('title', e.target.value)
+                                    }
                                     autoFocus
                                 />
+
                                 <InputError message={errors.title} />
                             </div>
 
                             <div className="grid gap-2">
-                                <Label htmlFor="description">Descrição</Label>
+                                <Label htmlFor="description">
+                                    Description
+                                </Label>
+
                                 <Textarea
                                     id="description"
                                     value={data.description}
-                                    onChange={(e) => setData('description', e.target.value)}
+                                    onChange={(e) =>
+                                        setData(
+                                            'description',
+                                            e.target.value,
+                                        )
+                                    }
                                 />
-                                <InputError message={errors.description} />
+
+                                <InputError
+                                    message={errors.description}
+                                />
                             </div>
 
                             <div className="grid gap-4 sm:grid-cols-3">
                                 <div className="grid gap-2">
-                                    <Label htmlFor="classification_id">Classificação</Label>
+                                    <Label htmlFor="classification_id">
+                                        Classification
+                                    </Label>
+
                                     <Select
                                         value={data.classification_id}
-                                        onValueChange={(value) => setData('classification_id', value)}
+                                        onValueChange={(value) =>
+                                            setData(
+                                                'classification_id',
+                                                value,
+                                            )
+                                        }
                                     >
-                                        <SelectTrigger id="classification_id" className="w-full">
-                                            <SelectValue placeholder="Selecione uma classificação" />
+                                        <SelectTrigger
+                                            id="classification_id"
+                                            className="w-full"
+                                        >
+                                            <SelectValue placeholder="Select a classification" />
                                         </SelectTrigger>
+
                                         <SelectContent>
-                                            {classifications.map((classification) => (
-                                                <SelectItem
-                                                    key={classification.id}
-                                                    value={String(classification.id)}
-                                                >
-                                                    {classification.name}
-                                                </SelectItem>
-                                            ))}
+                                            {classifications.map(
+                                                (classification) => (
+                                                    <SelectItem
+                                                        key={classification.id}
+                                                        value={String(
+                                                            classification.id,
+                                                        )}
+                                                    >
+                                                        {classification.name}
+                                                    </SelectItem>
+                                                ),
+                                            )}
                                         </SelectContent>
                                     </Select>
-                                    <InputError message={errors.classification_id} />
+
+                                    <InputError
+                                        message={errors.classification_id}
+                                    />
                                 </div>
 
                                 <div className="grid gap-2">
-                                    <Label htmlFor="template_id">Template (opcional)</Label>
+                                    <Label htmlFor="template_id">
+                                        Template (optional)
+                                    </Label>
+
                                     <Select
                                         value={data.template_id}
-                                        onValueChange={(value) => setData('template_id', value)}
+                                        onValueChange={(value) =>
+                                            setData(
+                                                'template_id',
+                                                value,
+                                            )
+                                        }
                                     >
-                                        <SelectTrigger id="template_id" className="w-full">
-                                            <SelectValue placeholder="Nenhum template" />
+                                        <SelectTrigger
+                                            id="template_id"
+                                            className="w-full"
+                                        >
+                                            <SelectValue placeholder="No template" />
                                         </SelectTrigger>
+
                                         <SelectContent>
                                             {templates.map((template) => (
-                                                <SelectItem key={template.id} value={String(template.id)}>
+                                                <SelectItem
+                                                    key={template.id}
+                                                    value={String(
+                                                        template.id,
+                                                    )}
+                                                >
                                                     {template.title}
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
-                                    <InputError message={errors.template_id} />
+
+                                    <InputError
+                                        message={errors.template_id}
+                                    />
                                 </div>
 
                                 <div className="grid gap-2">
-                                    <Label htmlFor="status">Status</Label>
+                                    <Label htmlFor="status">
+                                        Status
+                                    </Label>
+
                                     <Select
                                         value={data.status}
-                                        onValueChange={(value) => setData('status', value as TestCaseStatus)}
+                                        onValueChange={(value) =>
+                                            setData(
+                                                'status',
+                                                value as TestCaseStatus,
+                                            )
+                                        }
                                     >
-                                        <SelectTrigger id="status" className="w-full">
-                                            <SelectValue placeholder="Selecione um status" />
+                                        <SelectTrigger
+                                            id="status"
+                                            className="w-full"
+                                        >
+                                            <SelectValue placeholder="Select a status" />
                                         </SelectTrigger>
+
                                         <SelectContent>
                                             {statuses.map((status) => (
-                                                <SelectItem key={status} value={status}>
+                                                <SelectItem
+                                                    key={status}
+                                                    value={status}
+                                                >
                                                     {status}
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
-                                    <InputError message={errors.status} />
+
+                                    <InputError
+                                        message={errors.status}
+                                    />
                                 </div>
                             </div>
                         </CardContent>
@@ -184,24 +275,42 @@ export default function EditTestCase({ testCase, classifications, templates, sta
                     <Card>
                         <CardContent className="flex flex-col gap-4">
                             <div className="flex items-center justify-between">
-                                <Heading variant="small" title="Passos" description="Adicione ao menos um passo." />
-                                <Button type="button" variant="outline" size="sm" onClick={addStep}>
-                                    <Plus /> Adicionar passo
+                                <Heading
+                                    variant="small"
+                                    title="Steps"
+                                    description="Add at least one step."
+                                />
+
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={addStep}
+                                >
+                                    <Plus /> Add step
                                 </Button>
                             </div>
 
                             <InputError message={errors.steps} />
 
                             {data.steps.map((step, stepIndex) => (
-                                <div key={stepIndex} className="flex flex-col gap-3 rounded-lg border p-4">
+                                <div
+                                    key={stepIndex}
+                                    className="flex flex-col gap-3 rounded-lg border p-4"
+                                >
                                     <div className="flex items-center justify-between">
-                                        <span className="text-sm font-medium">Passo {stepIndex + 1}</span>
+                                        <span className="text-sm font-medium">
+                                            Step {stepIndex + 1}
+                                        </span>
+
                                         {data.steps.length > 1 && (
                                             <Button
                                                 type="button"
                                                 variant="ghost"
                                                 size="icon"
-                                                onClick={() => removeStep(stepIndex)}
+                                                onClick={() =>
+                                                    removeStep(stepIndex)
+                                                }
                                             >
                                                 <Trash2 />
                                             </Button>
@@ -209,25 +318,59 @@ export default function EditTestCase({ testCase, classifications, templates, sta
                                     </div>
 
                                     <div className="grid gap-2">
-                                        <Label htmlFor={`step-description-${stepIndex}`}>Ação</Label>
+                                        <Label
+                                            htmlFor={`step-description-${stepIndex}`}
+                                        >
+                                            Action
+                                        </Label>
+
                                         <Textarea
                                             id={`step-description-${stepIndex}`}
                                             value={step.description}
-                                            onChange={(e) => updateStep(stepIndex, 'description', e.target.value)}
+                                            onChange={(e) =>
+                                                updateStep(
+                                                    stepIndex,
+                                                    'description',
+                                                    e.target.value,
+                                                )
+                                            }
                                         />
-                                        <InputError message={stepErrors[`steps.${stepIndex}.description`]} />
+
+                                        <InputError
+                                            message={
+                                                stepErrors[
+                                                    `steps.${stepIndex}.description`
+                                                ]
+                                            }
+                                        />
                                     </div>
 
                                     <div className="grid gap-2">
-                                        <Label htmlFor={`step-expected-${stepIndex}`}>Resultado esperado</Label>
+                                        <Label
+                                            htmlFor={`step-expected-${stepIndex}`}
+                                        >
+                                            Expected result
+                                        </Label>
+
                                         <Textarea
                                             id={`step-expected-${stepIndex}`}
                                             value={step.expected_result}
                                             onChange={(e) =>
-                                                updateStep(stepIndex, 'expected_result', e.target.value)
+                                                updateStep(
+                                                    stepIndex,
+                                                    'expected_result',
+                                                    e.target.value,
+                                                )
                                             }
                                         />
-                                        <InputError message={stepErrors[`steps.${stepIndex}.expected_result`]} />
+
+                                        <InputError
+                                            message={
+                                                stepErrors[
+                                                    `steps.${stepIndex}.expected_result`
+                                                ]
+                                            }
+                                        />
                                     </div>
                                 </div>
                             ))}
@@ -236,7 +379,7 @@ export default function EditTestCase({ testCase, classifications, templates, sta
 
                     <div className="flex items-center gap-4">
                         <Button type="submit" disabled={processing}>
-                            Salvar alterações
+                            Save changes
                         </Button>
                     </div>
                 </form>
