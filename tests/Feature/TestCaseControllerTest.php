@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\TestCaseStatus;
 use App\Models\Classification;
+use App\Models\Role;
 use App\Models\TestCase as TestCaseModel;
 use App\Models\TestTemplate;
 use App\Models\User;
@@ -14,6 +15,13 @@ use Tests\TestCase;
 class TestCaseControllerTest extends TestCase
 {
     use RefreshDatabase;
+
+    private function createUserWithRole(string $slug): User
+    {
+        $role = Role::firstOrCreate(['slug' => $slug], ['name' => $slug]);
+
+        return User::factory()->create(['role_id' => $role->id]);
+    }
 
     public function test_guests_cannot_access_test_cases(): void
     {
@@ -156,6 +164,32 @@ class TestCaseControllerTest extends TestCase
         );
     }
 
+    public function test_index_can_be_filtered_by_assigned_to_me(): void
+    {
+        $qa = $this->createUserWithRole('qa');
+        $classification = Classification::create(['name' => 'Funcional']);
+
+        $assignedToMe = TestCaseModel::create([
+            'title' => 'Login com credenciais válidas',
+            'classification_id' => $classification->id,
+            'created_by' => $qa->id,
+            'assigned_to' => $qa->id,
+        ]);
+        TestCaseModel::create([
+            'title' => 'Cadastro de usuário',
+            'classification_id' => $classification->id,
+            'created_by' => $qa->id,
+        ]);
+
+        $response = $this->actingAs($qa)->get(route('test-cases.index', ['assigned_to_me' => '1']));
+
+        $response->assertInertia(fn (Assert $page) => $page
+            ->component('test-cases/index')
+            ->has('testCases', 1)
+            ->where('testCases.0.id', $assignedToMe->id)
+        );
+    }
+
     public function test_index_defaults_new_test_cases_to_pending_status(): void
     {
         $user = User::factory()->create();
@@ -269,6 +303,33 @@ class TestCaseControllerTest extends TestCase
             ->has('testCase.steps', 1)
             ->where('testCase.steps.0.description', 'Acessar a tela de login')
         );
+    }
+
+    public function test_show_includes_assignable_users_only_for_qa(): void
+    {
+        $qa = $this->createUserWithRole('qa');
+        $this->createUserWithRole('developer');
+        $this->createUserWithRole('viewer');
+        $developer = $this->createUserWithRole('developer');
+        $classification = Classification::create(['name' => 'Funcional']);
+
+        $testCase = TestCaseModel::create([
+            'title' => 'Login com credenciais válidas',
+            'classification_id' => $classification->id,
+            'created_by' => $qa->id,
+        ]);
+
+        $this->actingAs($qa)->get(route('test-cases.show', $testCase))
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('test-cases/show')
+                ->has('assignableUsers', 3)
+            );
+
+        $this->actingAs($developer)->get(route('test-cases.show', $testCase))
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('test-cases/show')
+                ->has('assignableUsers', 0)
+            );
     }
 
     public function test_creation_fails_without_a_classification(): void
@@ -407,6 +468,173 @@ class TestCaseControllerTest extends TestCase
 
         $response->assertSessionHasErrors('classification_id');
         $this->assertDatabaseHas('test_cases', ['id' => $testCase->id, 'title' => 'Login com credenciais válidas']);
+    }
+
+    public function test_qa_can_assign_a_test_case_to_another_qa_user(): void
+    {
+        $qa = $this->createUserWithRole('qa');
+        $otherQa = $this->createUserWithRole('qa');
+        $classification = Classification::create(['name' => 'Funcional']);
+
+        $testCase = TestCaseModel::create([
+            'title' => 'Login com credenciais válidas',
+            'classification_id' => $classification->id,
+            'created_by' => $qa->id,
+        ]);
+
+        $response = $this->actingAs($qa)->patch(route('test-cases.assign', $testCase), [
+            'assigned_to' => $otherQa->id,
+        ]);
+
+        $response->assertRedirect(route('test-cases.show', $testCase));
+        $this->assertDatabaseHas('test_cases', ['id' => $testCase->id, 'assigned_to' => $otherQa->id]);
+    }
+
+    public function test_qa_can_assign_a_test_case_to_a_developer(): void
+    {
+        $qa = $this->createUserWithRole('qa');
+        $developer = $this->createUserWithRole('developer');
+        $classification = Classification::create(['name' => 'Funcional']);
+
+        $testCase = TestCaseModel::create([
+            'title' => 'Login com credenciais válidas',
+            'classification_id' => $classification->id,
+            'created_by' => $qa->id,
+        ]);
+
+        $response = $this->actingAs($qa)->patch(route('test-cases.assign', $testCase), [
+            'assigned_to' => $developer->id,
+        ]);
+
+        $response->assertRedirect(route('test-cases.show', $testCase));
+        $this->assertDatabaseHas('test_cases', ['id' => $testCase->id, 'assigned_to' => $developer->id]);
+    }
+
+    public function test_qa_can_unassign_a_test_case(): void
+    {
+        $qa = $this->createUserWithRole('qa');
+        $classification = Classification::create(['name' => 'Funcional']);
+
+        $testCase = TestCaseModel::create([
+            'title' => 'Login com credenciais válidas',
+            'classification_id' => $classification->id,
+            'created_by' => $qa->id,
+            'assigned_to' => $qa->id,
+        ]);
+
+        $this->actingAs($qa)->patch(route('test-cases.assign', $testCase), [
+            'assigned_to' => null,
+        ]);
+
+        $this->assertDatabaseHas('test_cases', ['id' => $testCase->id, 'assigned_to' => null]);
+    }
+
+    public function test_qa_cannot_assign_a_test_case_to_a_viewer(): void
+    {
+        $qa = $this->createUserWithRole('qa');
+        $viewer = $this->createUserWithRole('viewer');
+        $classification = Classification::create(['name' => 'Funcional']);
+
+        $testCase = TestCaseModel::create([
+            'title' => 'Login com credenciais válidas',
+            'classification_id' => $classification->id,
+            'created_by' => $qa->id,
+        ]);
+
+        $response = $this->actingAs($qa)->patch(route('test-cases.assign', $testCase), [
+            'assigned_to' => $viewer->id,
+        ]);
+
+        $response->assertSessionHasErrors('assigned_to');
+        $this->assertDatabaseHas('test_cases', ['id' => $testCase->id, 'assigned_to' => null]);
+    }
+
+    public function test_non_qa_users_cannot_assign_test_cases(): void
+    {
+        $developer = $this->createUserWithRole('developer');
+        $otherDeveloper = $this->createUserWithRole('developer');
+        $classification = Classification::create(['name' => 'Funcional']);
+
+        $testCase = TestCaseModel::create([
+            'title' => 'Login com credenciais válidas',
+            'classification_id' => $classification->id,
+            'created_by' => $developer->id,
+        ]);
+
+        $response = $this->actingAs($developer)->patch(route('test-cases.assign', $testCase), [
+            'assigned_to' => $otherDeveloper->id,
+        ]);
+
+        $response->assertForbidden();
+        $this->assertDatabaseHas('test_cases', ['id' => $testCase->id, 'assigned_to' => null]);
+    }
+
+    public function test_status_can_be_updated_in_bulk(): void
+    {
+        $user = User::factory()->create();
+        $classification = Classification::create(['name' => 'Funcional']);
+
+        $first = TestCaseModel::create([
+            'title' => 'Login com credenciais válidas',
+            'classification_id' => $classification->id,
+            'created_by' => $user->id,
+            'status' => TestCaseStatus::Pendente,
+        ]);
+        $second = TestCaseModel::create([
+            'title' => 'Cadastro de usuário',
+            'classification_id' => $classification->id,
+            'created_by' => $user->id,
+            'status' => TestCaseStatus::Pendente,
+        ]);
+        $untouched = TestCaseModel::create([
+            'title' => 'Logout',
+            'classification_id' => $classification->id,
+            'created_by' => $user->id,
+            'status' => TestCaseStatus::Pendente,
+        ]);
+
+        $response = $this->actingAs($user)->patch(route('test-cases.bulk-status'), [
+            'ids' => [$first->id, $second->id],
+            'status' => TestCaseStatus::Aprovado->value,
+        ]);
+
+        $response->assertRedirect();
+        $this->assertDatabaseHas('test_cases', ['id' => $first->id, 'status' => TestCaseStatus::Aprovado->value]);
+        $this->assertDatabaseHas('test_cases', ['id' => $second->id, 'status' => TestCaseStatus::Aprovado->value]);
+        $this->assertDatabaseHas('test_cases', ['id' => $untouched->id, 'status' => TestCaseStatus::Pendente->value]);
+    }
+
+    public function test_bulk_status_update_fails_without_ids(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user)->patch(route('test-cases.bulk-status'), [
+            'ids' => [],
+            'status' => TestCaseStatus::Aprovado->value,
+        ]);
+
+        $response->assertSessionHasErrors('ids');
+    }
+
+    public function test_bulk_status_update_fails_with_invalid_status(): void
+    {
+        $user = User::factory()->create();
+        $classification = Classification::create(['name' => 'Funcional']);
+
+        $testCase = TestCaseModel::create([
+            'title' => 'Login com credenciais válidas',
+            'classification_id' => $classification->id,
+            'created_by' => $user->id,
+            'status' => TestCaseStatus::Pendente,
+        ]);
+
+        $response = $this->actingAs($user)->patch(route('test-cases.bulk-status'), [
+            'ids' => [$testCase->id],
+            'status' => 'NAO_EXISTE',
+        ]);
+
+        $response->assertSessionHasErrors('status');
+        $this->assertDatabaseHas('test_cases', ['id' => $testCase->id, 'status' => TestCaseStatus::Pendente->value]);
     }
 
     public function test_a_test_case_can_be_deleted(): void

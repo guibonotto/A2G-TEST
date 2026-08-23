@@ -5,7 +5,9 @@ import Heading from '@/components/heading';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
     Select,
     SelectContent,
@@ -14,7 +16,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { testCaseStatusBadgeVariant } from '@/lib/test-case-status';
-import { create, index, show } from '@/routes/test-cases';
+import { bulkStatus, create, index, show } from '@/routes/test-cases';
 import type { Classification, TestCaseFilters, TestCaseListItem, TestCaseStatus } from '@/types';
 
 type Props = {
@@ -26,6 +28,8 @@ type Props = {
 
 export default function TestCaseIndex({ testCases, classifications, statuses, filters }: Props) {
     const [search, setSearch] = useState(filters.search);
+    const [selectedIds, setSelectedIds] = useState<number[]>([]);
+    const [applyingBulkStatus, setApplyingBulkStatus] = useState(false);
     const isFirstRender = useRef(true);
 
     useEffect(() => {
@@ -36,9 +40,15 @@ export default function TestCaseIndex({ testCases, classifications, statuses, fi
         }
 
         const timeout = setTimeout(() => {
+            setSelectedIds([]);
             router.get(
                 index.url(),
-                { search, classification_id: filters.classification_id, status: filters.status },
+                {
+                    search,
+                    classification_id: filters.classification_id,
+                    status: filters.status,
+                    assigned_to_me: filters.assigned_to_me,
+                },
                 { preserveState: true, replace: true, preserveScroll: true },
             );
         }, 300);
@@ -48,22 +58,67 @@ export default function TestCaseIndex({ testCases, classifications, statuses, fi
     }, [search]);
 
     function handleClassificationChange(value: string) {
+        setSelectedIds([]);
         router.get(
             index.url(),
-            { search, classification_id: value === 'all' ? null : Number(value), status: filters.status },
+            {
+                search,
+                classification_id: value === 'all' ? null : Number(value),
+                status: filters.status,
+                assigned_to_me: filters.assigned_to_me,
+            },
             { preserveState: true, replace: true, preserveScroll: true },
         );
     }
 
     function handleStatusChange(value: string) {
+        setSelectedIds([]);
         router.get(
             index.url(),
             {
                 search,
                 classification_id: filters.classification_id,
                 status: value === 'all' ? null : value,
+                assigned_to_me: filters.assigned_to_me,
             },
             { preserveState: true, replace: true, preserveScroll: true },
+        );
+    }
+
+    function handleAssignedToMeChange(checked: boolean) {
+        setSelectedIds([]);
+        router.get(
+            index.url(),
+            {
+                search,
+                classification_id: filters.classification_id,
+                status: filters.status,
+                assigned_to_me: checked,
+            },
+            { preserveState: true, replace: true, preserveScroll: true },
+        );
+    }
+
+    function toggleAll(checked: boolean) {
+        setSelectedIds(checked ? testCases.map((testCase) => testCase.id) : []);
+    }
+
+    function toggleOne(id: number, checked: boolean) {
+        setSelectedIds((current) =>
+            checked ? [...current, id] : current.filter((selectedId) => selectedId !== id),
+        );
+    }
+
+    function handleBulkStatusChange(status: string) {
+        setApplyingBulkStatus(true);
+        router.patch(
+            bulkStatus.url(),
+            { ids: selectedIds, status },
+            {
+                preserveScroll: true,
+                onSuccess: () => setSelectedIds([]),
+                onFinish: () => setApplyingBulkStatus(false),
+            },
         );
     }
 
@@ -123,7 +178,42 @@ export default function TestCaseIndex({ testCases, classifications, statuses, fi
                             ))}
                         </SelectContent>
                     </Select>
+                    <div className="flex items-center gap-2">
+                        <Checkbox
+                            id="assigned_to_me"
+                            checked={filters.assigned_to_me}
+                            onCheckedChange={(checked) => handleAssignedToMeChange(checked === true)}
+                        />
+                        <Label htmlFor="assigned_to_me" className="font-normal">
+                            Meus testes atribuídos
+                        </Label>
+                    </div>
                 </div>
+
+                {selectedIds.length > 0 && (
+                    <div className="flex items-center gap-3 rounded-lg border bg-muted/50 px-4 py-2 text-sm">
+                        <span>{selectedIds.length} selecionado(s)</span>
+                        <Select
+                            value=""
+                            onValueChange={handleBulkStatusChange}
+                            disabled={applyingBulkStatus}
+                        >
+                            <SelectTrigger className="w-56">
+                                <SelectValue placeholder="Alterar status para..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {statuses.map((status) => (
+                                    <SelectItem key={status} value={status}>
+                                        {status}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <Button variant="ghost" size="sm" onClick={() => setSelectedIds([])}>
+                            Limpar seleção
+                        </Button>
+                    </div>
+                )}
 
                 <Card className="overflow-hidden py-0">
                     {testCases.length === 0 ? (
@@ -134,9 +224,19 @@ export default function TestCaseIndex({ testCases, classifications, statuses, fi
                         <table className="w-full text-sm">
                             <thead className="border-b bg-muted/50 text-left">
                                 <tr>
+                                    <th className="w-10 px-4 py-3">
+                                        <Checkbox
+                                            checked={
+                                                testCases.length > 0 && selectedIds.length === testCases.length
+                                            }
+                                            onCheckedChange={(checked) => toggleAll(checked === true)}
+                                            aria-label="Selecionar todos"
+                                        />
+                                    </th>
                                     <th className="px-4 py-3 font-medium">Título</th>
                                     <th className="px-4 py-3 font-medium">Classificação</th>
                                     <th className="px-4 py-3 font-medium">Status</th>
+                                    <th className="px-4 py-3 font-medium">Atribuído a</th>
                                     <th className="px-4 py-3 font-medium">Passos</th>
                                     <th className="px-4 py-3 font-medium">Criado por</th>
                                     <th className="px-4 py-3 font-medium">Criado em</th>
@@ -148,6 +248,15 @@ export default function TestCaseIndex({ testCases, classifications, statuses, fi
                                         key={testCase.id}
                                         className="border-b last:border-0 hover:bg-muted/50"
                                     >
+                                        <td className="px-4 py-3">
+                                            <Checkbox
+                                                checked={selectedIds.includes(testCase.id)}
+                                                onCheckedChange={(checked) =>
+                                                    toggleOne(testCase.id, checked === true)
+                                                }
+                                                aria-label={`Selecionar ${testCase.title}`}
+                                            />
+                                        </td>
                                         <td className="px-4 py-3">
                                             <Link
                                                 href={show(testCase.id)}
@@ -164,6 +273,7 @@ export default function TestCaseIndex({ testCases, classifications, statuses, fi
                                                 {testCase.status}
                                             </Badge>
                                         </td>
+                                        <td className="px-4 py-3">{testCase.assignee?.name ?? '—'}</td>
                                         <td className="px-4 py-3">{testCase.steps_count}</td>
                                         <td className="px-4 py-3">{testCase.creator?.name ?? '—'}</td>
                                         <td className="px-4 py-3">

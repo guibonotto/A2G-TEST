@@ -3,11 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Enums\TestCaseStatus;
+use App\Http\Requests\TestCases\AssignTestCaseRequest;
+use App\Http\Requests\TestCases\BulkUpdateTestCaseStatusRequest;
 use App\Http\Requests\TestCases\StoreTestCaseRequest;
 use App\Http\Requests\TestCases\UpdateTestCaseRequest;
 use App\Models\Classification;
 use App\Models\TestCase;
 use App\Models\TestTemplate;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -24,9 +27,10 @@ class TestCaseController extends Controller
         $search = $request->string('search')->trim()->toString();
         $classificationId = $request->integer('classification_id') ?: null;
         $status = $request->enum('status', TestCaseStatus::class);
+        $assignedToMe = $request->boolean('assigned_to_me');
 
         $testCases = TestCase::query()
-            ->with(['classification:id,name', 'creator:id,name'])
+            ->with(['classification:id,name', 'creator:id,name', 'assignee:id,name'])
             ->withCount('steps')
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($query) use ($search) {
@@ -38,8 +42,9 @@ class TestCaseController extends Controller
             })
             ->when($classificationId, fn ($query) => $query->where('classification_id', $classificationId))
             ->when($status, fn ($query) => $query->where('status', $status))
+            ->when($assignedToMe, fn ($query) => $query->where('assigned_to', $request->user()->id))
             ->latest()
-            ->get(['id', 'title', 'classification_id', 'status', 'created_by', 'created_at']);
+            ->get(['id', 'title', 'classification_id', 'status', 'assigned_to', 'created_by', 'created_at']);
 
         return Inertia::render('test-cases/index', [
             'testCases' => $testCases,
@@ -49,6 +54,7 @@ class TestCaseController extends Controller
                 'search' => $search,
                 'classification_id' => $classificationId,
                 'status' => $status,
+                'assigned_to_me' => $assignedToMe,
             ],
         ]);
     }
@@ -98,12 +104,18 @@ class TestCaseController extends Controller
     /**
      * Display the specified test case.
      */
-    public function show(TestCase $testCase): Response
+    public function show(Request $request, TestCase $testCase): Response
     {
-        $testCase->load(['classification:id,name', 'template:id,title', 'creator:id,name', 'steps']);
+        $testCase->load(['classification:id,name', 'template:id,title', 'creator:id,name', 'assignee:id,name', 'steps']);
 
         return Inertia::render('test-cases/show', [
             'testCase' => $testCase,
+            'assignableUsers' => $request->user()->hasRole('qa')
+                ? User::query()
+                    ->whereHas('role', fn ($query) => $query->whereIn('slug', ['qa', 'developer']))
+                    ->orderBy('name')
+                    ->get(['id', 'name'])
+                : [],
         ]);
     }
 
@@ -146,6 +158,40 @@ class TestCaseController extends Controller
         Inertia::flash('toast', [
             'type' => 'success',
             'message' => __('Test case ":title" updated.', ['title' => $testCase->title]),
+        ]);
+
+        return to_route('test-cases.show', $testCase);
+    }
+
+    /**
+     * Update the status of multiple test cases at once.
+     */
+    public function bulkUpdateStatus(BulkUpdateTestCaseStatusRequest $request): RedirectResponse
+    {
+        $count = TestCase::query()
+            ->whereIn('id', $request->validated('ids'))
+            ->update(['status' => $request->validated('status')]);
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => __(':count test case(s) updated.', ['count' => $count]),
+        ]);
+
+        return back();
+    }
+
+    /**
+     * Assign the specified test case to another user.
+     */
+    public function assign(AssignTestCaseRequest $request, TestCase $testCase): RedirectResponse
+    {
+        $testCase->update($request->safe()->only(['assigned_to']));
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => $request->validated('assigned_to')
+                ? __('Test case assigned.')
+                : __('Test case unassigned.'),
         ]);
 
         return to_route('test-cases.show', $testCase);

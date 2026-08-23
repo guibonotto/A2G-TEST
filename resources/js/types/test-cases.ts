@@ -10,12 +10,18 @@ export type TestTemplate = {
 
 export type TestCaseStatus = 'APROVADO' | 'REPROVADO' | 'PENDENTE' | 'CANCELADO' | 'REGRESSÃO';
 
+export type AssignableUser = {
+    id: number;
+    name: string;
+};
+
 export type TestCaseListItem = {
     id: number;
     title: string;
     classification: Classification | null;
     status: TestCaseStatus;
     creator: { id: number; name: string } | null;
+    assignee: AssignableUser | null;
     steps_count: number;
     created_at: string;
 };
@@ -35,6 +41,7 @@ export type TestCaseDetail = {
     template: TestTemplate | null;
     status: TestCaseStatus;
     creator: { id: number; name: string } | null;
+    assignee: AssignableUser | null;
     steps: TestStep[];
     created_at: string;
 };
@@ -43,4 +50,5 @@ export type TestCaseFilters = {
     search: string;
     classification_id: number | null;
     status: TestCaseStatus | null;
+    assigned_to_me: boolean;
 };

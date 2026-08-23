@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'created_by',
     'template_id',
     'status',
+    'assigned_to',
 ])]
 class TestCase extends Model
 {
@@ -49,6 +50,11 @@ class TestCase extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function assignee(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assigned_to');
     }
 
     public function steps(): HasMany
