@@ -190,6 +190,54 @@ class TestCaseControllerTest extends TestCase
         );
     }
 
+    public function test_index_can_combine_multiple_filters(): void
+    {
+        $qa = $this->createUserWithRole('qa');
+        $classification = Classification::create(['name' => 'Funcional']);
+        $otherClassification = Classification::create(['name' => 'Integração']);
+
+        $matching = TestCaseModel::create([
+            'title' => 'Registrar dados de execução',
+            'classification_id' => $classification->id,
+            'created_by' => $qa->id,
+            'assigned_to' => $qa->id,
+            'status' => TestCaseStatus::Pendente,
+        ]);
+        TestCaseModel::create([
+            'title' => 'Registrar dados de execução - outra classificação',
+            'classification_id' => $otherClassification->id,
+            'created_by' => $qa->id,
+            'assigned_to' => $qa->id,
+            'status' => TestCaseStatus::Pendente,
+        ]);
+        TestCaseModel::create([
+            'title' => 'Registrar dados de execução - outro status',
+            'classification_id' => $classification->id,
+            'created_by' => $qa->id,
+            'assigned_to' => $qa->id,
+            'status' => TestCaseStatus::Aprovado,
+        ]);
+        TestCaseModel::create([
+            'title' => 'Registrar dados de execução - outro responsável',
+            'classification_id' => $classification->id,
+            'created_by' => $qa->id,
+            'status' => TestCaseStatus::Pendente,
+        ]);
+
+        $response = $this->actingAs($qa)->get(route('test-cases.index', [
+            'search' => 'execução',
+            'classification_id' => $classification->id,
+            'status' => TestCaseStatus::Pendente->value,
+            'assigned_to_me' => '1',
+        ]));
+
+        $response->assertInertia(fn (Assert $page) => $page
+            ->component('test-cases/index')
+            ->has('testCases', 1)
+            ->where('testCases.0.id', $matching->id)
+        );
+    }
+
     public function test_index_defaults_new_test_cases_to_pending_status(): void
     {
         $user = User::factory()->create();
