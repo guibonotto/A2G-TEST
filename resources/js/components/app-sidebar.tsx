@@ -14,6 +14,8 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
+import { index as accountsIndex } from '@/routes/accounts';
+import { index as rolePermissionsIndex } from '@/routes/role-permissions';
 import { index as testCaseStatusesIndex } from '@/routes/test-case-statuses';
 import { index as testCasesIndex } from '@/routes/test-cases';
 import type { NavItem } from '@/types';
@@ -34,12 +36,12 @@ const mainNavItems: NavItem[] = [
 const managementNavItems: NavItem[] = [
     {
         title: 'Gerenciar Contas',
-        href: '/management/accounts',
+        href: accountsIndex(),
         icon: Users,
     },
     {
         title: 'Gerenciar Permissões',
-        href: '/management/permissions',
+        href: rolePermissionsIndex(),
         icon: ShieldCheck,
     },
     {
