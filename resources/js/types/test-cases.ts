@@ -34,3 +34,8 @@ export type TestCaseDetail = {
     steps: TestStep[];
     created_at: string;
 };
+
+export type TestCaseFilters = {
+    search: string;
+    classification_id: number | null;
+};
