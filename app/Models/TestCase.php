@@ -64,4 +64,9 @@ class TestCase extends Model
     {
         return $this->hasMany(TestStep::class)->orderBy('order');
     }
+
+    public function executions(): HasMany
+    {
+        return $this->hasMany(Execution::class)->latest('execution_date');
+    }
 }

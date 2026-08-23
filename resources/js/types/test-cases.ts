@@ -49,7 +49,16 @@ export type TestCaseDetail = {
     creator: { id: number; name: string } | null;
     assignee: AssignableUser | null;
     steps: TestStep[];
+    executions: Execution[];
     created_at: string;
+};
+
+export type Execution = {
+    id: number;
+    status: string;
+    comment: string | null;
+    execution_date: string;
+    executor: { id: number; name: string } | null;
 };
 
 export type TestCaseFilters = {

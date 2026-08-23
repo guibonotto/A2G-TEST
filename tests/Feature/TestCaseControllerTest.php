@@ -313,6 +313,58 @@ class TestCaseControllerTest extends TestCase
         );
     }
 
+    public function test_a_user_can_register_a_test_case_execution(): void
+    {
+        $user = User::factory()->create();
+        $classification = Classification::create(['name' => 'Funcional']);
+        $testCase = TestCaseModel::create([
+            'title' => 'Login com credenciais válidas',
+            'classification_id' => $classification->id,
+            'created_by' => $user->id,
+        ]);
+
+        $response = $this->actingAs($user)->post(route('test-cases.executions.store', $testCase), [
+            'status' => 'APROVADO',
+            'comment' => 'Execução concluída com sucesso.',
+            'execution_date' => '2026-08-23 10:30:00',
+        ]);
+
+        $response->assertRedirect(route('test-cases.show', $testCase));
+        $this->assertDatabaseHas('executions', [
+            'test_case_id' => $testCase->id,
+            'executed_by' => $user->id,
+            'status' => 'APROVADO',
+            'comment' => 'Execução concluída com sucesso.',
+        ]);
+    }
+
+    public function test_test_case_detail_includes_execution_history(): void
+    {
+        $user = User::factory()->create();
+        $classification = Classification::create(['name' => 'Funcional']);
+        $testCase = TestCaseModel::create([
+            'title' => 'Login com credenciais válidas',
+            'classification_id' => $classification->id,
+            'created_by' => $user->id,
+        ]);
+
+        $testCase->executions()->create([
+            'executed_by' => $user->id,
+            'status' => 'REPROVADO',
+            'comment' => 'Mensagem de erro não foi exibida.',
+            'execution_date' => '2026-08-23 11:00:00',
+        ]);
+
+        $this->actingAs($user)->get(route('test-cases.show', $testCase))
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('test-cases/show')
+                ->has('testCase.executions', 1)
+                ->where('testCase.executions.0.status', 'REPROVADO')
+                ->where('testCase.executions.0.comment', 'Mensagem de erro não foi exibida.')
+                ->where('testCase.executions.0.executor.name', $user->name)
+            );
+    }
+
     public function test_show_includes_assignable_users_only_for_qa(): void
     {
         $qa = $this->createUserWithRole('qa');

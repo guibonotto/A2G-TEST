@@ -5,8 +5,10 @@ namespace App\Http\Controllers;
 use App\Http\Requests\TestCases\AssignTestCaseRequest;
 use App\Http\Requests\TestCases\BulkUpdateTestCaseStatusRequest;
 use App\Http\Requests\TestCases\StoreTestCaseRequest;
+use App\Http\Requests\TestCases\StoreExecutionRequest;
 use App\Http\Requests\TestCases\UpdateTestCaseRequest;
 use App\Models\Classification;
+use App\Models\Execution;
 use App\Models\TestCase;
 use App\Models\TestCaseStatus;
 use App\Models\TestTemplate;
@@ -106,7 +108,7 @@ class TestCaseController extends Controller
      */
     public function show(Request $request, TestCase $testCase): Response
     {
-        $testCase->load(['classification:id,name', 'template:id,title', 'status:id,name,color', 'creator:id,name', 'assignee:id,name', 'steps']);
+        $testCase->load(['classification:id,name', 'template:id,title', 'status:id,name,color', 'creator:id,name', 'assignee:id,name', 'steps', 'executions.executor:id,name']);
 
         return Inertia::render('test-cases/show', [
             'testCase' => $testCase,
@@ -116,7 +118,23 @@ class TestCaseController extends Controller
                     ->orderBy('name')
                     ->get(['id', 'name'])
                 : [],
+            'executionStatuses' => ['APROVADO', 'REPROVADO', 'BLOQUEADO', 'PENDENTE'],
         ]);
+    }
+
+    public function storeExecution(StoreExecutionRequest $request, TestCase $testCase): RedirectResponse
+    {
+        $testCase->executions()->create([
+            ...$request->validated(),
+            'executed_by' => $request->user()->id,
+        ]);
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => __('Execution registered.'),
+        ]);
+
+        return to_route('test-cases.show', $testCase);
     }
 
     /**

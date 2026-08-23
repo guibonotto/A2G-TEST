@@ -7,6 +7,8 @@ import Heading from '@/components/heading';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import {
     Dialog,
     DialogClose,
@@ -226,6 +228,66 @@ export default function ShowTestCase({ testCase, assignableUsers }: Props) {
 
                 <Card>
                     <CardHeader>
+                        <CardTitle>Registrar execução</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <Form
+                            action={`/test-cases/${testCase.id}/executions`}
+                            method="post"
+                            options={{ preserveScroll: true }}
+                            className="grid gap-4 md:grid-cols-3"
+                        >
+                            {({ processing, errors }) => (
+                                <>
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="execution_status">Resultado</Label>
+                                        <select
+                                            id="execution_status"
+                                            name="status"
+                                            defaultValue="PENDENTE"
+                                            className="border-input bg-background h-10 rounded-md border px-3 text-sm"
+                                            required
+                                        >
+                                            <option value="APROVADO">Aprovado</option>
+                                            <option value="REPROVADO">Reprovado</option>
+                                            <option value="BLOQUEADO">Bloqueado</option>
+                                            <option value="PENDENTE">Pendente</option>
+                                        </select>
+                                        {errors.status && <p className="text-sm text-destructive">{errors.status}</p>}
+                                    </div>
+
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="execution_date">Data e hora</Label>
+                                        <input
+                                            id="execution_date"
+                                            name="execution_date"
+                                            type="datetime-local"
+                                            defaultValue={new Date().toISOString().slice(0, 16)}
+                                            className="border-input bg-background h-10 rounded-md border px-3 text-sm"
+                                            required
+                                        />
+                                        {errors.execution_date && <p className="text-sm text-destructive">{errors.execution_date}</p>}
+                                    </div>
+
+                                    <div className="grid gap-2 md:row-span-2">
+                                        <Label htmlFor="execution_comment">Comentário</Label>
+                                        <Textarea id="execution_comment" name="comment" placeholder="Observações da execução" />
+                                        {errors.comment && <p className="text-sm text-destructive">{errors.comment}</p>}
+                                    </div>
+
+                                    <div className="flex items-end">
+                                        <Button type="submit" disabled={processing}>
+                                            {processing ? 'Registrando...' : 'Registrar execução'}
+                                        </Button>
+                                    </div>
+                                </>
+                            )}
+                        </Form>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader>
                         <CardTitle className="text-sm font-medium text-muted-foreground">
                             General Information
                         </CardTitle>
@@ -267,6 +329,32 @@ export default function ShowTestCase({ testCase, assignableUsers }: Props) {
                                 {testCase.assignee?.name ?? '—'}
                             </div>
                         </div>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Histórico de execuções ({testCase.executions.length})</CardTitle>
+                    </CardHeader>
+                    <CardContent className="flex flex-col gap-3">
+                        {testCase.executions.length === 0 ? (
+                            <p className="text-sm text-muted-foreground">Nenhuma execução registrada.</p>
+                        ) : (
+                            testCase.executions.map((execution) => (
+                                <div key={execution.id} className="flex flex-col gap-2 rounded-lg border p-4">
+                                    <div className="flex flex-wrap items-center justify-between gap-2">
+                                        <Badge variant="outline">{execution.status}</Badge>
+                                        <span className="text-xs text-muted-foreground">
+                                            {new Date(execution.execution_date).toLocaleString('pt-BR')}
+                                        </span>
+                                    </div>
+                                    <span className="text-sm text-muted-foreground">
+                                        Executado por {execution.executor?.name ?? 'Usuário removido'}
+                                    </span>
+                                    {execution.comment && <p className="text-sm">{execution.comment}</p>}
+                                </div>
+                            ))
+                        )}
                     </CardContent>
                 </Card>
 
