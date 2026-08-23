@@ -30,6 +30,90 @@ type Props = {
     filters: TestCaseFilters;
 };
 
+type TestCaseTableProps = {
+    testCases: TestCaseListItem[];
+    selectedIds: number[];
+    toggleOne: (id: number, checked: boolean) => void;
+};
+
+function TestCaseTable({
+    testCases,
+    selectedIds,
+    toggleOne,
+}: TestCaseTableProps) {
+    return (
+        <table className="w-full text-sm">
+            <thead className="border-b bg-muted/50 text-left">
+                <tr>
+                    <th className="w-10 px-4 py-3">
+                        <Checkbox
+                            checked={
+                                testCases.length > 0 &&
+                                testCases.every((testCase) =>
+                                    selectedIds.includes(testCase.id),
+                                )
+                            }
+                            onCheckedChange={(checked) =>
+                                testCases.forEach((testCase) =>
+                                    toggleOne(testCase.id, checked === true),
+                                )
+                            }
+                            aria-label="Select all in group"
+                        />
+                    </th>
+                    <th className="px-4 py-3 font-medium">Título</th>
+                    <th className="px-4 py-3 font-medium">Classificação</th>
+                    <th className="px-4 py-3 font-medium">Responsável</th>
+                    <th className="px-4 py-3 font-medium">Passos</th>
+                    <th className="px-4 py-3 font-medium">Criado por</th>
+                    <th className="px-4 py-3 font-medium">Criado em</th>
+                </tr>
+            </thead>
+            <tbody>
+                {testCases.map((testCase) => (
+                    <tr
+                        key={testCase.id}
+                        className="border-b last:border-0 hover:bg-muted/50"
+                    >
+                        <td className="px-4 py-3">
+                            <Checkbox
+                                checked={selectedIds.includes(testCase.id)}
+                                onCheckedChange={(checked) =>
+                                    toggleOne(testCase.id, checked === true)
+                                }
+                                aria-label={`Select ${testCase.title}`}
+                            />
+                        </td>
+                        <td className="px-4 py-3">
+                            <Link
+                                href={show(testCase.id)}
+                                className="font-medium hover:underline"
+                            >
+                                {testCase.title}
+                            </Link>
+                        </td>
+                        <td className="px-4 py-3">
+                            {testCase.classification?.name ?? '—'}
+                        </td>
+                        <td className="px-4 py-3">
+                            {testCase.assignee?.name ?? '—'}
+                        </td>
+                        <td className="px-4 py-3">{testCase.steps_count}</td>
+                        <td className="px-4 py-3">
+                            {testCase.creator?.name ?? '—'}
+                        </td>
+                        <td className="px-4 py-3">
+                            {new Date(testCase.created_at).toLocaleDateString(
+                                'en-US',
+                            )}
+                        </td>
+                    </tr>
+                ))}
+            </tbody>
+        </table>
+    );
+}
+
 export default function TestCaseIndex({
     testCases,
     classifications,
@@ -40,6 +124,18 @@ export default function TestCaseIndex({
     const [selectedIds, setSelectedIds] = useState<number[]>([]);
     const [applyingBulkStatus, setApplyingBulkStatus] = useState(false);
     const isFirstRender = useRef(true);
+
+    const groupedTestCases = statuses
+        .map((status) => ({
+            key: String(status.id),
+            name: status.name,
+            color: status.color,
+            testCases: testCases.filter(
+                (testCase) => testCase.status?.id === status.id,
+            ),
+        }))
+        .filter((group) => group.testCases.length > 0);
+    const withoutStatus = testCases.filter((testCase) => !testCase.status);
 
     useEffect(() => {
         if (isFirstRender.current) {
@@ -125,12 +221,6 @@ export default function TestCaseIndex({
                 replace: true,
                 preserveScroll: true,
             },
-        );
-    }
-
-    function toggleAll(checked: boolean) {
-        setSelectedIds(
-            checked ? testCases.map((testCase) => testCase.id) : [],
         );
     }
 
@@ -283,104 +373,47 @@ export default function TestCaseIndex({
                     </div>
                 )}
 
-                <Card className="overflow-hidden py-0">
-                    {testCases.length === 0 ? (
+                {testCases.length === 0 ? (
+                    <Card>
                         <p className="p-6 text-sm text-muted-foreground">
                             No test cases found.
                         </p>
-                    ) : (
-                        <table className="w-full text-sm">
-                            <thead className="border-b bg-muted/50 text-left">
-                                <tr>
-                                    <th className="w-10 px-4 py-3">
-                                        <Checkbox
-                                            checked={
-                                                testCases.length > 0 &&
-                                                selectedIds.length ===
-                                                    testCases.length
-                                            }
-                                            onCheckedChange={(checked) =>
-                                                toggleAll(checked === true)
-                                            }
-                                            aria-label="Select all"
-                                        />
-                                    </th>
-                                    <th className="px-4 py-3 font-medium">Título</th>
-                                    <th className="px-4 py-3 font-medium">Classificação</th>
-                                    <th className="px-4 py-3 font-medium">Status</th>
-                                    <th className="px-4 py-3 font-medium">Responsável</th>
-                                    <th className="px-4 py-3 font-medium">Passos</th>
-                                    <th className="px-4 py-3 font-medium">Criado por</th>
-                                    <th className="px-4 py-3 font-medium">Criado em</th>
-                                </tr>
-                            </thead>
+                    </Card>
+                ) : (
+                    <div className="flex flex-col gap-4">
+                        {groupedTestCases.map((group) => (
+                            <Card key={group.key} className="overflow-hidden py-0">
+                                <div className="flex items-center gap-2 border-b px-4 py-3">
+                                    <Badge variant={group.color}>{group.name}</Badge>
+                                    <span className="text-sm text-muted-foreground">
+                                        {group.testCases.length} caso(s)
+                                    </span>
+                                </div>
+                                <TestCaseTable
+                                    testCases={group.testCases}
+                                    selectedIds={selectedIds}
+                                    toggleOne={toggleOne}
+                                />
+                            </Card>
+                        ))}
 
-                            <tbody>
-                                {testCases.map((testCase) => (
-                                    <tr
-                                        key={testCase.id}
-                                        className="border-b last:border-0 hover:bg-muted/50"
-                                    >
-                                        <td className="px-4 py-3">
-                                            <Checkbox
-                                                checked={selectedIds.includes(
-                                                    testCase.id,
-                                                )}
-                                                onCheckedChange={(checked) =>
-                                                    toggleOne(
-                                                        testCase.id,
-                                                        checked === true,
-                                                    )
-                                                }
-                                                aria-label={`Select ${testCase.title}`}
-                                            />
-                                        </td>
-
-                                        <td className="px-4 py-3">
-                                            <Link
-                                                href={show(testCase.id)}
-                                                className="font-medium hover:underline"
-                                            >
-                                                {testCase.title}
-                                            </Link>
-                                        </td>
-
-                                        <td className="px-4 py-3">
-                                            {testCase.classification?.name ??
-                                                '—'}
-                                        </td>
-
-                                        <td className="px-4 py-3">
-                                            {testCase.status ? (
-                                                <Badge variant={testCase.status.color}>{testCase.status.name}</Badge>
-                                            ) : (
-                                                '—'
-                                            )}
-                                        </td>
-
-                                        <td className="px-4 py-3">
-                                            {testCase.assignee?.name ?? '—'}
-                                        </td>
-
-                                        <td className="px-4 py-3">
-                                            {testCase.steps_count}
-                                        </td>
-
-                                        <td className="px-4 py-3">
-                                            {testCase.creator?.name ?? '—'}
-                                        </td>
-
-                                        <td className="px-4 py-3">
-                                            {new Date(
-                                                testCase.created_at,
-                                            ).toLocaleDateString('en-US')}
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    )}
-                </Card>
+                        {withoutStatus.length > 0 && (
+                            <Card className="overflow-hidden py-0">
+                                <div className="flex items-center gap-2 border-b px-4 py-3">
+                                    <Badge variant="secondary">Sem status</Badge>
+                                    <span className="text-sm text-muted-foreground">
+                                        {withoutStatus.length} caso(s)
+                                    </span>
+                                </div>
+                                <TestCaseTable
+                                    testCases={withoutStatus}
+                                    selectedIds={selectedIds}
+                                    toggleOne={toggleOne}
+                                />
+                            </Card>
+                        )}
+                    </div>
+                )}
             </div>
         </>
     );
