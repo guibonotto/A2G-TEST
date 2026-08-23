@@ -31,16 +31,23 @@ import type { AssignableUser, TestCaseDetail } from '@/types';
 type Props = {
     testCase: TestCaseDetail;
     assignableUsers: AssignableUser[];
+    executionStatuses: string[];
 };
 
 const UNASSIGNED = 'unassigned';
 
-export default function ShowTestCase({ testCase, assignableUsers }: Props) {
+export default function ShowTestCase({ testCase, assignableUsers, executionStatuses }: Props) {
     const { auth } = usePage().props;
     const [selectedAssignee, setSelectedAssignee] = useState(
         testCase.assignee ? String(testCase.assignee.id) : UNASSIGNED,
     );
     const [assigning, setAssigning] = useState(false);
+    const [executionStatusFilter, setExecutionStatusFilter] = useState('all');
+    const filteredExecutions = testCase.executions.filter(
+        (execution) =>
+            executionStatusFilter === 'all' ||
+            execution.status === executionStatusFilter,
+    );
 
     setLayoutProps({
         breadcrumbs: [
@@ -337,10 +344,31 @@ export default function ShowTestCase({ testCase, assignableUsers }: Props) {
                         <CardTitle>Histórico de execuções ({testCase.executions.length})</CardTitle>
                     </CardHeader>
                     <CardContent className="flex flex-col gap-3">
+                        {testCase.executions.length > 0 && (
+                            <Select
+                                value={executionStatusFilter}
+                                onValueChange={setExecutionStatusFilter}
+                            >
+                                <SelectTrigger className="w-full sm:w-64">
+                                    <SelectValue placeholder="Filtrar por resultado" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">Todos os resultados</SelectItem>
+                                    {executionStatuses.map((status) => (
+                                        <SelectItem key={status} value={status}>
+                                            {status}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        )}
+
                         {testCase.executions.length === 0 ? (
                             <p className="text-sm text-muted-foreground">Nenhuma execução registrada.</p>
+                        ) : filteredExecutions.length === 0 ? (
+                            <p className="text-sm text-muted-foreground">Nenhuma execução corresponde ao filtro.</p>
                         ) : (
-                            testCase.executions.map((execution) => (
+                            filteredExecutions.map((execution) => (
                                 <div key={execution.id} className="flex flex-col gap-2 rounded-lg border p-4">
                                     <div className="flex flex-wrap items-center justify-between gap-2">
                                         <Badge variant="outline">{execution.status}</Badge>
