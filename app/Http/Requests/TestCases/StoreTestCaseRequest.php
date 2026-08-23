@@ -2,8 +2,10 @@
 
 namespace App\Http\Requests\TestCases;
 
+use App\Enums\TestCaseStatus;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreTestCaseRequest extends FormRequest
 {
@@ -27,6 +29,7 @@ class StoreTestCaseRequest extends FormRequest
             'description' => ['nullable', 'string'],
             'classification_id' => ['required', 'integer', 'exists:classifications,id'],
             'template_id' => ['nullable', 'integer', 'exists:test_templates,id'],
+            'status' => ['sometimes', Rule::enum(TestCaseStatus::class)],
             'steps' => ['required', 'array', 'min:1'],
             'steps.*.description' => ['required', 'string'],
             'steps.*.expected_result' => ['nullable', 'string'],

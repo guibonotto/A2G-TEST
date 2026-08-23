@@ -8,10 +8,13 @@ export type TestTemplate = {
     title: string;
 };
 
+export type TestCaseStatus = 'APROVADO' | 'REPROVADO' | 'PENDENTE' | 'CANCELADO' | 'REGRESSÃO';
+
 export type TestCaseListItem = {
     id: number;
     title: string;
     classification: Classification | null;
+    status: TestCaseStatus;
     creator: { id: number; name: string } | null;
     steps_count: number;
     created_at: string;
@@ -30,6 +33,7 @@ export type TestCaseDetail = {
     description: string | null;
     classification: Classification | null;
     template: TestTemplate | null;
+    status: TestCaseStatus;
     creator: { id: number; name: string } | null;
     steps: TestStep[];
     created_at: string;
@@ -38,4 +42,5 @@ export type TestCaseDetail = {
 export type TestCaseFilters = {
     search: string;
     classification_id: number | null;
+    status: TestCaseStatus | null;
 };

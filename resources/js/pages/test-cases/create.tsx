@@ -16,11 +16,12 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { index, store } from '@/routes/test-cases';
-import type { Classification, TestTemplate } from '@/types';
+import type { Classification, TestCaseStatus, TestTemplate } from '@/types';
 
 type Props = {
     classifications: Classification[];
     templates: TestTemplate[];
+    statuses: TestCaseStatus[];
 };
 
 type StepForm = {
@@ -30,12 +31,13 @@ type StepForm = {
 
 const emptyStep: StepForm = { description: '', expected_result: '' };
 
-export default function CreateTestCase({ classifications, templates }: Props) {
+export default function CreateTestCase({ classifications, templates, statuses }: Props) {
     const { data, setData, post, processing, errors } = useForm({
         title: '',
         description: '',
         classification_id: '',
         template_id: '',
+        status: 'PENDENTE' as TestCaseStatus,
         steps: [{ ...emptyStep }] as StepForm[],
     });
 
@@ -98,7 +100,7 @@ export default function CreateTestCase({ classifications, templates }: Props) {
                                 <InputError message={errors.description} />
                             </div>
 
-                            <div className="grid gap-4 sm:grid-cols-2">
+                            <div className="grid gap-4 sm:grid-cols-3">
                                 <div className="grid gap-2">
                                     <Label htmlFor="classification_id">Classificação</Label>
                                     <Select
@@ -140,6 +142,26 @@ export default function CreateTestCase({ classifications, templates }: Props) {
                                         </SelectContent>
                                     </Select>
                                     <InputError message={errors.template_id} />
+                                </div>
+
+                                <div className="grid gap-2">
+                                    <Label htmlFor="status">Status</Label>
+                                    <Select
+                                        value={data.status}
+                                        onValueChange={(value) => setData('status', value as TestCaseStatus)}
+                                    >
+                                        <SelectTrigger id="status" className="w-full">
+                                            <SelectValue placeholder="Selecione um status" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {statuses.map((status) => (
+                                                <SelectItem key={status} value={status}>
+                                                    {status}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <InputError message={errors.status} />
                                 </div>
                             </div>
                         </CardContent>

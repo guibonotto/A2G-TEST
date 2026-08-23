@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\TestCaseStatus;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -13,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'classification_id',
     'created_by',
     'template_id',
+    'status',
 ])]
 class TestCase extends Model
 {
@@ -30,6 +32,7 @@ class TestCase extends Model
     {
         return [
             'created_at' => 'datetime',
+            'status' => TestCaseStatus::class,
         ];
     }
 

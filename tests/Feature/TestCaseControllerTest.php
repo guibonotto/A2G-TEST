@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\TestCaseStatus;
 use App\Models\Classification;
 use App\Models\TestCase as TestCaseModel;
 use App\Models\TestTemplate;
@@ -52,6 +53,126 @@ class TestCaseControllerTest extends TestCase
         );
     }
 
+    public function test_index_can_be_filtered_by_search_term(): void
+    {
+        $user = User::factory()->create();
+        $classification = Classification::create(['name' => 'Funcional']);
+
+        $matching = TestCaseModel::create([
+            'title' => 'Login com credenciais válidas',
+            'classification_id' => $classification->id,
+            'created_by' => $user->id,
+        ]);
+        TestCaseModel::create([
+            'title' => 'Cadastro de usuário',
+            'classification_id' => $classification->id,
+            'created_by' => $user->id,
+        ]);
+
+        $response = $this->actingAs($user)->get(route('test-cases.index', ['search' => 'login']));
+
+        $response->assertInertia(fn (Assert $page) => $page
+            ->component('test-cases/index')
+            ->has('testCases', 1)
+            ->where('testCases.0.id', $matching->id)
+        );
+    }
+
+    public function test_index_can_be_filtered_by_id(): void
+    {
+        $user = User::factory()->create();
+        $classification = Classification::create(['name' => 'Funcional']);
+
+        $matching = TestCaseModel::create([
+            'title' => 'Login com credenciais válidas',
+            'classification_id' => $classification->id,
+            'created_by' => $user->id,
+        ]);
+        TestCaseModel::create([
+            'title' => 'Cadastro de usuário',
+            'classification_id' => $classification->id,
+            'created_by' => $user->id,
+        ]);
+
+        $response = $this->actingAs($user)->get(route('test-cases.index', ['search' => (string) $matching->id]));
+
+        $response->assertInertia(fn (Assert $page) => $page
+            ->component('test-cases/index')
+            ->has('testCases', 1)
+            ->where('testCases.0.id', $matching->id)
+        );
+    }
+
+    public function test_index_can_be_filtered_by_classification(): void
+    {
+        $user = User::factory()->create();
+        $classification = Classification::create(['name' => 'Unitário']);
+        $otherClassification = Classification::create(['name' => 'Integração']);
+
+        $matching = TestCaseModel::create([
+            'title' => 'Login com credenciais válidas',
+            'classification_id' => $classification->id,
+            'created_by' => $user->id,
+        ]);
+        TestCaseModel::create([
+            'title' => 'Cadastro de usuário',
+            'classification_id' => $otherClassification->id,
+            'created_by' => $user->id,
+        ]);
+
+        $response = $this->actingAs($user)->get(route('test-cases.index', ['classification_id' => $classification->id]));
+
+        $response->assertInertia(fn (Assert $page) => $page
+            ->component('test-cases/index')
+            ->has('testCases', 1)
+            ->where('testCases.0.id', $matching->id)
+        );
+    }
+
+    public function test_index_can_be_filtered_by_status(): void
+    {
+        $user = User::factory()->create();
+        $classification = Classification::create(['name' => 'Funcional']);
+
+        $approved = TestCaseModel::create([
+            'title' => 'Login com credenciais válidas',
+            'classification_id' => $classification->id,
+            'created_by' => $user->id,
+            'status' => TestCaseStatus::Aprovado,
+        ]);
+        TestCaseModel::create([
+            'title' => 'Cadastro de usuário',
+            'classification_id' => $classification->id,
+            'created_by' => $user->id,
+            'status' => TestCaseStatus::Pendente,
+        ]);
+
+        $response = $this->actingAs($user)->get(route('test-cases.index', ['status' => TestCaseStatus::Aprovado->value]));
+
+        $response->assertInertia(fn (Assert $page) => $page
+            ->component('test-cases/index')
+            ->has('testCases', 1)
+            ->where('testCases.0.id', $approved->id)
+        );
+    }
+
+    public function test_index_defaults_new_test_cases_to_pending_status(): void
+    {
+        $user = User::factory()->create();
+        $classification = Classification::create(['name' => 'Funcional']);
+
+        TestCaseModel::create([
+            'title' => 'Login com credenciais válidas',
+            'classification_id' => $classification->id,
+            'created_by' => $user->id,
+        ]);
+
+        $this->assertDatabaseHas('test_cases', [
+            'title' => 'Login com credenciais válidas',
+            'status' => TestCaseStatus::Pendente->value,
+        ]);
+    }
+
     public function test_create_screen_can_be_rendered(): void
     {
         $user = User::factory()->create();
@@ -100,6 +221,26 @@ class TestCaseControllerTest extends TestCase
         $this->assertCount(3, $testCase->steps);
         $this->assertSame(1, $testCase->steps->first()->order);
         $this->assertSame('Acessar a tela de login', $testCase->steps->first()->description);
+    }
+
+    public function test_a_test_case_can_be_created_with_a_status(): void
+    {
+        $user = User::factory()->create();
+        $classification = Classification::create(['name' => 'Funcional']);
+
+        $this->actingAs($user)->post(route('test-cases.store'), [
+            'title' => 'Login com credenciais válidas',
+            'classification_id' => $classification->id,
+            'status' => TestCaseStatus::Regressao->value,
+            'steps' => [
+                ['description' => 'Acessar a tela de login'],
+            ],
+        ]);
+
+        $this->assertDatabaseHas('test_cases', [
+            'title' => 'Login com credenciais válidas',
+            'status' => TestCaseStatus::Regressao->value,
+        ]);
     }
 
     public function test_a_test_case_can_be_viewed(): void
@@ -215,6 +356,34 @@ class TestCaseControllerTest extends TestCase
         $testCase->refresh();
         $this->assertCount(2, $testCase->steps);
         $this->assertSame('Acessar a tela de login', $testCase->steps->first()->description);
+    }
+
+    public function test_a_test_case_status_can_be_updated(): void
+    {
+        $user = User::factory()->create();
+        $classification = Classification::create(['name' => 'Funcional']);
+
+        $testCase = TestCaseModel::create([
+            'title' => 'Login com credenciais válidas',
+            'classification_id' => $classification->id,
+            'created_by' => $user->id,
+            'status' => TestCaseStatus::Pendente,
+        ]);
+        $testCase->steps()->create(['order' => 1, 'description' => 'Passo antigo']);
+
+        $this->actingAs($user)->put(route('test-cases.update', $testCase), [
+            'title' => $testCase->title,
+            'classification_id' => $classification->id,
+            'status' => TestCaseStatus::Reprovado->value,
+            'steps' => [
+                ['description' => 'Acessar a tela de login'],
+            ],
+        ]);
+
+        $this->assertDatabaseHas('test_cases', [
+            'id' => $testCase->id,
+            'status' => TestCaseStatus::Reprovado->value,
+        ]);
     }
 
     public function test_update_fails_without_a_classification(): void

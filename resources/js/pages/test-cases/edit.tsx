@@ -16,12 +16,13 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { index, show, update } from '@/routes/test-cases';
-import type { Classification, TestCaseDetail, TestTemplate } from '@/types';
+import type { Classification, TestCaseDetail, TestCaseStatus, TestTemplate } from '@/types';
 
 type Props = {
     testCase: TestCaseDetail;
     classifications: Classification[];
     templates: TestTemplate[];
+    statuses: TestCaseStatus[];
 };
 
 type StepForm = {
@@ -31,12 +32,13 @@ type StepForm = {
 
 const emptyStep: StepForm = { description: '', expected_result: '' };
 
-export default function EditTestCase({ testCase, classifications, templates }: Props) {
+export default function EditTestCase({ testCase, classifications, templates, statuses }: Props) {
     const { data, setData, put, processing, errors } = useForm({
         title: testCase.title,
         description: testCase.description ?? '',
         classification_id: testCase.classification ? String(testCase.classification.id) : '',
         template_id: testCase.template ? String(testCase.template.id) : '',
+        status: testCase.status,
         steps: (testCase.steps.length > 0
             ? testCase.steps.map((step) => ({
                   description: step.description,
@@ -77,6 +79,7 @@ export default function EditTestCase({ testCase, classifications, templates }: P
             { title: 'Editar', href: '#' },
         ],
     });
+
     return (
         <>
             <Head title={`Editar ${testCase.title}`} />
@@ -111,7 +114,7 @@ export default function EditTestCase({ testCase, classifications, templates }: P
                                 <InputError message={errors.description} />
                             </div>
 
-                            <div className="grid gap-4 sm:grid-cols-2">
+                            <div className="grid gap-4 sm:grid-cols-3">
                                 <div className="grid gap-2">
                                     <Label htmlFor="classification_id">Classificação</Label>
                                     <Select
@@ -153,6 +156,26 @@ export default function EditTestCase({ testCase, classifications, templates }: P
                                         </SelectContent>
                                     </Select>
                                     <InputError message={errors.template_id} />
+                                </div>
+
+                                <div className="grid gap-2">
+                                    <Label htmlFor="status">Status</Label>
+                                    <Select
+                                        value={data.status}
+                                        onValueChange={(value) => setData('status', value as TestCaseStatus)}
+                                    >
+                                        <SelectTrigger id="status" className="w-full">
+                                            <SelectValue placeholder="Selecione um status" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {statuses.map((status) => (
+                                                <SelectItem key={status} value={status}>
+                                                    {status}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <InputError message={errors.status} />
                                 </div>
                             </div>
                         </CardContent>

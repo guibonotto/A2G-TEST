@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\TestCaseStatus;
 use App\Http\Requests\TestCases\StoreTestCaseRequest;
 use App\Http\Requests\TestCases\UpdateTestCaseRequest;
 use App\Models\Classification;
@@ -22,6 +23,7 @@ class TestCaseController extends Controller
     {
         $search = $request->string('search')->trim()->toString();
         $classificationId = $request->integer('classification_id') ?: null;
+        $status = $request->enum('status', TestCaseStatus::class);
 
         $testCases = TestCase::query()
             ->with(['classification:id,name', 'creator:id,name'])
@@ -35,15 +37,18 @@ class TestCaseController extends Controller
                 });
             })
             ->when($classificationId, fn ($query) => $query->where('classification_id', $classificationId))
+            ->when($status, fn ($query) => $query->where('status', $status))
             ->latest()
-            ->get(['id', 'title', 'classification_id', 'created_by', 'created_at']);
+            ->get(['id', 'title', 'classification_id', 'status', 'created_by', 'created_at']);
 
         return Inertia::render('test-cases/index', [
             'testCases' => $testCases,
             'classifications' => Classification::query()->orderBy('name')->get(['id', 'name']),
+            'statuses' => TestCaseStatus::cases(),
             'filters' => [
                 'search' => $search,
                 'classification_id' => $classificationId,
+                'status' => $status,
             ],
         ]);
     }
@@ -56,6 +61,7 @@ class TestCaseController extends Controller
         return Inertia::render('test-cases/create', [
             'classifications' => Classification::query()->orderBy('name')->get(['id', 'name']),
             'templates' => TestTemplate::query()->orderBy('title')->get(['id', 'title']),
+            'statuses' => TestCaseStatus::cases(),
         ]);
     }
 
@@ -66,7 +72,7 @@ class TestCaseController extends Controller
     {
         $testCase = DB::transaction(function () use ($request) {
             $testCase = TestCase::create([
-                ...$request->safe()->only(['title', 'description', 'classification_id', 'template_id']),
+                ...$request->safe()->only(['title', 'description', 'classification_id', 'template_id', 'status']),
                 'created_by' => $request->user()->id,
             ]);
 
@@ -112,6 +118,7 @@ class TestCaseController extends Controller
             'testCase' => $testCase,
             'classifications' => Classification::query()->orderBy('name')->get(['id', 'name']),
             'templates' => TestTemplate::query()->orderBy('title')->get(['id', 'title']),
+            'statuses' => TestCaseStatus::cases(),
         ]);
     }
 
@@ -122,7 +129,7 @@ class TestCaseController extends Controller
     {
         DB::transaction(function () use ($request, $testCase) {
             $testCase->update(
-                $request->safe()->only(['title', 'description', 'classification_id', 'template_id'])
+                $request->safe()->only(['title', 'description', 'classification_id', 'template_id', 'status'])
             );
 
             $testCase->steps()->delete();
@@ -159,81 +166,5 @@ class TestCaseController extends Controller
         ]);
 
         return to_route('test-cases.index');
-    }
-
-    public function test_index_can_be_filtered_by_search_term(): void
-    {
-        $user = User::factory()->create();
-        $classification = Classification::create(['name' => 'Funcional']);
-
-        $matching = TestCaseModel::create([
-            'title' => 'Login com credenciais válidas',
-            'classification_id' => $classification->id,
-            'created_by' => $user->id,
-        ]);
-        TestCaseModel::create([
-            'title' => 'Cadastro de usuário',
-            'classification_id' => $classification->id,
-            'created_by' => $user->id,
-        ]);
-
-        $response = $this->actingAs($user)->get(route('test-cases.index', ['search' => 'login']));
-
-        $response->assertInertia(fn (Assert $page) => $page
-            ->component('test-cases/index')
-            ->has('testCases', 1)
-            ->where('testCases.0.id', $matching->id)
-        );
-    }
-
-    public function test_index_can_be_filtered_by_id(): void
-    {
-        $user = User::factory()->create();
-        $classification = Classification::create(['name' => 'Funcional']);
-
-        $matching = TestCaseModel::create([
-            'title' => 'Login com credenciais válidas',
-            'classification_id' => $classification->id,
-            'created_by' => $user->id,
-        ]);
-        TestCaseModel::create([
-            'title' => 'Cadastro de usuário',
-            'classification_id' => $classification->id,
-            'created_by' => $user->id,
-        ]);
-
-        $response = $this->actingAs($user)->get(route('test-cases.index', ['search' => (string) $matching->id]));
-
-        $response->assertInertia(fn (Assert $page) => $page
-            ->component('test-cases/index')
-            ->has('testCases', 1)
-            ->where('testCases.0.id', $matching->id)
-        );
-    }
-
-    public function test_index_can_be_filtered_by_classification(): void
-    {
-        $user = User::factory()->create();
-        $classification = Classification::create(['name' => 'Unitário']);
-        $otherClassification = Classification::create(['name' => 'Integração']);
-
-        $matching = TestCaseModel::create([
-            'title' => 'Login com credenciais válidas',
-            'classification_id' => $classification->id,
-            'created_by' => $user->id,
-        ]);
-        TestCaseModel::create([
-            'title' => 'Cadastro de usuário',
-            'classification_id' => $otherClassification->id,
-            'created_by' => $user->id,
-        ]);
-
-        $response = $this->actingAs($user)->get(route('test-cases.index', ['classification_id' => $classification->id]));
-
-        $response->assertInertia(fn (Assert $page) => $page
-            ->component('test-cases/index')
-            ->has('testCases', 1)
-            ->where('testCases.0.id', $matching->id)
-        );
     }
 }

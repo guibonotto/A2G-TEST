@@ -14,6 +14,7 @@ import {
     DialogTitle,
     DialogTrigger,
 } from '@/components/ui/dialog';
+import { testCaseStatusBadgeVariant } from '@/lib/test-case-status';
 import { edit, index, show } from '@/routes/test-cases';
 import type { TestCaseDetail } from '@/types';
 
@@ -82,6 +83,9 @@ export default function ShowTestCase({ testCase }: Props) {
                         {testCase.classification && (
                             <Badge variant="secondary">{testCase.classification.name}</Badge>
                         )}
+                        <Badge variant={testCaseStatusBadgeVariant(testCase.status)}>
+                            {testCase.status}
+                        </Badge>
                     </div>
                 </div>
 
