@@ -2,17 +2,17 @@ import type { TestCaseStatus } from '@/types';
 
 export function testCaseStatusBadgeVariant(
     status: TestCaseStatus,
-): 'default' | 'secondary' | 'destructive' | 'outline' {
+): 'success' | 'destructive' | 'warning' | 'secondary' | 'info' {
     switch (status) {
         case 'APROVADO':
-            return 'default';
+            return 'success';
         case 'REPROVADO':
-        case 'CANCELADO':
             return 'destructive';
-        case 'REGRESSÃO':
-            return 'outline';
         case 'PENDENTE':
-        default:
+            return 'warning';
+        case 'CANCELADO':
             return 'secondary';
+        case 'REGRESSÃO':
+            return 'info';
     }
 }
