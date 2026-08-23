@@ -42,7 +42,7 @@ export default function ShowTestCase({ testCase, assignableUsers }: Props) {
 
     setLayoutProps({
         breadcrumbs: [
-            { title: 'Casos de teste', href: index() },
+            { title: 'Test Cases', href: index() },
             { title: testCase.title, href: show(testCase.id) },
         ],
     });
@@ -50,10 +50,19 @@ export default function ShowTestCase({ testCase, assignableUsers }: Props) {
     function submitAssignment(e: FormEvent) {
         e.preventDefault();
         setAssigning(true);
+
         router.patch(
             assign.url(testCase),
-            { assigned_to: selectedAssignee === UNASSIGNED ? null : Number(selectedAssignee) },
-            { preserveScroll: true, onFinish: () => setAssigning(false) },
+            {
+                assigned_to:
+                    selectedAssignee === UNASSIGNED
+                        ? null
+                        : Number(selectedAssignee),
+            },
+            {
+                preserveScroll: true,
+                onFinish: () => setAssigning(false),
+            },
         );
     }
 
@@ -64,41 +73,68 @@ export default function ShowTestCase({ testCase, assignableUsers }: Props) {
             <div className="flex flex-col gap-6 p-4">
                 <div className="flex items-start justify-between gap-4">
                     <div className="flex flex-col gap-2">
-                        <Button asChild variant="ghost" size="sm" className="w-fit -ml-2">
+                        <Button
+                            asChild
+                            variant="ghost"
+                            size="sm"
+                            className="w-fit -ml-2"
+                        >
                             <Link href={index()}>
-                                <ArrowLeft /> Voltar para casos de teste
+                                <ArrowLeft /> Back to test cases
                             </Link>
                         </Button>
-                        <Heading title={testCase.title} description={testCase.description ?? undefined} />
+
+                        <Heading
+                            title={testCase.title}
+                            description={testCase.description ?? undefined}
+                        />
                     </div>
 
                     <div className="flex items-center gap-2">
                         <Button asChild variant="outline" size="sm">
-                            <Link href={edit(testCase.id)}>Editar</Link>
+                            <Link href={edit(testCase.id)}>Edit</Link>
                         </Button>
 
                         {auth.user.role?.slug === 'qa' && (
                             <Dialog>
                                 <DialogTrigger asChild>
                                     <Button variant="outline" size="sm">
-                                        Atribuir
+                                        Assign
                                     </Button>
                                 </DialogTrigger>
+
                                 <DialogContent>
-                                    <DialogTitle>Atribuir caso de teste</DialogTitle>
+                                    <DialogTitle>
+                                        Assign test case
+                                    </DialogTitle>
+
                                     <DialogDescription>
-                                        Escolha quem vai ficar responsável por "{testCase.title}".
+                                        Choose who will be responsible for "
+                                        {testCase.title}".
                                     </DialogDescription>
 
-                                    <form onSubmit={submitAssignment} className="flex flex-col gap-4">
-                                        <Select value={selectedAssignee} onValueChange={setSelectedAssignee}>
+                                    <form
+                                        onSubmit={submitAssignment}
+                                        className="flex flex-col gap-4"
+                                    >
+                                        <Select
+                                            value={selectedAssignee}
+                                            onValueChange={setSelectedAssignee}
+                                        >
                                             <SelectTrigger className="w-full">
-                                                <SelectValue placeholder="Selecione um responsável" />
+                                                <SelectValue placeholder="Select an assignee" />
                                             </SelectTrigger>
+
                                             <SelectContent>
-                                                <SelectItem value={UNASSIGNED}>Sem responsável</SelectItem>
+                                                <SelectItem value={UNASSIGNED}>
+                                                    Unassigned
+                                                </SelectItem>
+
                                                 {assignableUsers.map((user) => (
-                                                    <SelectItem key={user.id} value={String(user.id)}>
+                                                    <SelectItem
+                                                        key={user.id}
+                                                        value={String(user.id)}
+                                                    >
                                                         {user.name}
                                                     </SelectItem>
                                                 ))}
@@ -107,12 +143,19 @@ export default function ShowTestCase({ testCase, assignableUsers }: Props) {
 
                                         <DialogFooter className="gap-2">
                                             <DialogClose asChild>
-                                                <Button type="button" variant="secondary">
-                                                    Cancelar
+                                                <Button
+                                                    type="button"
+                                                    variant="secondary"
+                                                >
+                                                    Cancel
                                                 </Button>
                                             </DialogClose>
-                                            <Button type="submit" disabled={assigning}>
-                                                Salvar
+
+                                            <Button
+                                                type="submit"
+                                                disabled={assigning}
+                                            >
+                                                Save
                                             </Button>
                                         </DialogFooter>
                                     </form>
@@ -122,27 +165,47 @@ export default function ShowTestCase({ testCase, assignableUsers }: Props) {
 
                         <Dialog>
                             <DialogTrigger asChild>
-                                <Button variant="destructive" size="sm">
-                                    Excluir
+                                <Button
+                                    variant="destructive"
+                                    size="sm"
+                                >
+                                    Delete
                                 </Button>
                             </DialogTrigger>
+
                             <DialogContent>
-                                <DialogTitle>Excluir caso de teste?</DialogTitle>
+                                <DialogTitle>
+                                    Delete test case?
+                                </DialogTitle>
+
                                 <DialogDescription>
-                                    Esta ação não pode ser desfeita. O caso de teste "{testCase.title}" e
-                                    todos os seus passos serão excluídos permanentemente.
+                                    This action cannot be undone. The test case
+                                    "{testCase.title}" and all of its steps
+                                    will be permanently deleted.
                                 </DialogDescription>
 
-                                <Form {...TestCaseController.deleteTestCase.form(testCase)}>
+                                <Form
+                                    {...TestCaseController.deleteTestCase.form(
+                                        testCase,
+                                    )}
+                                >
                                     {({ processing }) => (
                                         <DialogFooter className="gap-2">
                                             <DialogClose asChild>
-                                                <Button type="button" variant="secondary">
-                                                    Cancelar
+                                                <Button
+                                                    type="button"
+                                                    variant="secondary"
+                                                >
+                                                    Cancel
                                                 </Button>
                                             </DialogClose>
-                                            <Button type="submit" variant="destructive" disabled={processing}>
-                                                Excluir
+
+                                            <Button
+                                                type="submit"
+                                                variant="destructive"
+                                                disabled={processing}
+                                            >
+                                                Delete
                                             </Button>
                                         </DialogFooter>
                                     )}
@@ -151,7 +214,9 @@ export default function ShowTestCase({ testCase, assignableUsers }: Props) {
                         </Dialog>
 
                         {testCase.classification && (
-                            <Badge variant="secondary">{testCase.classification.name}</Badge>
+                            <Badge variant="secondary">
+                                {testCase.classification.name}
+                            </Badge>
                         )}
                         {testCase.status && (
                             <Badge variant={testCase.status.color}>{testCase.status.name}</Badge>
@@ -162,25 +227,45 @@ export default function ShowTestCase({ testCase, assignableUsers }: Props) {
                 <Card>
                     <CardHeader>
                         <CardTitle className="text-sm font-medium text-muted-foreground">
-                            Informações gerais
+                            General Information
                         </CardTitle>
                     </CardHeader>
+
                     <CardContent className="grid gap-3 text-sm sm:grid-cols-4">
                         <div>
-                            <div className="text-muted-foreground">Classificação</div>
-                            <div>{testCase.classification?.name ?? '—'}</div>
+                            <div className="text-muted-foreground">
+                                Classification
+                            </div>
+                            <div>
+                                {testCase.classification?.name ?? '—'}
+                            </div>
                         </div>
+
                         <div>
-                            <div className="text-muted-foreground">Template</div>
-                            <div>{testCase.template?.title ?? '—'}</div>
+                            <div className="text-muted-foreground">
+                                Template
+                            </div>
+                            <div>
+                                {testCase.template?.title ?? '—'}
+                            </div>
                         </div>
+
                         <div>
-                            <div className="text-muted-foreground">Criado por</div>
-                            <div>{testCase.creator?.name ?? '—'}</div>
+                            <div className="text-muted-foreground">
+                                Created by
+                            </div>
+                            <div>
+                                {testCase.creator?.name ?? '—'}
+                            </div>
                         </div>
+
                         <div>
-                            <div className="text-muted-foreground">Atribuído a</div>
-                            <div>{testCase.assignee?.name ?? '—'}</div>
+                            <div className="text-muted-foreground">
+                                Assigned to
+                            </div>
+                            <div>
+                                {testCase.assignee?.name ?? '—'}
+                            </div>
                         </div>
                     </CardContent>
                 </Card>
@@ -188,23 +273,39 @@ export default function ShowTestCase({ testCase, assignableUsers }: Props) {
                 <Card>
                     <CardHeader>
                         <CardTitle className="text-sm font-medium text-muted-foreground">
-                            Passos ({testCase.steps.length})
+                            Steps ({testCase.steps.length})
                         </CardTitle>
                     </CardHeader>
+
                     <CardContent className="flex flex-col gap-3">
                         {testCase.steps.map((step) => (
-                            <div key={step.id} className="flex flex-col gap-2 rounded-lg border p-4">
-                                <span className="text-sm font-medium">Passo {step.order}</span>
+                            <div
+                                key={step.id}
+                                className="flex flex-col gap-2 rounded-lg border p-4"
+                            >
+                                <span className="text-sm font-medium">
+                                    Step {step.order}
+                                </span>
 
                                 <div>
-                                    <div className="text-xs text-muted-foreground">Ação</div>
-                                    <p className="text-sm">{step.description}</p>
+                                    <div className="text-xs text-muted-foreground">
+                                        Action
+                                    </div>
+
+                                    <p className="text-sm">
+                                        {step.description}
+                                    </p>
                                 </div>
 
                                 {step.expected_result && (
                                     <div>
-                                        <div className="text-xs text-muted-foreground">Resultado esperado</div>
-                                        <p className="text-sm">{step.expected_result}</p>
+                                        <div className="text-xs text-muted-foreground">
+                                            Expected Result
+                                        </div>
+
+                                        <p className="text-sm">
+                                            {step.expected_result}
+                                        </p>
                                     </div>
                                 )}
                             </div>
