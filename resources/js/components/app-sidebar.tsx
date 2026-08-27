@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { BookOpen, ClipboardList, FolderGit2, LayoutGrid, ShieldCheck, Tags, Users } from 'lucide-react';
+import { BookOpen, ClipboardList, FileText, FolderGit2, LayoutGrid, ShieldCheck, Tags, Users } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
 import { index as accountsIndex } from '@/routes/accounts';
+import { index as requirementsIndex } from '@/routes/requirements';
 import { index as rolePermissionsIndex } from '@/routes/role-permissions';
 import { index as testCaseStatusesIndex } from '@/routes/test-case-statuses';
 import { index as testCasesIndex } from '@/routes/test-cases';
@@ -48,6 +49,11 @@ const managementNavItems: NavItem[] = [
         title: 'Gerenciar Status',
         href: testCaseStatusesIndex(),
         icon: Tags,
+    },
+    {
+        title: 'Gerenciar Requisitos',
+        href: requirementsIndex(),
+        icon: FileText,
     },
 ];
 

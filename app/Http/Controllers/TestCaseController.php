@@ -4,11 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\TestCases\AssignTestCaseRequest;
 use App\Http\Requests\TestCases\BulkUpdateTestCaseStatusRequest;
-use App\Http\Requests\TestCases\StoreTestCaseRequest;
+use App\Http\Requests\TestCases\LinkRequirementRequest;
 use App\Http\Requests\TestCases\StoreExecutionRequest;
+use App\Http\Requests\TestCases\StoreTestCaseRequest;
 use App\Http\Requests\TestCases\UpdateTestCaseRequest;
 use App\Models\Classification;
-use App\Models\Execution;
+use App\Models\Requirement;
 use App\Models\TestCase;
 use App\Models\TestCaseStatus;
 use App\Models\TestTemplate;
@@ -108,7 +109,16 @@ class TestCaseController extends Controller
      */
     public function show(Request $request, TestCase $testCase): Response
     {
-        $testCase->load(['classification:id,name', 'template:id,title', 'status:id,name,color', 'creator:id,name', 'assignee:id,name', 'steps', 'executions.executor:id,name']);
+        $testCase->load([
+            'classification:id,name',
+            'template:id,title',
+            'status:id,name,color',
+            'creator:id,name',
+            'assignee:id,name',
+            'steps',
+            'executions.executor:id,name',
+            'requirements' => fn ($query) => $query->orderBy('code'),
+        ]);
 
         return Inertia::render('test-cases/show', [
             'testCase' => $testCase,
@@ -119,6 +129,7 @@ class TestCaseController extends Controller
                     ->get(['id', 'name'])
                 : [],
             'executionStatuses' => ['APROVADO', 'REPROVADO', 'BLOQUEADO', 'PENDENTE'],
+            'availableRequirements' => Requirement::query()->orderBy('code')->get(['id', 'code', 'title']),
         ]);
     }
 
@@ -230,5 +241,37 @@ class TestCaseController extends Controller
         ]);
 
         return to_route('test-cases.index');
+    }
+
+    /**
+     * Link the test case to a requirement (RF017).
+     */
+    public function linkRequirement(LinkRequirementRequest $request, TestCase $testCase): RedirectResponse
+    {
+        $testCase->requirements()->syncWithoutDetaching([$request->validated('requirement_id')]);
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => __('Requisito vinculado.'),
+        ]);
+
+        return back();
+    }
+
+    /**
+     * Remove the link between the test case and a requirement.
+     */
+    public function unlinkRequirement(Request $request, TestCase $testCase): RedirectResponse
+    {
+        abort_unless($request->user()->hasRole('qa'), 403);
+
+        $testCase->requirements()->detach($request->integer('requirement_id'));
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => __('Requisito desvinculado.'),
+        ]);
+
+        return back();
     }
 }

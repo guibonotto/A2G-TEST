@@ -14,4 +14,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::put('test-cases/{testCase}', [TestCaseController::class, 'update'])->name('test-cases.update');
     Route::patch('test-cases/{testCase}/assign', [TestCaseController::class, 'assign'])->name('test-cases.assign');
     Route::delete('test-cases/{testCase}', [TestCaseController::class, 'deleteTestCase'])->name('test-cases.delete');
+    Route::post('test-cases/{testCase}/requirements', [TestCaseController::class, 'linkRequirement'])->name('test-cases.requirements.link');
+    Route::delete('test-cases/{testCase}/requirements', [TestCaseController::class, 'unlinkRequirement'])->name('test-cases.requirements.unlink');
 });

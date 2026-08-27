@@ -26,17 +26,18 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { assign, edit, index, show } from '@/routes/test-cases';
-import type { AssignableUser, TestCaseDetail } from '@/types';
+import type { AssignableUser, RequirementOption, TestCaseDetail } from '@/types';
 
 type Props = {
     testCase: TestCaseDetail;
     assignableUsers: AssignableUser[];
     executionStatuses: string[];
+    availableRequirements: RequirementOption[];
 };
 
 const UNASSIGNED = 'unassigned';
 
-export default function ShowTestCase({ testCase, assignableUsers, executionStatuses }: Props) {
+export default function ShowTestCase({ testCase, assignableUsers, executionStatuses, availableRequirements }: Props) {
     const { auth } = usePage().props;
     const [selectedAssignee, setSelectedAssignee] = useState(
         testCase.assignee ? String(testCase.assignee.id) : UNASSIGNED,
@@ -48,6 +49,38 @@ export default function ShowTestCase({ testCase, assignableUsers, executionStatu
             executionStatusFilter === 'all' ||
             execution.status === executionStatusFilter,
     );
+
+    const [linkRequirementOpen, setLinkRequirementOpen] = useState(false);
+    const [selectedRequirementId, setSelectedRequirementId] = useState('');
+    const [linkingRequirement, setLinkingRequirement] = useState(false);
+
+    const linkedRequirementIds = new Set(testCase.requirements.map((requirement) => requirement.id));
+    const linkableRequirements = availableRequirements.filter((requirement) => !linkedRequirementIds.has(requirement.id));
+
+    function submitLinkRequirement(e: FormEvent) {
+        e.preventDefault();
+        setLinkingRequirement(true);
+
+        router.post(
+            TestCaseController.linkRequirement.url(testCase),
+            { requirement_id: Number(selectedRequirementId) },
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    setSelectedRequirementId('');
+                    setLinkRequirementOpen(false);
+                },
+                onFinish: () => setLinkingRequirement(false),
+            },
+        );
+    }
+
+    function unlinkRequirement(requirementId: number) {
+        router.delete(TestCaseController.unlinkRequirement.url(testCase), {
+            data: { requirement_id: requirementId },
+            preserveScroll: true,
+        });
+    }
 
     setLayoutProps({
         breadcrumbs: [
@@ -336,6 +369,77 @@ export default function ShowTestCase({ testCase, assignableUsers, executionStatu
                                 {testCase.assignee?.name ?? '—'}
                             </div>
                         </div>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between">
+                        <CardTitle>Requisitos vinculados ({testCase.requirements.length})</CardTitle>
+
+                        {auth.user.role?.slug === 'qa' && linkableRequirements.length > 0 && (
+                            <Dialog open={linkRequirementOpen} onOpenChange={setLinkRequirementOpen}>
+                                <DialogTrigger asChild>
+                                    <Button variant="outline" size="sm">
+                                        Vincular requisito
+                                    </Button>
+                                </DialogTrigger>
+                                <DialogContent>
+                                    <DialogTitle>Vincular requisito</DialogTitle>
+                                    <DialogDescription>
+                                        Selecione um requisito para vincular a &quot;{testCase.title}&quot;.
+                                    </DialogDescription>
+
+                                    <form onSubmit={submitLinkRequirement} className="flex flex-col gap-4">
+                                        <Select value={selectedRequirementId} onValueChange={setSelectedRequirementId}>
+                                            <SelectTrigger className="w-full">
+                                                <SelectValue placeholder="Selecione um requisito" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {linkableRequirements.map((requirement) => (
+                                                    <SelectItem key={requirement.id} value={String(requirement.id)}>
+                                                        {requirement.code} — {requirement.title}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+
+                                        <DialogFooter className="gap-2">
+                                            <DialogClose asChild>
+                                                <Button type="button" variant="secondary">
+                                                    Cancelar
+                                                </Button>
+                                            </DialogClose>
+                                            <Button type="submit" disabled={!selectedRequirementId || linkingRequirement}>
+                                                Vincular
+                                            </Button>
+                                        </DialogFooter>
+                                    </form>
+                                </DialogContent>
+                            </Dialog>
+                        )}
+                    </CardHeader>
+
+                    <CardContent className="flex flex-col gap-2">
+                        {testCase.requirements.length === 0 ? (
+                            <p className="text-sm text-muted-foreground">Nenhum requisito vinculado.</p>
+                        ) : (
+                            testCase.requirements.map((requirement) => (
+                                <div
+                                    key={requirement.id}
+                                    className="flex items-center justify-between gap-2 rounded-lg border p-3"
+                                >
+                                    <div className="text-sm">
+                                        <span className="font-medium">{requirement.code}</span> — {requirement.title}
+                                    </div>
+
+                                    {auth.user.role?.slug === 'qa' && (
+                                        <Button variant="ghost" size="sm" onClick={() => unlinkRequirement(requirement.id)}>
+                                            Desvincular
+                                        </Button>
+                                    )}
+                                </div>
+                            ))
+                        )}
                     </CardContent>
                 </Card>
 

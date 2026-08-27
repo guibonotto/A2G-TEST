@@ -50,6 +50,7 @@ export type TestCaseDetail = {
     assignee: AssignableUser | null;
     steps: TestStep[];
     executions: Execution[];
+    requirements: LinkedRequirement[];
     created_at: string;
 };
 
@@ -59,6 +60,12 @@ export type Execution = {
     comment: string | null;
     execution_date: string;
     executor: { id: number; name: string } | null;
+};
+
+export type LinkedRequirement = {
+    id: number;
+    code: string;
+    title: string;
 };
 
 export type TestCaseFilters = {

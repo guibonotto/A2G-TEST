@@ -71,5 +71,7 @@ class DatabaseSeeder extends Seeder
         foreach ($statuses as $status) {
             TestCaseStatus::firstOrCreate(['name' => $status['name']], $status);
         }
+
+        $this->call(RequirementSeeder::class);
     }
 }

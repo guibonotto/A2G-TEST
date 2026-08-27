@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
@@ -68,5 +69,10 @@ class TestCase extends Model
     public function executions(): HasMany
     {
         return $this->hasMany(Execution::class)->latest('execution_date');
+    }
+
+    public function requirements(): BelongsToMany
+    {
+        return $this->belongsToMany(Requirement::class, 'test_case_requirements');
     }
 }

@@ -17,11 +17,6 @@ class TestCaseRequirement extends Model
     protected $table = 'test_case_requirements';
 
     /**
-     * Indicates if the model has an auto-incrementing primary key.
-     */
-    public $incrementing = false;
-
-    /**
      * Indicates if the model should have timestamps.
      */
     public $timestamps = false;

@@ -71,7 +71,10 @@ class DashboardTest extends TestCase
                 ->where('statusBreakdown.1.name', 'Aprovado')
                 ->where('statusBreakdown.1.total', 1)
                 ->where('classificationBreakdown.0.total', 3)
-                ->has('workload', 1)
+                ->has('workload', 2)
+                ->where('workload.0.name', 'Sem responsável')
+                ->where('workload.0.total', 2)
+                ->where('workload.1.total', 1)
                 ->has('creationTrend')
             );
     }
