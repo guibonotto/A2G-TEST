@@ -2,11 +2,13 @@
 
 namespace Database\Seeders;
 
+use App\Enums\Permission;
+use App\Models\Classification;
 use App\Models\Role;
+use App\Models\TestCaseStatus;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Str;
 
 class DatabaseSeeder extends Seeder
 {
@@ -17,17 +19,19 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        $allPermissions = array_map(fn (Permission $permission) => $permission->value, Permission::cases());
+
         $roles = [
-            ['name' => 'QA / Tester',   'slug' => 'qa'],
-            ['name' => 'Desenvolvedor',  'slug' => 'developer'],
-            ['name' => 'Administrador',  'slug' => 'admin'],
-            ['name' => 'Visualizador',   'slug' => 'viewer'],
+            ['name' => 'QA / Tester',   'slug' => 'qa', 'permissions' => $allPermissions],
+            ['name' => 'Desenvolvedor',  'slug' => 'developer', 'permissions' => []],
+            ['name' => 'Administrador',  'slug' => 'admin', 'permissions' => $allPermissions],
+            ['name' => 'Visualizador',   'slug' => 'viewer', 'permissions' => []],
         ];
 
         foreach ($roles as $role) {
-            Role::firstOrCreate(
+            Role::updateOrCreate(
                 ['slug' => $role['slug']],
-                ['uuid' => Str::uuid(), 'name' => $role['name']]
+                ['name' => $role['name'], 'permissions' => $role['permissions']]
             );
         }
 
@@ -48,5 +52,26 @@ class DatabaseSeeder extends Seeder
                 ]
             );
         }
+
+        $classifications = [
+            ['name' => 'Unitário', 'description' => 'Testes de unidade verificam o comportamento de componentes individuais do sistema.'],
+            ['name' => 'Integração', 'description' => 'Testes de integração avaliam a interação entre diferentes módulos ou serviços.'],
+        ];
+        foreach ($classifications as $classification) {
+            Classification::firstOrCreate(['name' => $classification['name']], $classification);
+        }
+
+        $statuses = [
+            ['name' => 'Aprovado', 'color' => 'success'],
+            ['name' => 'Reprovado', 'color' => 'destructive'],
+            ['name' => 'Pendente', 'color' => 'warning'],
+            ['name' => 'Cancelado', 'color' => 'secondary'],
+            ['name' => 'Regressão', 'color' => 'info'],
+        ];
+        foreach ($statuses as $status) {
+            TestCaseStatus::firstOrCreate(['name' => $status['name']], $status);
+        }
+
+        $this->call(RequirementSeeder::class);
     }
 }

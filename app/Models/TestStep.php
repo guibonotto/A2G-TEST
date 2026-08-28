@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[Fillable([
     'test_case_id',
@@ -22,4 +23,9 @@ class TestStep extends Model
      * Indicates if the model should have timestamps.
      */
     public $timestamps = false;
+
+    public function testCase(): BelongsTo
+    {
+        return $this->belongsTo(TestCase::class);
+    }
 }

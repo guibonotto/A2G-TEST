@@ -13,20 +13,23 @@ type PageProps = {
     auth: Auth;
 };
 
+const labelClassName =
+    'font-mono text-xs tracking-wide text-muted-foreground uppercase';
+
 export default function Profile() {
     const { auth } = usePage<PageProps>().props;
 
     return (
         <>
-            <Head title="Profile settings" />
+            <Head title="Configurações do perfil" />
 
-            <h1 className="sr-only">Profile settings</h1>
+            <h1 className="sr-only">Configurações do perfil</h1>
 
-            <div className="space-y-6">
+            <div className="space-y-8">
                 <Heading
                     variant="small"
-                    title="Profile"
-                    description="Update your name and email address"
+                    title="Perfil"
+                    description="Atualize seu nome e endereço de e-mail."
                 />
 
                 <Form
@@ -34,63 +37,88 @@ export default function Profile() {
                     options={{
                         preserveScroll: true,
                     }}
-                    className="space-y-6"
+                    className="max-w-xl space-y-6"
                 >
                     {({ processing, errors }) => (
                         <>
+                            {/* Nome */}
                             <div className="grid gap-2">
-                                <Label htmlFor="name">Name</Label>
+                                <Label
+                                    htmlFor="name"
+                                    className={labelClassName}
+                                >
+                                    Nome completo
+                                </Label>
 
                                 <Input
                                     id="name"
-                                    className="mt-1 block w-full"
+                                    className="h-10 bg-secondary font-mono text-sm"
                                     defaultValue={auth.user.name}
                                     name="name"
                                     required
                                     autoComplete="name"
-                                    placeholder="Full name"
+                                    placeholder="Seu nome completo"
                                 />
 
                                 <InputError
-                                    className="mt-2"
+                                    className="mt-1"
                                     message={errors.name}
                                 />
                             </div>
 
+                            {/* E-mail */}
                             <div className="grid gap-2">
-                                <Label htmlFor="email">Email address</Label>
+                                <Label
+                                    htmlFor="email"
+                                    className={labelClassName}
+                                >
+                                    E-mail
+                                </Label>
 
                                 <Input
                                     id="email"
                                     type="email"
-                                    className="mt-1 block w-full"
+                                    className="h-10 bg-secondary font-mono text-sm"
                                     defaultValue={auth.user.email}
                                     name="email"
                                     required
                                     autoComplete="username"
-                                    placeholder="Email address"
+                                    placeholder="seu@email.com"
                                 />
 
                                 <InputError
-                                    className="mt-2"
+                                    className="mt-1"
                                     message={errors.email}
                                 />
                             </div>
 
+                            {/* Ação */}
                             <div className="flex items-center gap-4">
                                 <Button
+                                    type="submit"
                                     disabled={processing}
                                     data-test="update-profile-button"
                                 >
-                                    Save
+                                    {processing
+                                        ? 'Salvando...'
+                                        : 'Salvar alterações'}
                                 </Button>
+
+                                {!processing && (
+                                    <span className="font-mono text-[10px] text-muted-foreground">
+                                        Suas informações serão atualizadas
+                                        imediatamente.
+                                    </span>
+                                )}
                             </div>
                         </>
                     )}
                 </Form>
-            </div>
 
-            <DeleteUser />
+                <div className="border-t border-border pt-8">
+                    <DeleteUser />
+                </div>
+            </div>
         </>
     );
 }
@@ -98,7 +126,7 @@ export default function Profile() {
 Profile.layout = {
     breadcrumbs: [
         {
-            title: 'Profile settings',
+            title: 'Configurações do perfil',
             href: edit(),
         },
     ],

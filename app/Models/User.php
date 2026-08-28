@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Enums\Permission;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -48,5 +49,15 @@ class User extends Authenticatable implements PasskeyUser
     public function projects(): BelongsToMany
     {
         return $this->belongsToMany(Project::class, 'project_user')->withTimestamps();
+    }
+
+    public function hasRole(string ...$slugs): bool
+    {
+        return in_array($this->role?->slug, $slugs, true);
+    }
+
+    public function hasPermission(Permission $permission): bool
+    {
+        return in_array($permission->value, $this->role?->permissions ?? [], true);
     }
 }

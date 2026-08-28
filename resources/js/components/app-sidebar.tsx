@@ -1,5 +1,5 @@
-import { Link } from '@inertiajs/react';
-import { BookOpen, FolderGit2, LayoutGrid, Users } from 'lucide-react';
+import { Link, usePage } from '@inertiajs/react';
+import { BookOpen, ClipboardList, FileText, FolderGit2, LayoutGrid, ShieldCheck, Tags, Users } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
@@ -14,7 +14,12 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
+import { index as accountsIndex } from '@/routes/accounts';
 import { index as projectsIndex } from '@/routes/projects';
+import { index as requirementsIndex } from '@/routes/requirements';
+import { index as rolePermissionsIndex } from '@/routes/role-permissions';
+import { index as testCaseStatusesIndex } from '@/routes/test-case-statuses';
+import { index as testCasesIndex } from '@/routes/test-cases';
 import type { NavItem } from '@/types';
 
 const mainNavItems: NavItem[] = [
@@ -27,6 +32,34 @@ const mainNavItems: NavItem[] = [
         title: 'Projetos',
         href: projectsIndex(),
         icon: Users,
+    },
+    {
+        title: 'Casos de teste',
+        href: testCasesIndex(),
+        icon: ClipboardList,
+    },
+];
+
+const managementNavItems: NavItem[] = [
+    {
+        title: 'Gerenciar Contas',
+        href: accountsIndex(),
+        icon: Users,
+    },
+    {
+        title: 'Gerenciar Permissões',
+        href: rolePermissionsIndex(),
+        icon: ShieldCheck,
+    },
+    {
+        title: 'Gerenciar Status',
+        href: testCaseStatusesIndex(),
+        icon: Tags,
+    },
+    {
+        title: 'Gerenciar Requisitos',
+        href: requirementsIndex(),
+        icon: FileText,
     },
 ];
 
@@ -44,6 +77,9 @@ const footerNavItems: NavItem[] = [
 ];
 
 export function AppSidebar() {
+    const { auth } = usePage().props;
+    const isQa = auth.user.role?.slug === 'qa';
+
     return (
         <Sidebar collapsible="icon" variant="inset">
             <SidebarHeader>
@@ -60,6 +96,7 @@ export function AppSidebar() {
 
             <SidebarContent>
                 <NavMain items={mainNavItems} />
+                {isQa && <NavMain items={managementNavItems} label="Gerenciamento" />}
             </SidebarContent>
 
             <SidebarFooter>
