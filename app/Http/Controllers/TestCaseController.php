@@ -9,6 +9,7 @@ use App\Http\Requests\TestCases\StoreExecutionRequest;
 use App\Http\Requests\TestCases\StoreTestCaseRequest;
 use App\Http\Requests\TestCases\UpdateTestCaseRequest;
 use App\Models\Classification;
+use App\Models\Project;
 use App\Models\Requirement;
 use App\Models\TestCase;
 use App\Models\TestCaseStatus;
@@ -27,12 +28,16 @@ class TestCaseController extends Controller
      */
     public function index(Request $request): Response
     {
+        $project = Project::current();
+        abort_unless($project, 404);
+
         $search = $request->string('search')->trim()->toString();
         $classificationId = $request->integer('classification_id') ?: null;
         $statusId = $request->integer('status_id') ?: null;
         $assignedToMe = $request->boolean('assigned_to_me');
 
         $testCases = TestCase::query()
+            ->where('project_id', $project->id)
             ->with(['classification:id,name', 'status:id,name,color', 'creator:id,name', 'assignee:id,name'])
             ->withCount('steps')
             ->when($search !== '', function ($query) use ($search) {
@@ -79,10 +84,14 @@ class TestCaseController extends Controller
      */
     public function store(StoreTestCaseRequest $request): RedirectResponse
     {
-        $testCase = DB::transaction(function () use ($request) {
+        $project = Project::current();
+        abort_unless($project, 404);
+
+        $testCase = DB::transaction(function () use ($request, $project) {
             $testCase = TestCase::create([
                 ...$request->safe()->only(['title', 'description', 'classification_id', 'template_id', 'status_id']),
                 'created_by' => $request->user()->id,
+                'project_id' => $project->id,
             ]);
 
             foreach ($request->safe()->array('steps') as $index => $step) {
@@ -109,6 +118,8 @@ class TestCaseController extends Controller
      */
     public function show(Request $request, TestCase $testCase): Response
     {
+        abort_unless($request->user()->can('view', $testCase), 403);
+
         $testCase->load([
             'classification:id,name',
             'template:id,title',
@@ -151,8 +162,10 @@ class TestCaseController extends Controller
     /**
      * Show the form for editing the specified test case.
      */
-    public function edit(TestCase $testCase): Response
+    public function edit(Request $request, TestCase $testCase): Response
     {
+        abort_unless($request->user()->can('update', $testCase), 403);
+
         $testCase->load('steps');
 
         return Inertia::render('test-cases/edit', [
@@ -199,6 +212,7 @@ class TestCaseController extends Controller
     {
         $count = TestCase::query()
             ->whereIn('id', $request->validated('ids'))
+            ->whereHas('project.members', fn ($query) => $query->whereKey($request->user()->id))
             ->update(['status_id' => $request->validated('status_id')]);
 
         Inertia::flash('toast', [
@@ -229,8 +243,10 @@ class TestCaseController extends Controller
     /**
      * Remove the specified test case from storage.
      */
-    public function deleteTestCase(TestCase $testCase): RedirectResponse
+    public function deleteTestCase(Request $request, TestCase $testCase): RedirectResponse
     {
+        abort_unless($request->user()->can('delete', $testCase), 403);
+
         $title = $testCase->title;
 
         $testCase->delete();
@@ -263,7 +279,7 @@ class TestCaseController extends Controller
      */
     public function unlinkRequirement(Request $request, TestCase $testCase): RedirectResponse
     {
-        abort_unless($request->user()->hasRole('qa'), 403);
+        abort_unless($request->user()->hasRole('qa') && $request->user()->can('view', $testCase), 403);
 
         $testCase->requirements()->detach($request->integer('requirement_id'));
 

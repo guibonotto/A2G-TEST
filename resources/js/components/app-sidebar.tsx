@@ -77,7 +77,7 @@ const footerNavItems: NavItem[] = [
 ];
 
 export function AppSidebar() {
-    const { auth } = usePage().props;
+    const { auth, currentProject } = usePage().props;
     const isQa = auth.user.role?.slug === 'qa';
 
     return (
@@ -91,6 +91,16 @@ export function AppSidebar() {
                             </Link>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
+                    {currentProject && (
+                        <SidebarMenuItem>
+                            <SidebarMenuButton size="sm" asChild>
+                                <Link href={projectsIndex()} className="text-muted-foreground">
+                                    <Users />
+                                    <span className="truncate">{currentProject.name}</span>
+                                </Link>
+                            </SidebarMenuButton>
+                        </SidebarMenuItem>
+                    )}
                 </SidebarMenu>
             </SidebarHeader>
 

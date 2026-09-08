@@ -7,5 +7,6 @@ Route::middleware(['auth', 'verified'])->prefix('projects')->name('projects.')->
     Route::get('/', [ProjectController::class, 'index'])->name('index');
     Route::post('/', [ProjectController::class, 'store'])->name('store');
     Route::post('join', [ProjectController::class, 'join'])->name('join');
+    Route::post('{project}/select', [ProjectController::class, 'select'])->name('select');
     Route::get('{project}', [ProjectController::class, 'show'])->name('show');
 });

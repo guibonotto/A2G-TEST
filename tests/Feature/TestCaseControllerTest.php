@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Classification;
+use App\Models\Project;
 use App\Models\Role;
 use App\Models\TestCase as TestCaseModel;
 use App\Models\TestCaseStatus;
@@ -28,13 +29,29 @@ class TestCaseControllerTest extends TestCase
         return TestCaseStatus::firstOrCreate(['name' => $name], ['color' => $color]);
     }
 
+    /**
+     * Create a project, attach the given user as a member, mark it as the
+     * user's active project in session, and authenticate as that user.
+     */
+    private function actingAsProjectMember(User $user): Project
+    {
+        $project = Project::factory()->create();
+        $project->members()->attach($user);
+        $this->withSession(['current_project_id' => $project->id]);
+        $this->actingAs($user);
+
+        return $project;
+    }
+
     public function test_guests_cannot_access_test_cases(): void
     {
         $classification = Classification::create(['name' => 'Funcional']);
+        $project = Project::factory()->create();
         $testCase = TestCaseModel::create([
             'title' => 'Login com credenciais válidas',
             'classification_id' => $classification->id,
             'created_by' => User::factory()->create()->id,
+            'project_id' => $project->id,
         ]);
 
         $this->get(route('test-cases.index'))->assertRedirect(route('login'));
@@ -44,19 +61,30 @@ class TestCaseControllerTest extends TestCase
         $this->delete(route('test-cases.delete', $testCase))->assertRedirect(route('login'));
     }
 
+    public function test_authenticated_users_without_a_project_are_redirected_to_projects(): void
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        $this->get(route('test-cases.index'))->assertRedirect(route('projects.index'));
+        $this->get(route('test-cases.create'))->assertRedirect(route('projects.index'));
+    }
+
     public function test_index_lists_existing_test_cases(): void
     {
         $user = User::factory()->create();
+        $project = $this->actingAsProjectMember($user);
         $classification = Classification::create(['name' => 'Funcional']);
 
         $testCase = TestCaseModel::create([
             'title' => 'Login com credenciais válidas',
             'classification_id' => $classification->id,
             'created_by' => $user->id,
+            'project_id' => $project->id,
         ]);
         $testCase->steps()->create(['order' => 1, 'description' => 'Acessar tela de login']);
 
-        $response = $this->actingAs($user)->get(route('test-cases.index'));
+        $response = $this->get(route('test-cases.index'));
 
         $response->assertInertia(fn (Assert $page) => $page
             ->component('test-cases/index')
@@ -69,20 +97,23 @@ class TestCaseControllerTest extends TestCase
     public function test_index_can_be_filtered_by_search_term(): void
     {
         $user = User::factory()->create();
+        $project = $this->actingAsProjectMember($user);
         $classification = Classification::create(['name' => 'Funcional']);
 
         $matching = TestCaseModel::create([
             'title' => 'Login com credenciais válidas',
             'classification_id' => $classification->id,
             'created_by' => $user->id,
+            'project_id' => $project->id,
         ]);
         TestCaseModel::create([
             'title' => 'Cadastro de usuário',
             'classification_id' => $classification->id,
             'created_by' => $user->id,
+            'project_id' => $project->id,
         ]);
 
-        $response = $this->actingAs($user)->get(route('test-cases.index', ['search' => 'login']));
+        $response = $this->get(route('test-cases.index', ['search' => 'login']));
 
         $response->assertInertia(fn (Assert $page) => $page
             ->component('test-cases/index')
@@ -94,20 +125,23 @@ class TestCaseControllerTest extends TestCase
     public function test_index_can_be_filtered_by_id(): void
     {
         $user = User::factory()->create();
+        $project = $this->actingAsProjectMember($user);
         $classification = Classification::create(['name' => 'Funcional']);
 
         $matching = TestCaseModel::create([
             'title' => 'Login com credenciais válidas',
             'classification_id' => $classification->id,
             'created_by' => $user->id,
+            'project_id' => $project->id,
         ]);
         TestCaseModel::create([
             'title' => 'Cadastro de usuário',
             'classification_id' => $classification->id,
             'created_by' => $user->id,
+            'project_id' => $project->id,
         ]);
 
-        $response = $this->actingAs($user)->get(route('test-cases.index', ['search' => (string) $matching->id]));
+        $response = $this->get(route('test-cases.index', ['search' => (string) $matching->id]));
 
         $response->assertInertia(fn (Assert $page) => $page
             ->component('test-cases/index')
@@ -119,6 +153,7 @@ class TestCaseControllerTest extends TestCase
     public function test_index_can_be_filtered_by_classification(): void
     {
         $user = User::factory()->create();
+        $project = $this->actingAsProjectMember($user);
         $classification = Classification::create(['name' => 'Unitário']);
         $otherClassification = Classification::create(['name' => 'Integração']);
 
@@ -126,14 +161,16 @@ class TestCaseControllerTest extends TestCase
             'title' => 'Login com credenciais válidas',
             'classification_id' => $classification->id,
             'created_by' => $user->id,
+            'project_id' => $project->id,
         ]);
         TestCaseModel::create([
             'title' => 'Cadastro de usuário',
             'classification_id' => $otherClassification->id,
             'created_by' => $user->id,
+            'project_id' => $project->id,
         ]);
 
-        $response = $this->actingAs($user)->get(route('test-cases.index', ['classification_id' => $classification->id]));
+        $response = $this->get(route('test-cases.index', ['classification_id' => $classification->id]));
 
         $response->assertInertia(fn (Assert $page) => $page
             ->component('test-cases/index')
@@ -145,6 +182,7 @@ class TestCaseControllerTest extends TestCase
     public function test_index_can_be_filtered_by_status(): void
     {
         $user = User::factory()->create();
+        $project = $this->actingAsProjectMember($user);
         $classification = Classification::create(['name' => 'Funcional']);
         $approvedStatus = $this->createStatus('Aprovado', 'success');
         $pendingStatus = $this->createStatus('Pendente', 'warning');
@@ -154,15 +192,17 @@ class TestCaseControllerTest extends TestCase
             'classification_id' => $classification->id,
             'created_by' => $user->id,
             'status_id' => $approvedStatus->id,
+            'project_id' => $project->id,
         ]);
         TestCaseModel::create([
             'title' => 'Cadastro de usuário',
             'classification_id' => $classification->id,
             'created_by' => $user->id,
             'status_id' => $pendingStatus->id,
+            'project_id' => $project->id,
         ]);
 
-        $response = $this->actingAs($user)->get(route('test-cases.index', ['status_id' => $approvedStatus->id]));
+        $response = $this->get(route('test-cases.index', ['status_id' => $approvedStatus->id]));
 
         $response->assertInertia(fn (Assert $page) => $page
             ->component('test-cases/index')
@@ -174,6 +214,7 @@ class TestCaseControllerTest extends TestCase
     public function test_index_can_be_filtered_by_assigned_to_me(): void
     {
         $qa = $this->createUserWithRole('qa');
+        $project = $this->actingAsProjectMember($qa);
         $classification = Classification::create(['name' => 'Funcional']);
 
         $assignedToMe = TestCaseModel::create([
@@ -181,14 +222,16 @@ class TestCaseControllerTest extends TestCase
             'classification_id' => $classification->id,
             'created_by' => $qa->id,
             'assigned_to' => $qa->id,
+            'project_id' => $project->id,
         ]);
         TestCaseModel::create([
             'title' => 'Cadastro de usuário',
             'classification_id' => $classification->id,
             'created_by' => $qa->id,
+            'project_id' => $project->id,
         ]);
 
-        $response = $this->actingAs($qa)->get(route('test-cases.index', ['assigned_to_me' => '1']));
+        $response = $this->get(route('test-cases.index', ['assigned_to_me' => '1']));
 
         $response->assertInertia(fn (Assert $page) => $page
             ->component('test-cases/index')
@@ -200,12 +243,14 @@ class TestCaseControllerTest extends TestCase
     public function test_a_new_test_case_has_no_status_by_default(): void
     {
         $user = User::factory()->create();
+        $project = Project::factory()->create();
         $classification = Classification::create(['name' => 'Funcional']);
 
         TestCaseModel::create([
             'title' => 'Login com credenciais válidas',
             'classification_id' => $classification->id,
             'created_by' => $user->id,
+            'project_id' => $project->id,
         ]);
 
         $this->assertDatabaseHas('test_cases', [
@@ -217,9 +262,10 @@ class TestCaseControllerTest extends TestCase
     public function test_create_screen_can_be_rendered(): void
     {
         $user = User::factory()->create();
+        $this->actingAsProjectMember($user);
         Classification::create(['name' => 'Funcional']);
 
-        $response = $this->actingAs($user)->get(route('test-cases.create'));
+        $response = $this->get(route('test-cases.create'));
 
         $response->assertInertia(fn (Assert $page) => $page
             ->component('test-cases/create')
@@ -230,13 +276,14 @@ class TestCaseControllerTest extends TestCase
     public function test_a_test_case_can_be_created_with_steps(): void
     {
         $user = User::factory()->create();
+        $project = $this->actingAsProjectMember($user);
         $classification = Classification::create(['name' => 'Funcional']);
         $template = TestTemplate::create([
             'title' => 'Template padrão',
             'created_by' => $user->id,
         ]);
 
-        $response = $this->actingAs($user)->post(route('test-cases.store'), [
+        $response = $this->post(route('test-cases.store'), [
             'title' => 'Login com credenciais válidas',
             'description' => 'Garante que o login funciona com dados corretos.',
             'classification_id' => $classification->id,
@@ -253,6 +300,7 @@ class TestCaseControllerTest extends TestCase
             'classification_id' => $classification->id,
             'template_id' => $template->id,
             'created_by' => $user->id,
+            'project_id' => $project->id,
         ]);
 
         $testCase = TestCaseModel::where('title', 'Login com credenciais válidas')->firstOrFail();
@@ -267,10 +315,11 @@ class TestCaseControllerTest extends TestCase
     public function test_a_test_case_can_be_created_with_a_status(): void
     {
         $user = User::factory()->create();
+        $this->actingAsProjectMember($user);
         $classification = Classification::create(['name' => 'Funcional']);
         $status = $this->createStatus('Regressão', 'info');
 
-        $this->actingAs($user)->post(route('test-cases.store'), [
+        $this->post(route('test-cases.store'), [
             'title' => 'Login com credenciais válidas',
             'classification_id' => $classification->id,
             'status_id' => $status->id,
@@ -288,6 +337,7 @@ class TestCaseControllerTest extends TestCase
     public function test_a_test_case_can_be_viewed(): void
     {
         $user = User::factory()->create();
+        $project = $this->actingAsProjectMember($user);
         $classification = Classification::create(['name' => 'Funcional']);
 
         $testCase = TestCaseModel::create([
@@ -295,6 +345,7 @@ class TestCaseControllerTest extends TestCase
             'description' => 'Garante que o login funciona.',
             'classification_id' => $classification->id,
             'created_by' => $user->id,
+            'project_id' => $project->id,
         ]);
         $testCase->steps()->create([
             'order' => 1,
@@ -302,7 +353,7 @@ class TestCaseControllerTest extends TestCase
             'expected_result' => 'Tela carregada',
         ]);
 
-        $response = $this->actingAs($user)->get(route('test-cases.show', $testCase));
+        $response = $this->get(route('test-cases.show', $testCase));
 
         $response->assertInertia(fn (Assert $page) => $page
             ->component('test-cases/show')
@@ -313,17 +364,36 @@ class TestCaseControllerTest extends TestCase
         );
     }
 
+    public function test_a_user_cannot_view_a_test_case_from_another_project(): void
+    {
+        $user = User::factory()->create();
+        $this->actingAsProjectMember($user);
+        $classification = Classification::create(['name' => 'Funcional']);
+
+        $otherProject = Project::factory()->create();
+        $testCase = TestCaseModel::create([
+            'title' => 'Login com credenciais válidas',
+            'classification_id' => $classification->id,
+            'created_by' => $user->id,
+            'project_id' => $otherProject->id,
+        ]);
+
+        $this->get(route('test-cases.show', $testCase))->assertForbidden();
+    }
+
     public function test_a_user_can_register_a_test_case_execution(): void
     {
         $user = User::factory()->create();
+        $project = $this->actingAsProjectMember($user);
         $classification = Classification::create(['name' => 'Funcional']);
         $testCase = TestCaseModel::create([
             'title' => 'Login com credenciais válidas',
             'classification_id' => $classification->id,
             'created_by' => $user->id,
+            'project_id' => $project->id,
         ]);
 
-        $response = $this->actingAs($user)->post(route('test-cases.executions.store', $testCase), [
+        $response = $this->post(route('test-cases.executions.store', $testCase), [
             'status' => 'APROVADO',
             'comment' => 'Execução concluída com sucesso.',
             'execution_date' => '2026-08-23 10:30:00',
@@ -341,11 +411,13 @@ class TestCaseControllerTest extends TestCase
     public function test_test_case_detail_includes_execution_history(): void
     {
         $user = User::factory()->create();
+        $project = $this->actingAsProjectMember($user);
         $classification = Classification::create(['name' => 'Funcional']);
         $testCase = TestCaseModel::create([
             'title' => 'Login com credenciais válidas',
             'classification_id' => $classification->id,
             'created_by' => $user->id,
+            'project_id' => $project->id,
         ]);
 
         $testCase->executions()->create([
@@ -355,7 +427,7 @@ class TestCaseControllerTest extends TestCase
             'execution_date' => '2026-08-23 11:00:00',
         ]);
 
-        $this->actingAs($user)->get(route('test-cases.show', $testCase))
+        $this->get(route('test-cases.show', $testCase))
             ->assertInertia(fn (Assert $page) => $page
                 ->component('test-cases/show')
                 ->has('testCase.executions', 1)
@@ -373,10 +445,15 @@ class TestCaseControllerTest extends TestCase
         $developer = $this->createUserWithRole('developer');
         $classification = Classification::create(['name' => 'Funcional']);
 
+        $project = Project::factory()->create();
+        $project->members()->attach([$qa->id, $developer->id]);
+        $this->withSession(['current_project_id' => $project->id]);
+
         $testCase = TestCaseModel::create([
             'title' => 'Login com credenciais válidas',
             'classification_id' => $classification->id,
             'created_by' => $qa->id,
+            'project_id' => $project->id,
         ]);
 
         $this->actingAs($qa)->get(route('test-cases.show', $testCase))
@@ -395,8 +472,9 @@ class TestCaseControllerTest extends TestCase
     public function test_creation_fails_without_a_classification(): void
     {
         $user = User::factory()->create();
+        $this->actingAsProjectMember($user);
 
-        $response = $this->actingAs($user)->post(route('test-cases.store'), [
+        $response = $this->post(route('test-cases.store'), [
             'title' => 'Login com credenciais válidas',
             'steps' => [
                 ['description' => 'Acessar a tela de login'],
@@ -410,9 +488,10 @@ class TestCaseControllerTest extends TestCase
     public function test_creation_fails_without_at_least_one_step(): void
     {
         $user = User::factory()->create();
+        $this->actingAsProjectMember($user);
         $classification = Classification::create(['name' => 'Funcional']);
 
-        $response = $this->actingAs($user)->post(route('test-cases.store'), [
+        $response = $this->post(route('test-cases.store'), [
             'title' => 'Login com credenciais válidas',
             'classification_id' => $classification->id,
             'steps' => [],
@@ -425,16 +504,18 @@ class TestCaseControllerTest extends TestCase
     public function test_edit_screen_can_be_rendered(): void
     {
         $user = User::factory()->create();
+        $project = $this->actingAsProjectMember($user);
         $classification = Classification::create(['name' => 'Funcional']);
 
         $testCase = TestCaseModel::create([
             'title' => 'Login com credenciais válidas',
             'classification_id' => $classification->id,
             'created_by' => $user->id,
+            'project_id' => $project->id,
         ]);
         $testCase->steps()->create(['order' => 1, 'description' => 'Acessar tela de login']);
 
-        $response = $this->actingAs($user)->get(route('test-cases.edit', $testCase));
+        $response = $this->get(route('test-cases.edit', $testCase));
 
         $response->assertInertia(fn (Assert $page) => $page
             ->component('test-cases/edit')
@@ -446,6 +527,7 @@ class TestCaseControllerTest extends TestCase
     public function test_a_test_case_can_be_updated_with_steps(): void
     {
         $user = User::factory()->create();
+        $project = $this->actingAsProjectMember($user);
         $classification = Classification::create(['name' => 'Funcional']);
         $otherClassification = Classification::create(['name' => 'Regressão']);
 
@@ -453,10 +535,11 @@ class TestCaseControllerTest extends TestCase
             'title' => 'Login com credenciais válidas',
             'classification_id' => $classification->id,
             'created_by' => $user->id,
+            'project_id' => $project->id,
         ]);
         $testCase->steps()->create(['order' => 1, 'description' => 'Passo antigo']);
 
-        $response = $this->actingAs($user)->put(route('test-cases.update', $testCase), [
+        $response = $this->put(route('test-cases.update', $testCase), [
             'title' => 'Login com credenciais inválidas',
             'description' => 'Garante que o login falha com dados incorretos.',
             'classification_id' => $otherClassification->id,
@@ -482,6 +565,7 @@ class TestCaseControllerTest extends TestCase
     public function test_a_test_case_status_can_be_updated(): void
     {
         $user = User::factory()->create();
+        $project = $this->actingAsProjectMember($user);
         $classification = Classification::create(['name' => 'Funcional']);
         $pendingStatus = $this->createStatus('Pendente', 'warning');
         $rejectedStatus = $this->createStatus('Reprovado', 'destructive');
@@ -491,10 +575,11 @@ class TestCaseControllerTest extends TestCase
             'classification_id' => $classification->id,
             'created_by' => $user->id,
             'status_id' => $pendingStatus->id,
+            'project_id' => $project->id,
         ]);
         $testCase->steps()->create(['order' => 1, 'description' => 'Passo antigo']);
 
-        $this->actingAs($user)->put(route('test-cases.update', $testCase), [
+        $this->put(route('test-cases.update', $testCase), [
             'title' => $testCase->title,
             'classification_id' => $classification->id,
             'status_id' => $rejectedStatus->id,
@@ -512,16 +597,18 @@ class TestCaseControllerTest extends TestCase
     public function test_update_fails_without_a_classification(): void
     {
         $user = User::factory()->create();
+        $project = $this->actingAsProjectMember($user);
         $classification = Classification::create(['name' => 'Funcional']);
 
         $testCase = TestCaseModel::create([
             'title' => 'Login com credenciais válidas',
             'classification_id' => $classification->id,
             'created_by' => $user->id,
+            'project_id' => $project->id,
         ]);
         $testCase->steps()->create(['order' => 1, 'description' => 'Passo antigo']);
 
-        $response = $this->actingAs($user)->put(route('test-cases.update', $testCase), [
+        $response = $this->put(route('test-cases.update', $testCase), [
             'title' => 'Título alterado',
             'steps' => [
                 ['description' => 'Acessar a tela de login'],
@@ -536,15 +623,17 @@ class TestCaseControllerTest extends TestCase
     {
         $qa = $this->createUserWithRole('qa');
         $otherQa = $this->createUserWithRole('qa');
+        $project = $this->actingAsProjectMember($qa);
         $classification = Classification::create(['name' => 'Funcional']);
 
         $testCase = TestCaseModel::create([
             'title' => 'Login com credenciais válidas',
             'classification_id' => $classification->id,
             'created_by' => $qa->id,
+            'project_id' => $project->id,
         ]);
 
-        $response = $this->actingAs($qa)->patch(route('test-cases.assign', $testCase), [
+        $response = $this->patch(route('test-cases.assign', $testCase), [
             'assigned_to' => $otherQa->id,
         ]);
 
@@ -556,15 +645,17 @@ class TestCaseControllerTest extends TestCase
     {
         $qa = $this->createUserWithRole('qa');
         $developer = $this->createUserWithRole('developer');
+        $project = $this->actingAsProjectMember($qa);
         $classification = Classification::create(['name' => 'Funcional']);
 
         $testCase = TestCaseModel::create([
             'title' => 'Login com credenciais válidas',
             'classification_id' => $classification->id,
             'created_by' => $qa->id,
+            'project_id' => $project->id,
         ]);
 
-        $response = $this->actingAs($qa)->patch(route('test-cases.assign', $testCase), [
+        $response = $this->patch(route('test-cases.assign', $testCase), [
             'assigned_to' => $developer->id,
         ]);
 
@@ -575,6 +666,7 @@ class TestCaseControllerTest extends TestCase
     public function test_qa_can_unassign_a_test_case(): void
     {
         $qa = $this->createUserWithRole('qa');
+        $project = $this->actingAsProjectMember($qa);
         $classification = Classification::create(['name' => 'Funcional']);
 
         $testCase = TestCaseModel::create([
@@ -582,9 +674,10 @@ class TestCaseControllerTest extends TestCase
             'classification_id' => $classification->id,
             'created_by' => $qa->id,
             'assigned_to' => $qa->id,
+            'project_id' => $project->id,
         ]);
 
-        $this->actingAs($qa)->patch(route('test-cases.assign', $testCase), [
+        $this->patch(route('test-cases.assign', $testCase), [
             'assigned_to' => null,
         ]);
 
@@ -595,15 +688,17 @@ class TestCaseControllerTest extends TestCase
     {
         $qa = $this->createUserWithRole('qa');
         $viewer = $this->createUserWithRole('viewer');
+        $project = $this->actingAsProjectMember($qa);
         $classification = Classification::create(['name' => 'Funcional']);
 
         $testCase = TestCaseModel::create([
             'title' => 'Login com credenciais válidas',
             'classification_id' => $classification->id,
             'created_by' => $qa->id,
+            'project_id' => $project->id,
         ]);
 
-        $response = $this->actingAs($qa)->patch(route('test-cases.assign', $testCase), [
+        $response = $this->patch(route('test-cases.assign', $testCase), [
             'assigned_to' => $viewer->id,
         ]);
 
@@ -615,15 +710,17 @@ class TestCaseControllerTest extends TestCase
     {
         $developer = $this->createUserWithRole('developer');
         $otherDeveloper = $this->createUserWithRole('developer');
+        $project = $this->actingAsProjectMember($developer);
         $classification = Classification::create(['name' => 'Funcional']);
 
         $testCase = TestCaseModel::create([
             'title' => 'Login com credenciais válidas',
             'classification_id' => $classification->id,
             'created_by' => $developer->id,
+            'project_id' => $project->id,
         ]);
 
-        $response = $this->actingAs($developer)->patch(route('test-cases.assign', $testCase), [
+        $response = $this->patch(route('test-cases.assign', $testCase), [
             'assigned_to' => $otherDeveloper->id,
         ]);
 
@@ -634,6 +731,7 @@ class TestCaseControllerTest extends TestCase
     public function test_status_can_be_updated_in_bulk(): void
     {
         $user = User::factory()->create();
+        $project = $this->actingAsProjectMember($user);
         $classification = Classification::create(['name' => 'Funcional']);
         $pendingStatus = $this->createStatus('Pendente', 'warning');
         $approvedStatus = $this->createStatus('Aprovado', 'success');
@@ -643,21 +741,24 @@ class TestCaseControllerTest extends TestCase
             'classification_id' => $classification->id,
             'created_by' => $user->id,
             'status_id' => $pendingStatus->id,
+            'project_id' => $project->id,
         ]);
         $second = TestCaseModel::create([
             'title' => 'Cadastro de usuário',
             'classification_id' => $classification->id,
             'created_by' => $user->id,
             'status_id' => $pendingStatus->id,
+            'project_id' => $project->id,
         ]);
         $untouched = TestCaseModel::create([
             'title' => 'Logout',
             'classification_id' => $classification->id,
             'created_by' => $user->id,
             'status_id' => $pendingStatus->id,
+            'project_id' => $project->id,
         ]);
 
-        $response = $this->actingAs($user)->patch(route('test-cases.bulk-status'), [
+        $response = $this->patch(route('test-cases.bulk-status'), [
             'ids' => [$first->id, $second->id],
             'status_id' => $approvedStatus->id,
         ]);
@@ -668,12 +769,46 @@ class TestCaseControllerTest extends TestCase
         $this->assertDatabaseHas('test_cases', ['id' => $untouched->id, 'status_id' => $pendingStatus->id]);
     }
 
+    public function test_bulk_status_update_only_affects_test_cases_in_the_users_project(): void
+    {
+        $user = User::factory()->create();
+        $project = $this->actingAsProjectMember($user);
+        $otherProject = Project::factory()->create();
+        $classification = Classification::create(['name' => 'Funcional']);
+        $pendingStatus = $this->createStatus('Pendente', 'warning');
+        $approvedStatus = $this->createStatus('Aprovado', 'success');
+
+        $mine = TestCaseModel::create([
+            'title' => 'Login com credenciais válidas',
+            'classification_id' => $classification->id,
+            'created_by' => $user->id,
+            'status_id' => $pendingStatus->id,
+            'project_id' => $project->id,
+        ]);
+        $otherProjectsCase = TestCaseModel::create([
+            'title' => 'Cadastro de usuário',
+            'classification_id' => $classification->id,
+            'created_by' => $user->id,
+            'status_id' => $pendingStatus->id,
+            'project_id' => $otherProject->id,
+        ]);
+
+        $this->patch(route('test-cases.bulk-status'), [
+            'ids' => [$mine->id, $otherProjectsCase->id],
+            'status_id' => $approvedStatus->id,
+        ]);
+
+        $this->assertDatabaseHas('test_cases', ['id' => $mine->id, 'status_id' => $approvedStatus->id]);
+        $this->assertDatabaseHas('test_cases', ['id' => $otherProjectsCase->id, 'status_id' => $pendingStatus->id]);
+    }
+
     public function test_bulk_status_update_fails_without_ids(): void
     {
         $user = User::factory()->create();
+        $this->actingAsProjectMember($user);
         $status = $this->createStatus('Aprovado', 'success');
 
-        $response = $this->actingAs($user)->patch(route('test-cases.bulk-status'), [
+        $response = $this->patch(route('test-cases.bulk-status'), [
             'ids' => [],
             'status_id' => $status->id,
         ]);
@@ -684,6 +819,7 @@ class TestCaseControllerTest extends TestCase
     public function test_bulk_status_update_fails_with_invalid_status(): void
     {
         $user = User::factory()->create();
+        $project = $this->actingAsProjectMember($user);
         $classification = Classification::create(['name' => 'Funcional']);
         $pendingStatus = $this->createStatus('Pendente', 'warning');
 
@@ -692,9 +828,10 @@ class TestCaseControllerTest extends TestCase
             'classification_id' => $classification->id,
             'created_by' => $user->id,
             'status_id' => $pendingStatus->id,
+            'project_id' => $project->id,
         ]);
 
-        $response = $this->actingAs($user)->patch(route('test-cases.bulk-status'), [
+        $response = $this->patch(route('test-cases.bulk-status'), [
             'ids' => [$testCase->id],
             'status_id' => 999999,
         ]);
@@ -706,16 +843,18 @@ class TestCaseControllerTest extends TestCase
     public function test_a_test_case_can_be_deleted(): void
     {
         $user = User::factory()->create();
+        $project = $this->actingAsProjectMember($user);
         $classification = Classification::create(['name' => 'Funcional']);
 
         $testCase = TestCaseModel::create([
             'title' => 'Login com credenciais válidas',
             'classification_id' => $classification->id,
             'created_by' => $user->id,
+            'project_id' => $project->id,
         ]);
         $testCase->steps()->create(['order' => 1, 'description' => 'Acessar tela de login']);
 
-        $response = $this->actingAs($user)->delete(route('test-cases.delete', $testCase));
+        $response = $this->delete(route('test-cases.delete', $testCase));
 
         $response->assertRedirect(route('test-cases.index'));
         $this->assertDatabaseMissing('test_cases', ['id' => $testCase->id]);

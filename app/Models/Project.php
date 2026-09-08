@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
 #[Fillable(['uuid', 'name', 'password', 'owner_id'])]
@@ -53,5 +54,28 @@ class Project extends Model
     public function members(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'project_user')->withTimestamps();
+    }
+
+    public function testCases(): HasMany
+    {
+        return $this->hasMany(TestCase::class);
+    }
+
+    /**
+     * Resolve the active project for the authenticated user from the session,
+     * scoped to projects they actually belong to.
+     */
+    public static function current(): ?self
+    {
+        $id = session('current_project_id');
+
+        if (! $id || ! auth()->check()) {
+            return null;
+        }
+
+        return static::query()
+            ->whereKey($id)
+            ->whereHas('members', fn ($query) => $query->whereKey(auth()->id()))
+            ->first();
     }
 }

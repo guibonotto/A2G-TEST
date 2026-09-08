@@ -9,10 +9,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { index as projectsIndex } from '@/routes/projects';
+import type { ProjectSummary } from '@/types/projects';
 
 type Mode = 'create' | 'join';
 
-export default function ProjectsIndex() {
+export default function ProjectsIndex({ myProjects }: { myProjects: ProjectSummary[] }) {
     const [mode, setMode] = useState<Mode>('create');
 
     return (
@@ -24,6 +25,27 @@ export default function ProjectsIndex() {
                     title="Projetos"
                     description="Crie um novo projeto ou entre em um projeto existente informando o ID e a senha."
                 />
+
+                {myProjects.length > 0 && (
+                    <div className="space-y-2 rounded-lg border p-4">
+                        <p className="text-sm font-medium">Seus projetos</p>
+                        <ul className="space-y-2">
+                            {myProjects.map((project) => (
+                                <li key={project.id} className="flex items-center justify-between gap-2">
+                                    <span className="truncate text-sm">{project.name}</span>
+                                    <Form {...ProjectController.select.form(project.uuid)}>
+                                        {({ processing }) => (
+                                            <Button type="submit" variant="outline" size="sm" disabled={processing}>
+                                                {processing && <Spinner />}
+                                                Entrar
+                                            </Button>
+                                        )}
+                                    </Form>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                )}
 
                 <div className="inline-flex rounded-lg border p-1">
                     <button

@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'template_id',
     'status_id',
     'assigned_to',
+    'project_id',
 ])]
 class TestCase extends Model
 {
@@ -34,6 +35,11 @@ class TestCase extends Model
         return [
             'created_at' => 'datetime',
         ];
+    }
+
+    public function project(): BelongsTo
+    {
+        return $this->belongsTo(Project::class);
     }
 
     public function classification(): BelongsTo

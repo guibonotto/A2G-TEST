@@ -15,9 +15,11 @@ class ProjectController extends Controller
     /**
      * Show the page to create a new project or join an existing one.
      */
-    public function index(): Response
+    public function index(Request $request): Response
     {
-        return Inertia::render('projects/index');
+        return Inertia::render('projects/index', [
+            'myProjects' => $request->user()->projects()->orderBy('name')->get(['projects.id', 'projects.uuid', 'projects.name']),
+        ]);
     }
 
     /**
@@ -31,6 +33,8 @@ class ProjectController extends Controller
         ]);
 
         $project->members()->attach($request->user());
+
+        session(['current_project_id' => $project->id]);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Projeto criado com sucesso.')]);
 
@@ -46,9 +50,26 @@ class ProjectController extends Controller
 
         $project->members()->attach($request->user());
 
+        session(['current_project_id' => $project->id]);
+
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Você entrou no projeto ":name".', ['name' => $project->name])]);
 
         return to_route('projects.show', $project);
+    }
+
+    /**
+     * Set the given project (the user is already a member of) as the active project.
+     */
+    public function select(Request $request, Project $project): RedirectResponse
+    {
+        abort_unless(
+            $project->members()->whereKey($request->user()->id)->exists(),
+            403
+        );
+
+        session(['current_project_id' => $project->id]);
+
+        return to_route('dashboard');
     }
 
     /**

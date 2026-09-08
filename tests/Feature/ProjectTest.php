@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 class ProjectTest extends TestCase
@@ -48,6 +49,7 @@ class ProjectTest extends TestCase
         $this->assertSame($user->id, $project->owner_id);
         $this->assertTrue($project->members()->whereKey($user->id)->exists());
         $this->assertTrue(Hash::check('password', $project->password));
+        $this->assertSame($project->id, session('current_project_id'));
     }
 
     public function test_creating_a_project_requires_a_name_and_password(): void
@@ -80,6 +82,7 @@ class ProjectTest extends TestCase
         $response->assertRedirect(route('projects.show', $project));
 
         $this->assertTrue($project->members()->whereKey($user->id)->exists());
+        $this->assertSame($project->id, session('current_project_id'));
     }
 
     public function test_a_user_cannot_join_a_project_with_the_wrong_password(): void
@@ -150,5 +153,43 @@ class ProjectTest extends TestCase
         $response = $this->actingAs($owner)->get(route('projects.show', $project));
 
         $response->assertOk();
+    }
+
+    public function test_projects_index_lists_the_users_projects(): void
+    {
+        $user = User::factory()->create();
+        $project = Project::factory()->create(['name' => 'Projeto Alpha']);
+        $project->members()->attach($user);
+        Project::factory()->create();
+
+        $response = $this->actingAs($user)->get(route('projects.index'));
+
+        $response->assertInertia(fn (Assert $page) => $page
+            ->component('projects/index')
+            ->has('myProjects', 1)
+            ->where('myProjects.0.name', 'Projeto Alpha')
+        );
+    }
+
+    public function test_a_member_can_select_a_project_as_active(): void
+    {
+        $user = User::factory()->create();
+        $project = Project::factory()->create();
+        $project->members()->attach($user);
+
+        $response = $this->actingAs($user)->post(route('projects.select', $project));
+
+        $response->assertRedirect(route('dashboard'));
+        $this->assertSame($project->id, session('current_project_id'));
+    }
+
+    public function test_a_non_member_cannot_select_a_project_as_active(): void
+    {
+        $user = User::factory()->create();
+        $project = Project::factory()->create();
+
+        $response = $this->actingAs($user)->post(route('projects.select', $project));
+
+        $response->assertForbidden();
     }
 }
