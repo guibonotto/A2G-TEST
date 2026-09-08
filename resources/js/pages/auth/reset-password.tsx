@@ -23,7 +23,7 @@ export default function ResetPassword({
 }: Props) {
     return (
         <>
-            <Head title="Redefinir senha" />
+            <Head title="Reset password" />
 
             <div className="bg-grid" />
 
@@ -41,12 +41,12 @@ export default function ResetPassword({
                         {/* Header */}
                         <div>
                             <h1 className="text-2xl font-extrabold tracking-tight">
-                                Redefinir senha
+                                Reset password
                             </h1>
 
                             <p className="mt-1.5 font-mono text-xs leading-relaxed text-muted-foreground">
-                                Defina uma nova senha para recuperar o acesso à
-                                sua conta.
+                                Set a new password to regain access to your
+                                account.
                             </p>
                         </div>
 
@@ -65,13 +65,13 @@ export default function ResetPassword({
                         >
                             {({ processing, errors }) => (
                                 <>
-                                    {/* E-mail */}
+                                    {/* Email */}
                                     <div className="grid gap-2">
                                         <Label
                                             htmlFor="email"
                                             className={labelClassName}
                                         >
-                                            E-mail
+                                            Email
                                         </Label>
 
                                         <Input
@@ -89,13 +89,13 @@ export default function ResetPassword({
                                         />
                                     </div>
 
-                                    {/* Nova senha */}
+                                    {/* New password */}
                                     <div className="grid gap-2">
                                         <Label
                                             htmlFor="password"
                                             className={labelClassName}
                                         >
-                                            Nova senha
+                                            New password
                                         </Label>
 
                                         <PasswordInput
@@ -114,20 +114,20 @@ export default function ResetPassword({
 
                                         {passwordRules && (
                                             <p className="font-mono text-[10px] leading-relaxed text-muted-foreground">
-                                                A senha deve atender aos
-                                                requisitos de segurança
-                                                definidos pelo sistema.
+                                                The password must meet the
+                                                security requirements defined
+                                                by the system.
                                             </p>
                                         )}
                                     </div>
 
-                                    {/* Confirmar senha */}
+                                    {/* Confirm password */}
                                     <div className="grid gap-2">
                                         <Label
                                             htmlFor="password_confirmation"
                                             className={labelClassName}
                                         >
-                                            Confirmar nova senha
+                                            Confirm new password
                                         </Label>
 
                                         <PasswordInput
@@ -155,8 +155,8 @@ export default function ResetPassword({
                                     >
                                         {processing && <Spinner />}
                                         {processing
-                                            ? 'Redefinindo senha...'
-                                            : 'Redefinir senha →'}
+                                            ? 'Resetting password...'
+                                            : 'Reset password →'}
                                     </Button>
                                 </>
                             )}
@@ -165,8 +165,8 @@ export default function ResetPassword({
                 </div>
 
                 <p className="text-center font-mono text-xs text-muted-foreground">
-                    Após redefinir sua senha, você poderá acessar sua conta
-                    normalmente.
+                    After resetting your password, you can sign in to your
+                    account as usual.
                 </p>
             </div>
         </>
@@ -174,6 +174,6 @@ export default function ResetPassword({
 }
 
 ResetPassword.layout = {
-    title: 'Redefinir senha',
-    description: 'Defina uma nova senha para sua conta',
+    title: 'Reset password',
+    description: 'Set a new password for your account',
 };

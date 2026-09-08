@@ -23,17 +23,17 @@ export default function Security(props: Props) {
 
     return (
         <>
-            <Head title="Configurações de segurança" />
+            <Head title="Security settings" />
 
-            <h1 className="sr-only">Configurações de segurança</h1>
+            <h1 className="sr-only">Security settings</h1>
 
             <div className="space-y-8">
-                {/* Alteração de senha */}
+                {/* Password change */}
                 <div className="space-y-6">
                     <Heading
                         variant="small"
-                        title="Alterar senha"
-                        description="Mantenha sua conta protegida utilizando uma senha longa e exclusiva."
+                        title="Change password"
+                        description="Keep your account secure by using a long, unique password."
                     />
 
                     <Form
@@ -60,13 +60,13 @@ export default function Security(props: Props) {
                     >
                         {({ errors, processing }) => (
                             <>
-                                {/* Senha atual */}
+                                {/* Current password */}
                                 <div className="grid gap-2">
                                     <Label
                                         htmlFor="current_password"
                                         className={labelClassName}
                                     >
-                                        Senha atual
+                                        Current password
                                     </Label>
 
                                     <PasswordInput
@@ -83,13 +83,13 @@ export default function Security(props: Props) {
                                     />
                                 </div>
 
-                                {/* Nova senha */}
+                                {/* New password */}
                                 <div className="grid gap-2">
                                     <Label
                                         htmlFor="password"
                                         className={labelClassName}
                                     >
-                                        Nova senha
+                                        New password
                                     </Label>
 
                                     <PasswordInput
@@ -107,18 +107,18 @@ export default function Security(props: Props) {
                                     />
 
                                     <p className="font-mono text-[10px] leading-relaxed text-muted-foreground">
-                                        Use uma senha longa e exclusiva para
-                                        aumentar a segurança da sua conta.
+                                        Use a long, unique password to keep
+                                        your account more secure.
                                     </p>
                                 </div>
 
-                                {/* Confirmar nova senha */}
+                                {/* Confirm new password */}
                                 <div className="grid gap-2">
                                     <Label
                                         htmlFor="password_confirmation"
                                         className={labelClassName}
                                     >
-                                        Confirmar nova senha
+                                        Confirm new password
                                     </Label>
 
                                     <PasswordInput
@@ -137,7 +137,7 @@ export default function Security(props: Props) {
                                     />
                                 </div>
 
-                                {/* Salvar */}
+                                {/* Save */}
                                 <div className="flex items-center gap-4">
                                     <Button
                                         type="submit"
@@ -145,8 +145,8 @@ export default function Security(props: Props) {
                                         data-test="update-password-button"
                                     >
                                         {processing
-                                            ? 'Atualizando...'
-                                            : 'Atualizar senha'}
+                                            ? 'Updating...'
+                                            : 'Update password'}
                                     </Button>
                                 </div>
                             </>
@@ -169,7 +169,7 @@ export default function Security(props: Props) {
 Security.layout = {
     breadcrumbs: [
         {
-            title: 'Configurações de segurança',
+            title: 'Security settings',
             href: edit(),
         },
     ],

@@ -36,7 +36,7 @@ export default function Welcome() {
                                     href={login()}
                                     className="rounded-lg border border-border px-4 py-2 text-sm font-medium transition hover:bg-muted"
                                 >
-                                    Entrar
+                                    Log in
                                 </Link>
                             )}
                         </nav>
@@ -48,22 +48,21 @@ export default function Welcome() {
                         <div className="mx-auto max-w-7xl px-6 py-20 lg:px-8 lg:py-28">
                             <div className="mx-auto max-w-3xl text-center">
                                 <div className="mb-6 inline-flex items-center rounded-full border border-border bg-muted/50 px-4 py-1.5 text-sm font-medium">
-                                    Plataforma de Gestão de Testes
+                                    Test Management Platform
                                 </div>
 
                                 <h1 className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
-                                    Testes de software mais
+                                    Software testing that is
                                     <span className="text-primary">
-                                        {' '}organizados e eficientes
+                                        {' '}organized and efficient
                                     </span>
                                 </h1>
 
                                 <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-muted-foreground">
-                                    O A2G TEST é uma plataforma para criação,
-                                    organização, execução e acompanhamento de
-                                    casos de teste, ajudando equipes a melhorar
-                                    a qualidade e a confiabilidade de seus
-                                    sistemas.
+                                    A2G TEST is a platform for creating,
+                                    organizing, running, and tracking test
+                                    cases, helping teams improve the quality
+                                    and reliability of their systems.
                                 </p>
 
                                 <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
@@ -72,14 +71,14 @@ export default function Welcome() {
                                             href={dashboard()}
                                             className="w-full rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-sm transition hover:opacity-90 sm:w-auto"
                                         >
-                                            Acessar dashboard
+                                            Go to dashboard
                                         </Link>
                                     ) : (
                                         <Link
                                             href={login()}
                                             className="w-full rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-sm transition hover:opacity-90 sm:w-auto"
                                         >
-                                            Acessar sistema
+                                            Access the system
                                         </Link>
                                     )}
                                 </div>
@@ -91,31 +90,31 @@ export default function Welcome() {
                         <div className="mx-auto max-w-7xl px-6 py-20 lg:px-8">
                             <div className="mx-auto max-w-2xl text-center">
                                 <h2 className="text-3xl font-bold tracking-tight">
-                                    Tudo para gerenciar seus testes
+                                    Everything you need to manage your tests
                                 </h2>
 
                                 <p className="mt-4 text-muted-foreground">
-                                    Centralize as informações do processo de
-                                    testes em um único ambiente.
+                                    Centralize your entire testing process in
+                                    a single place.
                                 </p>
                             </div>
 
                             <div className="mx-auto mt-12 grid max-w-5xl gap-6 md:grid-cols-3">
                                 <FeatureCard
-                                    title="Casos de teste"
-                                    description="Crie e organize casos de teste de forma estruturada, mantendo seus cenários documentados e acessíveis."
+                                    title="Test cases"
+                                    description="Create and organize test cases in a structured way, keeping your scenarios documented and accessible."
                                     icon="✓"
                                 />
 
                                 <FeatureCard
-                                    title="Execução"
-                                    description="Registre a execução dos testes e acompanhe seus resultados para identificar problemas rapidamente."
+                                    title="Execution"
+                                    description="Record test executions and track their results to spot problems quickly."
                                     icon="▶"
                                 />
 
                                 <FeatureCard
-                                    title="Acompanhamento"
-                                    description="Visualize o andamento dos testes e obtenha uma visão clara da qualidade do projeto."
+                                    title="Tracking"
+                                    description="Follow testing progress and get a clear picture of the project quality."
                                     icon="◈"
                                 />
                             </div>
@@ -126,13 +125,13 @@ export default function Welcome() {
                         <div className="mx-auto max-w-7xl px-6 py-20 lg:px-8">
                             <div className="mx-auto max-w-3xl rounded-2xl border border-border bg-card p-8 text-center shadow-sm sm:p-12">
                                 <h2 className="text-3xl font-bold">
-                                    Pronto para começar?
+                                    Ready to get started?
                                 </h2>
 
                                 <p className="mx-auto mt-4 max-w-xl text-muted-foreground">
-                                    Acesse o A2G TEST e comece a gerenciar seus
-                                    casos de teste de maneira mais simples e
-                                    organizada.
+                                    Sign in to A2G TEST and start managing
+                                    your test cases in a simpler, more
+                                    organized way.
                                 </p>
 
                                 <div className="mt-8">
@@ -141,14 +140,14 @@ export default function Welcome() {
                                             href={dashboard()}
                                             className="inline-flex rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
                                         >
-                                            Ir para o dashboard
+                                            Go to dashboard
                                         </Link>
                                     ) : (
                                         <Link
                                             href={login()}
                                             className="inline-flex rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
                                         >
-                                            Entrar no A2G TEST
+                                            Log in to A2G TEST
                                         </Link>
                                     )}
                                 </div>
@@ -160,12 +159,12 @@ export default function Welcome() {
                 <footer className="border-t border-border">
                     <div className="mx-auto flex max-w-7xl flex-col gap-2 px-6 py-8 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between lg:px-8">
                         <p>
-                            © {new Date().getFullYear()} A2G TEST. Todos os
-                            direitos reservados.
+                            © {new Date().getFullYear()} A2G TEST. All rights
+                            reserved.
                         </p>
 
                         <p>
-                            Sistema de gerenciamento de testes de software.
+                            Software test management system.
                         </p>
                     </div>
                 </footer>

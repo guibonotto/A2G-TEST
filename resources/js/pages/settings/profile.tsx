@@ -21,15 +21,15 @@ export default function Profile() {
 
     return (
         <>
-            <Head title="Configurações do perfil" />
+            <Head title="Profile settings" />
 
-            <h1 className="sr-only">Configurações do perfil</h1>
+            <h1 className="sr-only">Profile settings</h1>
 
             <div className="space-y-8">
                 <Heading
                     variant="small"
-                    title="Perfil"
-                    description="Atualize seu nome e endereço de e-mail."
+                    title="Profile"
+                    description="Update your name and email address."
                 />
 
                 <Form
@@ -41,13 +41,13 @@ export default function Profile() {
                 >
                     {({ processing, errors }) => (
                         <>
-                            {/* Nome */}
+                            {/* Name */}
                             <div className="grid gap-2">
                                 <Label
                                     htmlFor="name"
                                     className={labelClassName}
                                 >
-                                    Nome completo
+                                    Full name
                                 </Label>
 
                                 <Input
@@ -57,7 +57,7 @@ export default function Profile() {
                                     name="name"
                                     required
                                     autoComplete="name"
-                                    placeholder="Seu nome completo"
+                                    placeholder="Your full name"
                                 />
 
                                 <InputError
@@ -66,13 +66,13 @@ export default function Profile() {
                                 />
                             </div>
 
-                            {/* E-mail */}
+                            {/* Email */}
                             <div className="grid gap-2">
                                 <Label
                                     htmlFor="email"
                                     className={labelClassName}
                                 >
-                                    E-mail
+                                    Email
                                 </Label>
 
                                 <Input
@@ -83,7 +83,7 @@ export default function Profile() {
                                     name="email"
                                     required
                                     autoComplete="username"
-                                    placeholder="seu@email.com"
+                                    placeholder="you@example.com"
                                 />
 
                                 <InputError
@@ -92,7 +92,7 @@ export default function Profile() {
                                 />
                             </div>
 
-                            {/* Ação */}
+                            {/* Action */}
                             <div className="flex items-center gap-4">
                                 <Button
                                     type="submit"
@@ -100,14 +100,14 @@ export default function Profile() {
                                     data-test="update-profile-button"
                                 >
                                     {processing
-                                        ? 'Salvando...'
-                                        : 'Salvar alterações'}
+                                        ? 'Saving...'
+                                        : 'Save changes'}
                                 </Button>
 
                                 {!processing && (
                                     <span className="font-mono text-[10px] text-muted-foreground">
-                                        Suas informações serão atualizadas
-                                        imediatamente.
+                                        Your information will be updated
+                                        immediately.
                                     </span>
                                 )}
                             </div>
@@ -126,7 +126,7 @@ export default function Profile() {
 Profile.layout = {
     breadcrumbs: [
         {
-            title: 'Configurações do perfil',
+            title: 'Profile settings',
             href: edit(),
         },
     ],

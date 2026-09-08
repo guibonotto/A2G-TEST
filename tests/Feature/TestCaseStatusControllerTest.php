@@ -51,7 +51,7 @@ class TestCaseStatusControllerTest extends TestCase
     public function test_qa_can_view_the_status_list(): void
     {
         $qa = $this->createUserWithRole('qa');
-        $status = $this->createStatus('Aprovado', 'success');
+        $status = $this->createStatus('Passed', 'success');
         $classification = Classification::create(['name' => 'Funcional']);
         TestCaseModel::create([
             'title' => 'Login',
@@ -65,8 +65,8 @@ class TestCaseStatusControllerTest extends TestCase
         $response->assertInertia(fn (Assert $page) => $page
             ->component('management/statuses/index')
             ->has('statuses', 5)
-            ->where('statuses.0.name', 'Aprovado')
-            ->where('statuses.0.test_cases_count', 1)
+            ->where('statuses.2.name', 'Passed')
+            ->where('statuses.2.test_cases_count', 1)
         );
     }
 

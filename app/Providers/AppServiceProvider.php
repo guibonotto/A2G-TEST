@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Services\Jira\JiraClient;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -15,7 +16,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton(JiraClient::class, fn (): JiraClient => new JiraClient(
+            clientId: (string) config('services.jira.client_id'),
+            clientSecret: (string) config('services.jira.client_secret'),
+            redirectUri: (string) config('services.jira.redirect'),
+        ));
     }
 
     /**

@@ -252,7 +252,7 @@ class TestCaseController extends Controller
 
         Inertia::flash('toast', [
             'type' => 'success',
-            'message' => __('Requisito vinculado.'),
+            'message' => __('Requirement linked.'),
         ]);
 
         return back();
@@ -269,7 +269,7 @@ class TestCaseController extends Controller
 
         Inertia::flash('toast', [
             'type' => 'success',
-            'message' => __('Requisito desvinculado.'),
+            'message' => __('Requirement unlinked.'),
         ]);
 
         return back();

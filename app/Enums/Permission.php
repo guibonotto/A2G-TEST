@@ -15,10 +15,10 @@ enum Permission: string
     public function label(): string
     {
         return match ($this) {
-            self::ManageAccounts => 'Gerenciar contas de usuário',
-            self::ManageRoles => 'Gerenciar papéis e permissões',
-            self::ManageStatuses => 'Gerenciar status de casos de teste',
-            self::AssignTestCases => 'Atribuir casos de teste a outros usuários',
+            self::ManageAccounts => 'Manage user accounts',
+            self::ManageRoles => 'Manage roles and permissions',
+            self::ManageStatuses => 'Manage test case statuses',
+            self::AssignTestCases => 'Assign test cases to other users',
         };
     }
 }

@@ -61,12 +61,12 @@ function TestCaseTable({
                             aria-label="Select all in group"
                         />
                     </th>
-                    <th className="px-4 py-3 font-medium">Título</th>
-                    <th className="px-4 py-3 font-medium">Classificação</th>
-                    <th className="px-4 py-3 font-medium">Responsável</th>
-                    <th className="px-4 py-3 font-medium">Passos</th>
-                    <th className="px-4 py-3 font-medium">Criado por</th>
-                    <th className="px-4 py-3 font-medium">Criado em</th>
+                    <th className="px-4 py-3 font-medium">Title</th>
+                    <th className="px-4 py-3 font-medium">Classification</th>
+                    <th className="px-4 py-3 font-medium">Assignee</th>
+                    <th className="px-4 py-3 font-medium">Steps</th>
+                    <th className="px-4 py-3 font-medium">Created by</th>
+                    <th className="px-4 py-3 font-medium">Created at</th>
                 </tr>
             </thead>
             <tbody>
@@ -386,7 +386,7 @@ export default function TestCaseIndex({
                                 <div className="flex items-center gap-2 border-b px-4 py-3">
                                     <Badge variant={group.color}>{group.name}</Badge>
                                     <span className="text-sm text-muted-foreground">
-                                        {group.testCases.length} caso(s)
+                                        {group.testCases.length} case(s)
                                     </span>
                                 </div>
                                 <TestCaseTable
@@ -400,9 +400,9 @@ export default function TestCaseIndex({
                         {withoutStatus.length > 0 && (
                             <Card className="overflow-hidden py-0">
                                 <div className="flex items-center gap-2 border-b px-4 py-3">
-                                    <Badge variant="secondary">Sem status</Badge>
+                                    <Badge variant="secondary">No status</Badge>
                                     <span className="text-sm text-muted-foreground">
-                                        {withoutStatus.length} caso(s)
+                                        {withoutStatus.length} case(s)
                                     </span>
                                 </div>
                                 <TestCaseTable

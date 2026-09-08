@@ -25,6 +25,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { executionStatusLabel } from '@/lib/execution-status';
 import { assign, edit, index, show } from '@/routes/test-cases';
 import type { AssignableUser, RequirementOption, TestCaseDetail } from '@/types';
 
@@ -268,7 +269,7 @@ export default function ShowTestCase({ testCase, assignableUsers, executionStatu
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>Registrar execução</CardTitle>
+                        <CardTitle>Record execution</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <Form
@@ -280,7 +281,7 @@ export default function ShowTestCase({ testCase, assignableUsers, executionStatu
                             {({ processing, errors }) => (
                                 <>
                                     <div className="grid gap-2">
-                                        <Label htmlFor="execution_status">Resultado</Label>
+                                        <Label htmlFor="execution_status">Result</Label>
                                         <select
                                             id="execution_status"
                                             name="status"
@@ -288,16 +289,16 @@ export default function ShowTestCase({ testCase, assignableUsers, executionStatu
                                             className="border-input bg-background h-10 rounded-md border px-3 text-sm"
                                             required
                                         >
-                                            <option value="APROVADO">Aprovado</option>
-                                            <option value="REPROVADO">Reprovado</option>
-                                            <option value="BLOQUEADO">Bloqueado</option>
-                                            <option value="PENDENTE">Pendente</option>
+                                            <option value="APROVADO">Passed</option>
+                                            <option value="REPROVADO">Failed</option>
+                                            <option value="BLOQUEADO">Blocked</option>
+                                            <option value="PENDENTE">Pending</option>
                                         </select>
                                         {errors.status && <p className="text-sm text-destructive">{errors.status}</p>}
                                     </div>
 
                                     <div className="grid gap-2">
-                                        <Label htmlFor="execution_date">Data e hora</Label>
+                                        <Label htmlFor="execution_date">Date and time</Label>
                                         <input
                                             id="execution_date"
                                             name="execution_date"
@@ -310,14 +311,14 @@ export default function ShowTestCase({ testCase, assignableUsers, executionStatu
                                     </div>
 
                                     <div className="grid gap-2 md:row-span-2">
-                                        <Label htmlFor="execution_comment">Comentário</Label>
-                                        <Textarea id="execution_comment" name="comment" placeholder="Observações da execução" />
+                                        <Label htmlFor="execution_comment">Comment</Label>
+                                        <Textarea id="execution_comment" name="comment" placeholder="Execution notes" />
                                         {errors.comment && <p className="text-sm text-destructive">{errors.comment}</p>}
                                     </div>
 
                                     <div className="flex items-end">
                                         <Button type="submit" disabled={processing}>
-                                            {processing ? 'Registrando...' : 'Registrar execução'}
+                                            {processing ? 'Recording...' : 'Record execution'}
                                         </Button>
                                     </div>
                                 </>
@@ -374,25 +375,25 @@ export default function ShowTestCase({ testCase, assignableUsers, executionStatu
 
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between">
-                        <CardTitle>Requisitos vinculados ({testCase.requirements.length})</CardTitle>
+                        <CardTitle>Linked requirements ({testCase.requirements.length})</CardTitle>
 
                         {auth.user.role?.slug === 'qa' && linkableRequirements.length > 0 && (
                             <Dialog open={linkRequirementOpen} onOpenChange={setLinkRequirementOpen}>
                                 <DialogTrigger asChild>
                                     <Button variant="outline" size="sm">
-                                        Vincular requisito
+                                        Link requirement
                                     </Button>
                                 </DialogTrigger>
                                 <DialogContent>
-                                    <DialogTitle>Vincular requisito</DialogTitle>
+                                    <DialogTitle>Link requirement</DialogTitle>
                                     <DialogDescription>
-                                        Selecione um requisito para vincular a &quot;{testCase.title}&quot;.
+                                        Select a requirement to link to &quot;{testCase.title}&quot;.
                                     </DialogDescription>
 
                                     <form onSubmit={submitLinkRequirement} className="flex flex-col gap-4">
                                         <Select value={selectedRequirementId} onValueChange={setSelectedRequirementId}>
                                             <SelectTrigger className="w-full">
-                                                <SelectValue placeholder="Selecione um requisito" />
+                                                <SelectValue placeholder="Select a requirement" />
                                             </SelectTrigger>
                                             <SelectContent>
                                                 {linkableRequirements.map((requirement) => (
@@ -406,11 +407,11 @@ export default function ShowTestCase({ testCase, assignableUsers, executionStatu
                                         <DialogFooter className="gap-2">
                                             <DialogClose asChild>
                                                 <Button type="button" variant="secondary">
-                                                    Cancelar
+                                                    Cancel
                                                 </Button>
                                             </DialogClose>
                                             <Button type="submit" disabled={!selectedRequirementId || linkingRequirement}>
-                                                Vincular
+                                                Link
                                             </Button>
                                         </DialogFooter>
                                     </form>
@@ -421,7 +422,7 @@ export default function ShowTestCase({ testCase, assignableUsers, executionStatu
 
                     <CardContent className="flex flex-col gap-2">
                         {testCase.requirements.length === 0 ? (
-                            <p className="text-sm text-muted-foreground">Nenhum requisito vinculado.</p>
+                            <p className="text-sm text-muted-foreground">No requirements linked.</p>
                         ) : (
                             testCase.requirements.map((requirement) => (
                                 <div
@@ -434,7 +435,7 @@ export default function ShowTestCase({ testCase, assignableUsers, executionStatu
 
                                     {auth.user.role?.slug === 'qa' && (
                                         <Button variant="ghost" size="sm" onClick={() => unlinkRequirement(requirement.id)}>
-                                            Desvincular
+                                            Unlink
                                         </Button>
                                     )}
                                 </div>
@@ -445,7 +446,7 @@ export default function ShowTestCase({ testCase, assignableUsers, executionStatu
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>Histórico de execuções ({testCase.executions.length})</CardTitle>
+                        <CardTitle>Execution history ({testCase.executions.length})</CardTitle>
                     </CardHeader>
                     <CardContent className="flex flex-col gap-3">
                         {testCase.executions.length > 0 && (
@@ -454,13 +455,13 @@ export default function ShowTestCase({ testCase, assignableUsers, executionStatu
                                 onValueChange={setExecutionStatusFilter}
                             >
                                 <SelectTrigger className="w-full sm:w-64">
-                                    <SelectValue placeholder="Filtrar por resultado" />
+                                    <SelectValue placeholder="Filter by result" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="all">Todos os resultados</SelectItem>
+                                    <SelectItem value="all">All results</SelectItem>
                                     {executionStatuses.map((status) => (
                                         <SelectItem key={status} value={status}>
-                                            {status}
+                                            {executionStatusLabel(status)}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
@@ -468,20 +469,20 @@ export default function ShowTestCase({ testCase, assignableUsers, executionStatu
                         )}
 
                         {testCase.executions.length === 0 ? (
-                            <p className="text-sm text-muted-foreground">Nenhuma execução registrada.</p>
+                            <p className="text-sm text-muted-foreground">No executions recorded.</p>
                         ) : filteredExecutions.length === 0 ? (
-                            <p className="text-sm text-muted-foreground">Nenhuma execução corresponde ao filtro.</p>
+                            <p className="text-sm text-muted-foreground">No executions match this filter.</p>
                         ) : (
                             filteredExecutions.map((execution) => (
                                 <div key={execution.id} className="flex flex-col gap-2 rounded-lg border p-4">
                                     <div className="flex flex-wrap items-center justify-between gap-2">
-                                        <Badge variant="outline">{execution.status}</Badge>
+                                        <Badge variant="outline">{executionStatusLabel(execution.status)}</Badge>
                                         <span className="text-xs text-muted-foreground">
-                                            {new Date(execution.execution_date).toLocaleString('pt-BR')}
+                                            {new Date(execution.execution_date).toLocaleString('en-US')}
                                         </span>
                                     </div>
                                     <span className="text-sm text-muted-foreground">
-                                        Executado por {execution.executor?.name ?? 'Usuário removido'}
+                                        Executed by {execution.executor?.name ?? 'Deleted user'}
                                     </span>
                                     {execution.comment && <p className="text-sm">{execution.comment}</p>}
                                 </div>

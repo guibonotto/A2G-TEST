@@ -28,24 +28,24 @@ export default function ManageAccounts({ accounts, roles }: Props) {
 
     return (
         <>
-            <Head title="Gerenciar contas" />
+            <Head title="Manage accounts" />
 
             <div className="flex flex-col gap-6 p-4">
                 <Heading
-                    title="Gerenciar contas"
-                    description="Defina o papel (role) de cada usuário cadastrado no sistema."
+                    title="Manage accounts"
+                    description="Set the role of each user registered in the system."
                 />
 
                 <Card className="overflow-hidden py-0">
                     {accounts.length === 0 ? (
-                        <p className="p-6 text-sm text-muted-foreground">Nenhuma conta cadastrada ainda.</p>
+                        <p className="p-6 text-sm text-muted-foreground">No accounts registered yet.</p>
                     ) : (
                         <table className="w-full text-sm">
                             <thead className="border-b bg-muted/50 text-left">
                                 <tr>
-                                    <th className="px-4 py-3 font-medium">Nome</th>
-                                    <th className="px-4 py-3 font-medium">E-mail</th>
-                                    <th className="px-4 py-3 font-medium">Papel</th>
+                                    <th className="px-4 py-3 font-medium">Name</th>
+                                    <th className="px-4 py-3 font-medium">Email</th>
+                                    <th className="px-4 py-3 font-medium">Role</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -63,7 +63,7 @@ export default function ManageAccounts({ accounts, roles }: Props) {
                                                         <SelectValue />
                                                     </SelectTrigger>
                                                     <SelectContent>
-                                                        <SelectItem value="none">Sem papel</SelectItem>
+                                                        <SelectItem value="none">No role</SelectItem>
                                                         {roles.map((role) => (
                                                             <SelectItem key={role.id} value={String(role.id)}>
                                                                 {role.name}
@@ -86,5 +86,5 @@ export default function ManageAccounts({ accounts, roles }: Props) {
 }
 
 ManageAccounts.layout = {
-    breadcrumbs: [{ title: 'Gerenciar contas', href: index() }],
+    breadcrumbs: [{ title: 'Manage accounts', href: index() }],
 };

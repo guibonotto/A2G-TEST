@@ -16,12 +16,12 @@ type Props = {
 export default function ManageRolePermissions({ roles, availablePermissions }: Props) {
     return (
         <>
-            <Head title="Gerenciar permissões" />
+            <Head title="Manage permissions" />
 
             <div className="flex flex-col gap-6 p-4">
                 <Heading
-                    title="Gerenciar permissões"
-                    description="Defina quais ações cada papel pode executar no sistema."
+                    title="Manage permissions"
+                    description="Set which actions each role can perform in the system."
                 />
 
                 <div className="flex flex-col gap-4">
@@ -76,7 +76,7 @@ function RoleCard({ role, availablePermissions }: { role: Role; availablePermiss
 
                 <div>
                     <Button type="submit" size="sm" disabled={form.processing}>
-                        Salvar
+                        Save
                     </Button>
                 </div>
             </form>
@@ -85,5 +85,5 @@ function RoleCard({ role, availablePermissions }: { role: Role; availablePermiss
 }
 
 ManageRolePermissions.layout = {
-    breadcrumbs: [{ title: 'Gerenciar permissões', href: index() }],
+    breadcrumbs: [{ title: 'Manage permissions', href: index() }],
 };

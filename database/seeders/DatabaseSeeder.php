@@ -23,9 +23,9 @@ class DatabaseSeeder extends Seeder
 
         $roles = [
             ['name' => 'QA / Tester',   'slug' => 'qa', 'permissions' => $allPermissions],
-            ['name' => 'Desenvolvedor',  'slug' => 'developer', 'permissions' => []],
-            ['name' => 'Administrador',  'slug' => 'admin', 'permissions' => $allPermissions],
-            ['name' => 'Visualizador',   'slug' => 'viewer', 'permissions' => []],
+            ['name' => 'Developer',  'slug' => 'developer', 'permissions' => []],
+            ['name' => 'Administrator',  'slug' => 'admin', 'permissions' => $allPermissions],
+            ['name' => 'Viewer',   'slug' => 'viewer', 'permissions' => []],
         ];
 
         foreach ($roles as $role) {
@@ -36,9 +36,9 @@ class DatabaseSeeder extends Seeder
         }
 
         $demoUsers = [
-            ['name' => 'Administrador Demo', 'email' => 'admin@a2gtest.com', 'role' => 'admin'],
+            ['name' => 'Admin Demo', 'email' => 'admin@a2gtest.com', 'role' => 'admin'],
             ['name' => 'QA Demo', 'email' => 'qa@a2gtest.com', 'role' => 'qa'],
-            ['name' => 'Visualizador Demo', 'email' => 'viewer@a2gtest.com', 'role' => 'viewer'],
+            ['name' => 'Viewer Demo', 'email' => 'viewer@a2gtest.com', 'role' => 'viewer'],
         ];
 
         foreach ($demoUsers as $demoUser) {
@@ -54,19 +54,19 @@ class DatabaseSeeder extends Seeder
         }
 
         $classifications = [
-            ['name' => 'Unitário', 'description' => 'Testes de unidade verificam o comportamento de componentes individuais do sistema.'],
-            ['name' => 'Integração', 'description' => 'Testes de integração avaliam a interação entre diferentes módulos ou serviços.'],
+            ['name' => 'Unit', 'description' => 'Unit tests verify the behavior of individual components of the system.'],
+            ['name' => 'Integration', 'description' => 'Integration tests assess the interaction between different modules or services.'],
         ];
         foreach ($classifications as $classification) {
             Classification::firstOrCreate(['name' => $classification['name']], $classification);
         }
 
         $statuses = [
-            ['name' => 'Aprovado', 'color' => 'success'],
-            ['name' => 'Reprovado', 'color' => 'destructive'],
-            ['name' => 'Pendente', 'color' => 'warning'],
-            ['name' => 'Cancelado', 'color' => 'secondary'],
-            ['name' => 'Regressão', 'color' => 'info'],
+            ['name' => 'Passed', 'color' => 'success'],
+            ['name' => 'Failed', 'color' => 'destructive'],
+            ['name' => 'Pending', 'color' => 'warning'],
+            ['name' => 'Cancelled', 'color' => 'secondary'],
+            ['name' => 'Regression', 'color' => 'info'],
         ];
         foreach ($statuses as $status) {
             TestCaseStatus::firstOrCreate(['name' => $status['name']], $status);

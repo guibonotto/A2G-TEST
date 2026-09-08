@@ -8,12 +8,12 @@ export function ClassificationChart({ data }: { data: ClassificationBreakdownIte
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Casos por Classificação</CardTitle>
-                <CardDescription>Unitário vs. integração e demais classificações cadastradas</CardDescription>
+                <CardTitle>Cases by Classification</CardTitle>
+                <CardDescription>Unit vs. integration and any other registered classifications</CardDescription>
             </CardHeader>
             <CardContent>
                 {data.length === 0 ? (
-                    <p className="py-12 text-center text-sm text-muted-foreground">Nenhuma classificação cadastrada ainda.</p>
+                    <p className="py-12 text-center text-sm text-muted-foreground">No classifications registered yet.</p>
                 ) : (
                     <ResponsiveContainer width="100%" height={Math.max(120, data.length * 44)}>
                         <BarChart data={data} layout="vertical" margin={{ left: 8, right: 16 }}>
@@ -22,7 +22,7 @@ export function ClassificationChart({ data }: { data: ClassificationBreakdownIte
                             <YAxis type="category" dataKey="name" width={110} stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
                             <Tooltip
                                 cursor={{ fill: 'var(--muted)' }}
-                                formatter={(value: number) => [`${value} caso(s)`, 'Total']}
+                                formatter={(value: number) => [`${value} case(s)`, 'Total']}
                                 contentStyle={{ background: 'var(--popover)', borderColor: 'var(--border)', borderRadius: 8, fontSize: 12 }}
                             />
                             <Bar dataKey="total" radius={[0, 4, 4, 0]} barSize={20}>

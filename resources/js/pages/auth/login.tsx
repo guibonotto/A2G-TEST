@@ -12,9 +12,9 @@ import { request } from '@/routes/password';
 import { store as registerStore } from '@/routes/register';
 
 const demoAccounts = [
-    { role: 'Administrador', email: 'admin@a2gtest.com' },
+    { role: 'Administrator', email: 'admin@a2gtest.com' },
     { role: 'QA', email: 'qa@a2gtest.com' },
-    { role: 'Visualizador', email: 'viewer@a2gtest.com' },
+    { role: 'Viewer', email: 'viewer@a2gtest.com' },
 ];
 
 type Props = {
@@ -25,7 +25,7 @@ type Props = {
 export default function Login({ status, canResetPassword }: Props) {
     return (
         <>
-            <Head title="Entrar" />
+            <Head title="Log in" />
 
             <div className="bg-grid" />
 
@@ -36,7 +36,7 @@ export default function Login({ status, canResetPassword }: Props) {
                 {/* Logo */}
                 <Link
                     href="/"
-                    aria-label="A2G TEST - Página inicial"
+                    aria-label="A2G TEST - Home"
                     className="mb-8 flex items-center justify-center gap-2 font-mono text-lg font-bold tracking-wide"
                 >
                     <span
@@ -57,12 +57,12 @@ export default function Login({ status, canResetPassword }: Props) {
                                 id="login-title"
                                 className="text-2xl font-extrabold tracking-tight"
                             >
-                                Entrar
+                                Log in
                             </h1>
 
                             <p className="mt-1.5 font-mono text-xs leading-relaxed text-muted-foreground">
-                                Entre na sua conta para gerenciar seus casos de
-                                teste.
+                                Sign in to your account to manage your test
+                                cases.
                             </p>
                         </header>
 
@@ -92,7 +92,7 @@ export default function Login({ status, canResetPassword }: Props) {
                                             htmlFor="email"
                                             className="font-mono text-xs tracking-wide text-muted-foreground uppercase"
                                         >
-                                            E-mail
+                                            Email
                                         </Label>
 
                                         <input
@@ -100,7 +100,7 @@ export default function Login({ status, canResetPassword }: Props) {
                                             className="flex h-11 w-full rounded-lg border border-input bg-secondary px-3.5 font-mono text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground/60 focus:border-primary focus:ring-3 focus:ring-primary/15 disabled:cursor-not-allowed disabled:opacity-60"
                                             type="email"
                                             name="email"
-                                            placeholder="seu@email.com"
+                                            placeholder="you@example.com"
                                             autoFocus
                                             autoComplete="email"
                                             required
@@ -133,7 +133,7 @@ export default function Login({ status, canResetPassword }: Props) {
                                                 htmlFor="password"
                                                 className="font-mono text-xs tracking-wide text-muted-foreground uppercase"
                                             >
-                                                Senha
+                                                Password
                                             </Label>
 
                                             {canResetPassword && (
@@ -141,7 +141,7 @@ export default function Login({ status, canResetPassword }: Props) {
                                                     href={request()}
                                                     className="font-mono text-xs text-muted-foreground transition-colors hover:text-primary hover:underline"
                                                 >
-                                                    Esqueceu a senha?
+                                                    Forgot password?
                                                 </Link>
                                             )}
                                         </div>
@@ -150,7 +150,7 @@ export default function Login({ status, canResetPassword }: Props) {
                                             id="password"
                                             className="h-11 rounded-lg bg-secondary font-mono text-sm focus-visible:ring-primary/15"
                                             name="password"
-                                            placeholder="Digite sua senha"
+                                            placeholder="Enter your password"
                                             autoComplete="current-password"
                                             required
                                             aria-invalid={
@@ -185,10 +185,10 @@ export default function Login({ status, canResetPassword }: Props) {
                                         {processing ? (
                                             <>
                                                 <Spinner />
-                                                Entrando...
+                                                Signing in...
                                             </>
                                         ) : (
-                                            'Entrar →'
+                                            'Log in →'
                                         )}
                                     </Button>
                                 </>
@@ -199,14 +199,14 @@ export default function Login({ status, canResetPassword }: Props) {
                         <details className="group rounded-lg border border-border/60 bg-secondary/40">
                             <summary className="cursor-pointer list-none px-4 py-3 font-mono text-[10px] tracking-widest text-muted-foreground uppercase transition-colors hover:text-foreground">
                                 <span className="group-open:text-primary">
-                                    // Contas de demonstração
+                                    // Demo accounts
                                 </span>
                             </summary>
 
                             <div className="border-t border-border/60 px-4 py-3">
                                 <p className="mb-3 text-xs leading-relaxed text-muted-foreground">
-                                    Utilize uma destas contas para testar as
-                                    funcionalidades do sistema.
+                                    Use one of these accounts to try out the
+                                    system features.
                                 </p>
 
                                 <div className="flex flex-col gap-2">
@@ -235,12 +235,12 @@ export default function Login({ status, canResetPassword }: Props) {
 
                 {/* Registration */}
                 <p className="mt-6 text-center font-mono text-xs text-muted-foreground">
-                    Ainda não possui uma conta?{' '}
+                    Don&apos;t have an account yet?{' '}
                     <Link
                         href={registerStore.url()}
                         className="font-medium text-primary hover:underline"
                     >
-                        Criar conta
+                        Sign up
                     </Link>
                 </p>
             </main>

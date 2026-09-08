@@ -44,20 +44,20 @@ type RequirementFormData = {
 };
 
 const typeOptions: { value: RequirementType; label: string }[] = [
-    { value: 'funcional', label: 'Funcional (RF)' },
-    { value: 'nao_funcional', label: 'Não funcional (RNF)' },
+    { value: 'funcional', label: 'Functional (FR)' },
+    { value: 'nao_funcional', label: 'Non-functional (NFR)' },
 ];
 
 const priorityOptions: { value: RequirementPriority; label: string }[] = [
-    { value: 'baixa', label: 'Baixa' },
-    { value: 'media', label: 'Média' },
-    { value: 'alta', label: 'Alta' },
+    { value: 'baixa', label: 'Low' },
+    { value: 'media', label: 'Medium' },
+    { value: 'alta', label: 'High' },
 ];
 
 const statusOptions: { value: RequirementStatus; label: string }[] = [
-    { value: 'pendente', label: 'Pendente' },
-    { value: 'em_andamento', label: 'Em andamento' },
-    { value: 'concluido', label: 'Concluído' },
+    { value: 'pendente', label: 'Pending' },
+    { value: 'em_andamento', label: 'In progress' },
+    { value: 'concluido', label: 'Done' },
 ];
 
 const NONE = 'none';
@@ -75,7 +75,7 @@ function RequirementForm({
         <form onSubmit={onSubmit} className="flex flex-col gap-4">
             <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
-                    <Label htmlFor={`${idPrefix}-code`}>Código</Label>
+                    <Label htmlFor={`${idPrefix}-code`}>Code</Label>
                     <Input
                         id={`${idPrefix}-code`}
                         value={form.data.code}
@@ -87,7 +87,7 @@ function RequirementForm({
                 </div>
 
                 <div className="grid gap-2">
-                    <Label htmlFor={`${idPrefix}-type`}>Tipo</Label>
+                    <Label htmlFor={`${idPrefix}-type`}>Type</Label>
                     <Select value={form.data.type} onValueChange={(value) => form.setData('type', value as RequirementType)}>
                         <SelectTrigger id={`${idPrefix}-type`} className="w-full">
                             <SelectValue />
@@ -105,7 +105,7 @@ function RequirementForm({
             </div>
 
             <div className="grid gap-2">
-                <Label htmlFor={`${idPrefix}-title`}>Título</Label>
+                <Label htmlFor={`${idPrefix}-title`}>Title</Label>
                 <Input
                     id={`${idPrefix}-title`}
                     value={form.data.title}
@@ -115,7 +115,7 @@ function RequirementForm({
             </div>
 
             <div className="grid gap-2">
-                <Label htmlFor={`${idPrefix}-description`}>Descrição</Label>
+                <Label htmlFor={`${idPrefix}-description`}>Description</Label>
                 <Textarea
                     id={`${idPrefix}-description`}
                     value={form.data.description}
@@ -127,16 +127,16 @@ function RequirementForm({
 
             <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
-                    <Label htmlFor={`${idPrefix}-priority`}>Prioridade</Label>
+                    <Label htmlFor={`${idPrefix}-priority`}>Priority</Label>
                     <Select
                         value={form.data.priority || NONE}
                         onValueChange={(value) => form.setData('priority', value === NONE ? '' : value)}
                     >
                         <SelectTrigger id={`${idPrefix}-priority`} className="w-full">
-                            <SelectValue placeholder="Sem prioridade" />
+                            <SelectValue placeholder="No priority" />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value={NONE}>Sem prioridade</SelectItem>
+                            <SelectItem value={NONE}>No priority</SelectItem>
                             {priorityOptions.map((option) => (
                                 <SelectItem key={option.value} value={option.value}>
                                     {option.label}
@@ -154,10 +154,10 @@ function RequirementForm({
                         onValueChange={(value) => form.setData('status', value === NONE ? '' : value)}
                     >
                         <SelectTrigger id={`${idPrefix}-status`} className="w-full">
-                            <SelectValue placeholder="Sem status" />
+                            <SelectValue placeholder="No status" />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value={NONE}>Sem status</SelectItem>
+                            <SelectItem value={NONE}>No status</SelectItem>
                             {statusOptions.map((option) => (
                                 <SelectItem key={option.value} value={option.value}>
                                     {option.label}
@@ -172,11 +172,11 @@ function RequirementForm({
             <DialogFooter className="gap-2">
                 <DialogClose asChild>
                     <Button type="button" variant="secondary">
-                        Cancelar
+                        Cancel
                     </Button>
                 </DialogClose>
                 <Button type="submit" disabled={form.processing}>
-                    Salvar
+                    Save
                 </Button>
             </DialogFooter>
         </form>
@@ -208,24 +208,24 @@ export default function ManageRequirements({ requirements }: Props) {
 
     return (
         <>
-            <Head title="Gerenciar requisitos" />
+            <Head title="Manage requirements" />
 
             <div className="flex flex-col gap-6 p-4">
                 <div className="flex items-center justify-between">
                     <Heading
-                        title="Gerenciar requisitos"
-                        description="Requisitos funcionais e não funcionais que podem ser vinculados a casos de teste."
+                        title="Manage requirements"
+                        description="Functional and non-functional requirements that can be linked to test cases."
                     />
 
                     <Dialog open={createOpen} onOpenChange={setCreateOpen}>
                         <DialogTrigger asChild>
                             <Button>
-                                <Plus /> Novo requisito
+                                <Plus /> New requirement
                             </Button>
                         </DialogTrigger>
                         <DialogContent>
-                            <DialogTitle>Novo requisito</DialogTitle>
-                            <DialogDescription>Cadastre um requisito funcional ou não funcional.</DialogDescription>
+                            <DialogTitle>New requirement</DialogTitle>
+                            <DialogDescription>Register a functional or non-functional requirement.</DialogDescription>
                             <RequirementForm form={createForm} idPrefix="create" onSubmit={submitCreate} />
                         </DialogContent>
                     </Dialog>
@@ -233,16 +233,16 @@ export default function ManageRequirements({ requirements }: Props) {
 
                 <Card className="overflow-hidden py-0">
                     {requirements.length === 0 ? (
-                        <p className="p-6 text-sm text-muted-foreground">Nenhum requisito cadastrado ainda.</p>
+                        <p className="p-6 text-sm text-muted-foreground">No requirements registered yet.</p>
                     ) : (
                         <table className="w-full text-sm">
                             <thead className="border-b bg-muted/50 text-left">
                                 <tr>
-                                    <th className="px-4 py-3 font-medium">Código</th>
-                                    <th className="px-4 py-3 font-medium">Título</th>
-                                    <th className="px-4 py-3 font-medium">Tipo</th>
-                                    <th className="px-4 py-3 font-medium">Casos vinculados</th>
-                                    <th className="px-4 py-3 font-medium">Ações</th>
+                                    <th className="px-4 py-3 font-medium">Code</th>
+                                    <th className="px-4 py-3 font-medium">Title</th>
+                                    <th className="px-4 py-3 font-medium">Type</th>
+                                    <th className="px-4 py-3 font-medium">Linked cases</th>
+                                    <th className="px-4 py-3 font-medium">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -283,7 +283,7 @@ function RequirementRow({ requirement }: { requirement: RequirementListItem }) {
             <td className="px-4 py-3 font-medium">{requirement.code}</td>
             <td className="px-4 py-3">{requirement.title}</td>
             <td className="px-4 py-3">
-                <Badge variant="secondary">{requirement.type === 'funcional' ? 'RF' : 'RNF'}</Badge>
+                <Badge variant="secondary">{requirement.type === 'funcional' ? 'FR' : 'NFR'}</Badge>
             </td>
             <td className="px-4 py-3">{requirement.test_cases_count}</td>
             <td className="px-4 py-3">
@@ -291,12 +291,12 @@ function RequirementRow({ requirement }: { requirement: RequirementListItem }) {
                     <Dialog open={editOpen} onOpenChange={setEditOpen}>
                         <DialogTrigger asChild>
                             <Button variant="outline" size="sm">
-                                Editar
+                                Edit
                             </Button>
                         </DialogTrigger>
                         <DialogContent>
-                            <DialogTitle>Editar requisito</DialogTitle>
-                            <DialogDescription>Atualize os dados de &quot;{requirement.code}&quot;.</DialogDescription>
+                            <DialogTitle>Edit requirement</DialogTitle>
+                            <DialogDescription>Update the details of &quot;{requirement.code}&quot;.</DialogDescription>
                             <RequirementForm form={editForm} idPrefix={`edit-${requirement.id}`} onSubmit={submitEdit} />
                         </DialogContent>
                     </Dialog>
@@ -304,14 +304,14 @@ function RequirementRow({ requirement }: { requirement: RequirementListItem }) {
                     <Dialog>
                         <DialogTrigger asChild>
                             <Button variant="destructive" size="sm">
-                                Excluir
+                                Delete
                             </Button>
                         </DialogTrigger>
                         <DialogContent>
-                            <DialogTitle>Excluir requisito?</DialogTitle>
+                            <DialogTitle>Delete requirement?</DialogTitle>
                             <DialogDescription>
-                                Esta ação não pode ser desfeita. Casos de teste vinculados a &quot;{requirement.code}&quot; perderão
-                                essa associação.
+                                This action cannot be undone. Test cases linked to &quot;{requirement.code}&quot; will lose
+                                that association.
                             </DialogDescription>
 
                             <Form {...RequirementController.destroy.form(requirement)}>
@@ -319,11 +319,11 @@ function RequirementRow({ requirement }: { requirement: RequirementListItem }) {
                                     <DialogFooter className="gap-2">
                                         <DialogClose asChild>
                                             <Button type="button" variant="secondary">
-                                                Cancelar
+                                                Cancel
                                             </Button>
                                         </DialogClose>
                                         <Button type="submit" variant="destructive" disabled={processing}>
-                                            Excluir
+                                            Delete
                                         </Button>
                                     </DialogFooter>
                                 )}
@@ -337,5 +337,5 @@ function RequirementRow({ requirement }: { requirement: RequirementListItem }) {
 }
 
 ManageRequirements.layout = {
-    breadcrumbs: [{ title: 'Gerenciar requisitos', href: index() }],
+    breadcrumbs: [{ title: 'Manage requirements', href: index() }],
 };

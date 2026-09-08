@@ -36,11 +36,11 @@ type Props = {
 };
 
 const colorOptions: { value: TestCaseStatusColor; label: string }[] = [
-    { value: 'success', label: 'Verde' },
-    { value: 'destructive', label: 'Vermelho' },
-    { value: 'warning', label: 'Âmbar' },
+    { value: 'success', label: 'Green' },
+    { value: 'destructive', label: 'Red' },
+    { value: 'warning', label: 'Amber' },
     { value: 'info', label: 'Teal' },
-    { value: 'secondary', label: 'Cinza' },
+    { value: 'secondary', label: 'Gray' },
 ];
 
 export default function ManageTestCaseStatuses({ statuses }: Props) {
@@ -61,28 +61,28 @@ export default function ManageTestCaseStatuses({ statuses }: Props) {
 
     return (
         <>
-            <Head title="Gerenciar status" />
+            <Head title="Manage statuses" />
 
             <div className="flex flex-col gap-6 p-4">
                 <div className="flex items-center justify-between">
                     <Heading
-                        title="Gerenciar status"
-                        description="Adicione, edite ou remova os status disponíveis para os casos de teste."
+                        title="Manage statuses"
+                        description="Add, edit, or remove the statuses available for test cases."
                     />
 
                     <Dialog open={createOpen} onOpenChange={setCreateOpen}>
                         <DialogTrigger asChild>
                             <Button>
-                                <Plus /> Novo status
+                                <Plus /> New status
                             </Button>
                         </DialogTrigger>
                         <DialogContent>
-                            <DialogTitle>Novo status</DialogTitle>
-                            <DialogDescription>Defina o nome e a cor do novo status.</DialogDescription>
+                            <DialogTitle>New status</DialogTitle>
+                            <DialogDescription>Set the name and color of the new status.</DialogDescription>
 
                             <form onSubmit={submitCreate} className="flex flex-col gap-4">
                                 <div className="grid gap-2">
-                                    <Label htmlFor="create-name">Nome</Label>
+                                    <Label htmlFor="create-name">Name</Label>
                                     <Input
                                         id="create-name"
                                         value={createForm.data.name}
@@ -93,7 +93,7 @@ export default function ManageTestCaseStatuses({ statuses }: Props) {
                                 </div>
 
                                 <div className="grid gap-2">
-                                    <Label htmlFor="create-color">Cor</Label>
+                                    <Label htmlFor="create-color">Color</Label>
                                     <Select
                                         value={createForm.data.color}
                                         onValueChange={(value) =>
@@ -117,11 +117,11 @@ export default function ManageTestCaseStatuses({ statuses }: Props) {
                                 <DialogFooter className="gap-2">
                                     <DialogClose asChild>
                                         <Button type="button" variant="secondary">
-                                            Cancelar
+                                            Cancel
                                         </Button>
                                     </DialogClose>
                                     <Button type="submit" disabled={createForm.processing}>
-                                        Criar status
+                                        Create status
                                     </Button>
                                 </DialogFooter>
                             </form>
@@ -131,15 +131,15 @@ export default function ManageTestCaseStatuses({ statuses }: Props) {
 
                 <Card className="overflow-hidden py-0">
                     {statuses.length === 0 ? (
-                        <p className="p-6 text-sm text-muted-foreground">Nenhum status cadastrado ainda.</p>
+                        <p className="p-6 text-sm text-muted-foreground">No statuses registered yet.</p>
                     ) : (
                         <table className="w-full text-sm">
                             <thead className="border-b bg-muted/50 text-left">
                                 <tr>
                                     <th className="px-4 py-3 font-medium">Status</th>
-                                    <th className="px-4 py-3 font-medium">Cor</th>
-                                    <th className="px-4 py-3 font-medium">Casos de teste</th>
-                                    <th className="px-4 py-3 font-medium">Ações</th>
+                                    <th className="px-4 py-3 font-medium">Color</th>
+                                    <th className="px-4 py-3 font-medium">Test cases</th>
+                                    <th className="px-4 py-3 font-medium">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -182,16 +182,16 @@ function StatusRow({ status }: { status: ManagedStatus }) {
                     <Dialog open={editOpen} onOpenChange={setEditOpen}>
                         <DialogTrigger asChild>
                             <Button variant="outline" size="sm">
-                                Editar
+                                Edit
                             </Button>
                         </DialogTrigger>
                         <DialogContent>
-                            <DialogTitle>Editar status</DialogTitle>
-                            <DialogDescription>Atualize o nome e a cor de "{status.name}".</DialogDescription>
+                            <DialogTitle>Edit status</DialogTitle>
+                            <DialogDescription>Update the name and color of "{status.name}".</DialogDescription>
 
                             <form onSubmit={submitEdit} className="flex flex-col gap-4">
                                 <div className="grid gap-2">
-                                    <Label htmlFor={`edit-name-${status.id}`}>Nome</Label>
+                                    <Label htmlFor={`edit-name-${status.id}`}>Name</Label>
                                     <Input
                                         id={`edit-name-${status.id}`}
                                         value={editForm.data.name}
@@ -202,7 +202,7 @@ function StatusRow({ status }: { status: ManagedStatus }) {
                                 </div>
 
                                 <div className="grid gap-2">
-                                    <Label htmlFor={`edit-color-${status.id}`}>Cor</Label>
+                                    <Label htmlFor={`edit-color-${status.id}`}>Color</Label>
                                     <Select
                                         value={editForm.data.color}
                                         onValueChange={(value) =>
@@ -226,11 +226,11 @@ function StatusRow({ status }: { status: ManagedStatus }) {
                                 <DialogFooter className="gap-2">
                                     <DialogClose asChild>
                                         <Button type="button" variant="secondary">
-                                            Cancelar
+                                            Cancel
                                         </Button>
                                     </DialogClose>
                                     <Button type="submit" disabled={editForm.processing}>
-                                        Salvar
+                                        Save
                                     </Button>
                                 </DialogFooter>
                             </form>
@@ -240,14 +240,14 @@ function StatusRow({ status }: { status: ManagedStatus }) {
                     <Dialog>
                         <DialogTrigger asChild>
                             <Button variant="destructive" size="sm">
-                                Excluir
+                                Delete
                             </Button>
                         </DialogTrigger>
                         <DialogContent>
-                            <DialogTitle>Excluir status?</DialogTitle>
+                            <DialogTitle>Delete status?</DialogTitle>
                             <DialogDescription>
-                                Esta ação não pode ser desfeita. Casos de teste com o status "{status.name}"
-                                ficarão sem status atribuído.
+                                This action cannot be undone. Test cases with the "{status.name}" status
+                                will be left without a status.
                             </DialogDescription>
 
                             <Form {...TestCaseStatusController.destroy.form(status)}>
@@ -255,11 +255,11 @@ function StatusRow({ status }: { status: ManagedStatus }) {
                                     <DialogFooter className="gap-2">
                                         <DialogClose asChild>
                                             <Button type="button" variant="secondary">
-                                                Cancelar
+                                                Cancel
                                             </Button>
                                         </DialogClose>
                                         <Button type="submit" variant="destructive" disabled={processing}>
-                                            Excluir
+                                            Delete
                                         </Button>
                                     </DialogFooter>
                                 )}
@@ -273,5 +273,5 @@ function StatusRow({ status }: { status: ManagedStatus }) {
 }
 
 ManageTestCaseStatuses.layout = {
-    breadcrumbs: [{ title: 'Gerenciar status', href: index() }],
+    breadcrumbs: [{ title: 'Manage statuses', href: index() }],
 };

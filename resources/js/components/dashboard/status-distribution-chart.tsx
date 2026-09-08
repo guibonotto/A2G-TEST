@@ -9,13 +9,13 @@ export function StatusDistributionChart({ data }: { data: StatusBreakdownItem[] 
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Distribuição por Status</CardTitle>
-                <CardDescription>Casos de teste agrupados pelo status atual</CardDescription>
+                <CardTitle>Status Distribution</CardTitle>
+                <CardDescription>Test cases grouped by their current status</CardDescription>
             </CardHeader>
             <CardContent>
                 {total === 0 ? (
                     <p className="py-12 text-center text-sm text-muted-foreground">
-                        Nenhum caso de teste cadastrado ainda.
+                        No test cases registered yet.
                     </p>
                 ) : (
                     <div className="relative">
@@ -37,7 +37,7 @@ export function StatusDistributionChart({ data }: { data: StatusBreakdownItem[] 
                                     ))}
                                 </Pie>
                                 <Tooltip
-                                    formatter={(value: number, name: string) => [`${value} caso(s)`, name]}
+                                    formatter={(value: number, name: string) => [`${value} case(s)`, name]}
                                     contentStyle={{
                                         background: 'var(--popover)',
                                         borderColor: 'var(--border)',
@@ -51,7 +51,7 @@ export function StatusDistributionChart({ data }: { data: StatusBreakdownItem[] 
 
                         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
                             <span className="text-2xl font-semibold tabular-nums">{total}</span>
-                            <span className="text-xs text-muted-foreground">casos</span>
+                            <span className="text-xs text-muted-foreground">cases</span>
                         </div>
                     </div>
                 )}

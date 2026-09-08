@@ -15,25 +15,25 @@ const roles = [
         id: 'role-qa',
         value: 'qa',
         name: 'QA / Tester',
-        desc: 'Criar e editar testes',
+        desc: 'Create and edit tests',
     },
     {
         id: 'role-dev',
         value: 'developer',
-        name: 'Desenvolvedor',
-        desc: 'Visualizar e executar',
+        name: 'Developer',
+        desc: 'View and execute',
     },
     {
         id: 'role-admin',
         value: 'admin',
-        name: 'Administrador',
-        desc: 'Acesso total',
+        name: 'Administrator',
+        desc: 'Full access',
     },
     {
         id: 'role-viewer',
         value: 'viewer',
-        name: 'Visualizador',
-        desc: 'Somente leitura',
+        name: 'Viewer',
+        desc: 'Read only',
     },
 ];
 
@@ -48,7 +48,7 @@ export default function Register() {
 
     return (
         <>
-            <Head title="Criar conta" />
+            <Head title="Sign up" />
 
             <div className="bg-grid" />
 
@@ -69,12 +69,12 @@ export default function Register() {
                         {/* Header */}
                         <div>
                             <h1 className="text-2xl font-extrabold tracking-tight">
-                                Crie sua conta
+                                Create your account
                             </h1>
 
                             <p className="mt-1.5 font-mono text-xs leading-relaxed text-muted-foreground">
-                                Junte-se ao A2G TEST e gerencie seus casos de
-                                teste com eficiência.
+                                Join A2G TEST and manage your test cases
+                                efficiently.
                             </p>
                         </div>
 
@@ -88,14 +88,14 @@ export default function Register() {
                         >
                             {({ processing, errors }) => (
                                 <>
-                                    {/* Nome e sobrenome */}
+                                    {/* First and last name */}
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="grid gap-2">
                                             <Label
                                                 htmlFor="first_name"
                                                 className={labelClassName}
                                             >
-                                                Nome
+                                                First name
                                             </Label>
 
                                             <input
@@ -103,7 +103,7 @@ export default function Register() {
                                                 className={fieldClassName}
                                                 type="text"
                                                 name="first_name"
-                                                placeholder="João"
+                                                placeholder="John"
                                                 autoFocus
                                                 autoComplete="given-name"
                                             />
@@ -118,7 +118,7 @@ export default function Register() {
                                                 htmlFor="last_name"
                                                 className={labelClassName}
                                             >
-                                                Sobrenome
+                                                Last name
                                             </Label>
 
                                             <input
@@ -126,7 +126,7 @@ export default function Register() {
                                                 className={fieldClassName}
                                                 type="text"
                                                 name="last_name"
-                                                placeholder="Silva"
+                                                placeholder="Smith"
                                                 autoComplete="family-name"
                                             />
 
@@ -136,13 +136,13 @@ export default function Register() {
                                         </div>
                                     </div>
 
-                                    {/* E-mail */}
+                                    {/* Email */}
                                     <div className="grid gap-2">
                                         <Label
                                             htmlFor="email"
                                             className={labelClassName}
                                         >
-                                            E-mail
+                                            Email
                                         </Label>
 
                                         <input
@@ -150,20 +150,20 @@ export default function Register() {
                                             className={fieldClassName}
                                             type="email"
                                             name="email"
-                                            placeholder="joao@empresa.com"
+                                            placeholder="john@company.com"
                                             autoComplete="email"
                                         />
 
                                         <InputError message={errors.email} />
                                     </div>
 
-                                    {/* Senha */}
+                                    {/* Password */}
                                     <div className="grid gap-2">
                                         <Label
                                             htmlFor="password"
                                             className={labelClassName}
                                         >
-                                            Senha
+                                            Password
                                         </Label>
 
                                         <PasswordInput
@@ -179,13 +179,13 @@ export default function Register() {
                                         />
                                     </div>
 
-                                    {/* Confirmação da senha */}
+                                    {/* Password confirmation */}
                                     <div className="grid gap-2">
                                         <Label
                                             htmlFor="password_confirmation"
                                             className={labelClassName}
                                         >
-                                            Confirmar senha
+                                            Confirm password
                                         </Label>
 
                                         <PasswordInput
@@ -203,15 +203,15 @@ export default function Register() {
                                         />
                                     </div>
 
-                                    {/* Perfil */}
+                                    {/* Role */}
                                     <div className="grid gap-2">
                                         <div className="flex items-center justify-between">
                                             <Label className={labelClassName}>
-                                                Perfil de acesso
+                                                Access role
                                             </Label>
 
                                             <span className="font-mono text-[10px] text-muted-foreground">
-                                                Obrigatório
+                                                Required
                                             </span>
                                         </div>
 
@@ -268,7 +268,7 @@ export default function Register() {
                                         <InputError message={errors.role} />
                                     </div>
 
-                                    {/* Criar conta */}
+                                    {/* Create account */}
                                     <Button
                                         type="submit"
                                         className="mt-1 w-full"
@@ -276,15 +276,15 @@ export default function Register() {
                                     >
                                         {processing && <Spinner />}
                                         {processing
-                                            ? 'Criando conta...'
-                                            : 'Criar conta →'}
+                                            ? 'Creating account...'
+                                            : 'Create account →'}
                                     </Button>
 
-                                    {/* Divisor */}
+                                    {/* Divider */}
                                     <div className="flex items-center gap-3 text-xs text-muted-foreground">
                                         <span className="h-px flex-1 bg-border" />
                                         <span className="font-mono">
-                                            ou
+                                            or
                                         </span>
                                         <span className="h-px flex-1 bg-border" />
                                     </div>
@@ -295,7 +295,7 @@ export default function Register() {
                                         variant="outline"
                                         className="w-full"
                                     >
-                                        Continuar com Google
+                                        Continue with Google
                                     </Button>
                                 </>
                             )}
@@ -305,12 +305,12 @@ export default function Register() {
 
                 {/* Login */}
                 <p className="text-center font-mono text-xs text-muted-foreground">
-                    Já tem uma conta?{' '}
+                    Already have an account?{' '}
                     <Link
                         href={loginStore.url()}
                         className="text-primary transition-colors hover:underline"
                     >
-                        Fazer login
+                        Log in
                     </Link>
                 </p>
             </div>

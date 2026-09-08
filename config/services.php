@@ -35,4 +35,10 @@ return [
         ],
     ],
 
+    'jira' => [
+        'client_id' => env('JIRA_CLIENT_ID'),
+        'client_secret' => env('JIRA_CLIENT_SECRET'),
+        'redirect' => env('JIRA_REDIRECT_URI'),
+    ],
+
 ];

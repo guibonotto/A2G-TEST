@@ -3,15 +3,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import type { CreationTrendPoint } from '@/types/dashboard';
 
 function formatDay(value: string) {
-    return new Date(`${value}T00:00:00`).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+    return new Date(`${value}T00:00:00`).toLocaleDateString('en-US', { day: '2-digit', month: '2-digit' });
 }
 
 export function CreationTrendChart({ data }: { data: CreationTrendPoint[] }) {
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Casos de Teste Criados</CardTitle>
-                <CardDescription>Total acumulado nos últimos 30 dias</CardDescription>
+                <CardTitle>Test Cases Created</CardTitle>
+                <CardDescription>Cumulative total over the last 30 days</CardDescription>
             </CardHeader>
             <CardContent>
                 <ResponsiveContainer width="100%" height={260}>
@@ -27,7 +27,7 @@ export function CreationTrendChart({ data }: { data: CreationTrendPoint[] }) {
                         <YAxis allowDecimals={false} stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
                         <Tooltip
                             labelFormatter={(value: string) => formatDay(value)}
-                            formatter={(value: number, key: string) => [`${value} caso(s)`, key === 'cumulative' ? 'Acumulado' : 'Criados no dia']}
+                            formatter={(value: number, key: string) => [`${value} case(s)`, key === 'cumulative' ? 'Cumulative' : 'Created that day']}
                             contentStyle={{ background: 'var(--popover)', borderColor: 'var(--border)', borderRadius: 8, fontSize: 12 }}
                         />
                         <Area type="monotone" dataKey="cumulative" stroke="var(--chart-1)" strokeWidth={2} fill="url(#creationTrendFill)" activeDot={{ r: 4 }} />

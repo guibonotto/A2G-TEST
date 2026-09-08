@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { BookOpen, ClipboardList, FileText, FolderGit2, LayoutGrid, ShieldCheck, Tags, Users } from 'lucide-react';
+import { BookOpen, ClipboardList, FileText, FolderGit2, LayoutGrid, Plug, ShieldCheck, Tags, Users } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
 import { index as accountsIndex } from '@/routes/accounts';
+import { edit as jiraEdit } from '@/routes/jira';
 import { index as requirementsIndex } from '@/routes/requirements';
 import { index as rolePermissionsIndex } from '@/routes/role-permissions';
 import { index as testCaseStatusesIndex } from '@/routes/test-case-statuses';
@@ -28,7 +29,7 @@ const mainNavItems: NavItem[] = [
         icon: LayoutGrid,
     },
     {
-        title: 'Casos de teste',
+        title: 'Test Cases',
         href: testCasesIndex(),
         icon: ClipboardList,
     },
@@ -36,24 +37,29 @@ const mainNavItems: NavItem[] = [
 
 const managementNavItems: NavItem[] = [
     {
-        title: 'Gerenciar Contas',
+        title: 'Manage Accounts',
         href: accountsIndex(),
         icon: Users,
     },
     {
-        title: 'Gerenciar Permissões',
+        title: 'Manage Permissions',
         href: rolePermissionsIndex(),
         icon: ShieldCheck,
     },
     {
-        title: 'Gerenciar Status',
+        title: 'Manage Statuses',
         href: testCaseStatusesIndex(),
         icon: Tags,
     },
     {
-        title: 'Gerenciar Requisitos',
+        title: 'Manage Requirements',
         href: requirementsIndex(),
         icon: FileText,
+    },
+    {
+        title: 'Jira Integration',
+        href: jiraEdit(),
+        icon: Plug,
     },
 ];
 
@@ -90,7 +96,7 @@ export function AppSidebar() {
 
             <SidebarContent>
                 <NavMain items={mainNavItems} />
-                {isQa && <NavMain items={managementNavItems} label="Gerenciamento" />}
+                {isQa && <NavMain items={managementNavItems} label="Management" />}
             </SidebarContent>
 
             <SidebarFooter>

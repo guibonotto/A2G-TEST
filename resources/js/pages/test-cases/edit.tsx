@@ -234,7 +234,7 @@ export default function EditTestCase({
                                         onValueChange={(value) => setData('status_id', value)}
                                     >
                                         <SelectTrigger id="status_id" className="w-full">
-                                            <SelectValue placeholder="Selecione um status" />
+                                            <SelectValue placeholder="Select a status" />
                                         </SelectTrigger>
 
                                         <SelectContent>

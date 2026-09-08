@@ -37,7 +37,7 @@ class RequirementController extends Controller
 
         Inertia::flash('toast', [
             'type' => 'success',
-            'message' => __('Requisito ":code" criado.', ['code' => $requirement->code]),
+            'message' => __('Requirement ":code" created.', ['code' => $requirement->code]),
         ]);
 
         return back();
@@ -52,7 +52,7 @@ class RequirementController extends Controller
 
         Inertia::flash('toast', [
             'type' => 'success',
-            'message' => __('Requisito ":code" atualizado.', ['code' => $requirement->code]),
+            'message' => __('Requirement ":code" updated.', ['code' => $requirement->code]),
         ]);
 
         return back();
@@ -69,7 +69,7 @@ class RequirementController extends Controller
 
         Inertia::flash('toast', [
             'type' => 'success',
-            'message' => __('Requisito ":code" removido.', ['code' => $code]),
+            'message' => __('Requirement ":code" deleted.', ['code' => $code]),
         ]);
 
         return back();
