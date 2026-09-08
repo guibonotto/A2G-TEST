@@ -60,6 +60,7 @@ export type Execution = {
     comment: string | null;
     execution_date: string;
     executor: { id: number; name: string } | null;
+    evidences: Evidence[];
 };
 
 export type LinkedRequirement = {
@@ -73,4 +74,12 @@ export type TestCaseFilters = {
     classification_id: number | null;
     status_id: number | null;
     assigned_to_me: boolean;
+};
+
+export type Evidence = {
+    id: number;
+    file_name: string;
+    mime_type: string;
+    size: number;
+    uploaded_at: string;
 };

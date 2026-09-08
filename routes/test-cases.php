@@ -16,4 +16,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('test-cases/{testCase}', [TestCaseController::class, 'deleteTestCase'])->name('test-cases.delete');
     Route::post('test-cases/{testCase}/requirements', [TestCaseController::class, 'linkRequirement'])->name('test-cases.requirements.link');
     Route::delete('test-cases/{testCase}/requirements', [TestCaseController::class, 'unlinkRequirement'])->name('test-cases.requirements.unlink');
+    Route::get('evidences/{evidence}', [TestCaseController::class, 'showEvidence'])->name('evidences.show');
+    Route::delete('evidences/{evidence}', [TestCaseController::class, 'destroyEvidence'])->name('evidences.destroy');
 });

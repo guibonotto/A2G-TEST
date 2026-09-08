@@ -21,6 +21,12 @@ class StoreExecutionRequest extends FormRequest
             'status' => ['required', 'string', 'in:APROVADO,REPROVADO,BLOQUEADO,PENDENTE'],
             'comment' => ['nullable', 'string', 'max:5000'],
             'execution_date' => ['required', 'date'],
+            'evidences' => ['nullable', 'array', 'max:10'],
+            'evidences.*' => [
+                'file',
+                'max:10240',
+                'mimetypes:image/png,image/jpeg,image/gif,image/webp,application/pdf,text/plain',
+            ],
         ];
     }
 }

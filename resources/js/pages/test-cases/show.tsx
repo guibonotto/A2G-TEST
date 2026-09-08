@@ -7,8 +7,6 @@ import Heading from '@/components/heading';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import {
     Dialog,
     DialogClose,
@@ -18,6 +16,7 @@ import {
     DialogTitle,
     DialogTrigger,
 } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
 import {
     Select,
     SelectContent,
@@ -25,7 +24,9 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import { executionStatusLabel } from '@/lib/execution-status';
+import { show as evidenceShow } from '@/routes/evidences';
 import { assign, edit, index, show } from '@/routes/test-cases';
 import type { AssignableUser, RequirementOption, TestCaseDetail } from '@/types';
 
@@ -316,6 +317,20 @@ export default function ShowTestCase({ testCase, assignableUsers, executionStatu
                                         {errors.comment && <p className="text-sm text-destructive">{errors.comment}</p>}
                                     </div>
 
+                                    <div className="grid gap-2 md:col-span-2">
+                                        <Label htmlFor="evidences">Evidence (sreenshots, logs)</Label>
+                                        <input
+                                            id="evidences"
+                                            name="evidences[]"
+                                            type="file"
+                                            multiple
+                                            accept="image/png,image/jpeg,image/gif,image/webp,application/pdf,text/plain"
+                                            className="border-input bg-background rounded-md border px-3 py-2 text-sm file:mr-3 file:rounded file:border-0 file:bg-secondary file:px-3 file:py-1 file:text-sm"
+                                        />
+                                        <p className="text-xs text-muted-foreground">Up to 10 files, 10MB each.</p>
+                                        {errors['evidences.0'] && <p className="text-sm text-destructive">{errors['evidences.0']}</p>}
+                                    </div>
+
                                     <div className="flex items-end">
                                         <Button type="submit" disabled={processing}>
                                             {processing ? 'Recording...' : 'Record execution'}
@@ -485,6 +500,33 @@ export default function ShowTestCase({ testCase, assignableUsers, executionStatu
                                         Executed by {execution.executor?.name ?? 'Deleted user'}
                                     </span>
                                     {execution.comment && <p className="text-sm">{execution.comment}</p>}
+                                    {execution.evidences.length > 0 && (
+                                        <div className="flex flex-wrap gap-3 pt-1">
+                                            {execution.evidences.map((evidence) => (
+                                                <a
+                                                    key={evidence.id}
+                                                    href={evidenceShow.url(evidence.id)}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    className="group flex flex-col gap-1"
+                                                    title={evidence.file_name}
+                                                >
+                                                    {evidence.mime_type.startsWith('image/') ? (
+                                                        <img
+                                                            src={evidenceShow.url(evidence.id)}
+                                                            alt={evidence.file_name}
+                                                            className="h-24 w-32 rounded border object-cover transition group-hover:opacity-80"
+                                                        />
+                                                    ) : (
+                                                        <span className="flex h-24 w-32 items-center justify-center rounded border bg-muted text-xs text-muted-foreground">
+                                                            {evidence.file_name.split('.').pop()?.toUpperCase()}
+                                                        </span>
+                                                    )}
+                                                    <span className="max-w-32 truncate text-xs text-muted-foreground">{evidence.file_name}</span>
+                                                </a>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                             ))
                         )}

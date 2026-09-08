@@ -9,6 +9,7 @@ use App\Http\Requests\TestCases\StoreExecutionRequest;
 use App\Http\Requests\TestCases\StoreTestCaseRequest;
 use App\Http\Requests\TestCases\UpdateTestCaseRequest;
 use App\Models\Classification;
+use App\Models\Evidence;
 use App\Models\Requirement;
 use App\Models\TestCase;
 use App\Models\TestCaseStatus;
@@ -17,8 +18,10 @@ use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class TestCaseController extends Controller
 {
@@ -117,6 +120,7 @@ class TestCaseController extends Controller
             'assignee:id,name',
             'steps',
             'executions.executor:id,name',
+            'executions.evidences:id,execution_id,file_name,mime_type,size,uploaded_at',
             'requirements' => fn ($query) => $query->orderBy('code'),
         ]);
 
@@ -135,10 +139,20 @@ class TestCaseController extends Controller
 
     public function storeExecution(StoreExecutionRequest $request, TestCase $testCase): RedirectResponse
     {
-        $testCase->executions()->create([
-            ...$request->validated(),
+        $execution = $testCase->executions()->create([
+            ...$request->safe()->except('evidences'),
             'executed_by' => $request->user()->id,
         ]);
+
+        foreach ($request->file('evidences') ?? [] as $file) {
+            $execution->evidences()->create([
+                'file_name' => $file->getClientOriginalName(),
+                'file_path' => $file->store("evidences/{$execution->id}", 'local'),
+                'mime_type' => $file->getMimeType(),
+                'size' => $file->getSize(),
+                'uploaded_at' => now(),
+            ]);
+        }
 
         Inertia::flash('toast', [
             'type' => 'success',
@@ -273,5 +287,31 @@ class TestCaseController extends Controller
         ]);
 
         return back();
+    }
+
+    /**
+     * Stream an evidence file to the browser, behind authentication.
+     */
+    public function showEvidence(Evidence $evidence): StreamedResponse
+    {
+        abort_unless(Storage::disk('local')->exists($evidence->file_path), 404);
+
+        return Storage::disk('local')->response($evidence->file_path, $evidence->file_name);
+    }
+
+    /**
+     * Remove an evidence file from storage.
+     */
+    public function destroyEvidence(Evidence $evidence): RedirectResponse
+    {
+        $testCase = $evidence->execution->testCase;
+        $evidence->delete();
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => __('Evidence deleted.'),
+        ]);
+
+        return to_route('test-cases.show', $testCase);
     }
 }
