@@ -1,9 +1,12 @@
 <?php
 
 use App\Http\Controllers\TestCaseController;
+use App\Http\Controllers\TestTemplateController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'verified', 'project'])->group(function () {
+    Route::get('test-templates/{testTemplate}', [TestTemplateController::class, 'show'])->name('test-templates.show');
+
     Route::get('test-cases', [TestCaseController::class, 'index'])->name('test-cases.index');
     Route::patch('test-cases/bulk-status', [TestCaseController::class, 'bulkUpdateStatus'])->name('test-cases.bulk-status');
     Route::get('test-cases/create', [TestCaseController::class, 'create'])->name('test-cases.create');

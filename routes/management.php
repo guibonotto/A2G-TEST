@@ -4,6 +4,7 @@ use App\Http\Controllers\AccountController;
 use App\Http\Controllers\RequirementController;
 use App\Http\Controllers\RolePermissionController;
 use App\Http\Controllers\TestCaseStatusController;
+use App\Http\Controllers\TestTemplateController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'verified', 'role:qa'])->group(function () {
@@ -22,4 +23,9 @@ Route::middleware(['auth', 'verified', 'role:qa'])->group(function () {
     Route::post('management/requirements', [RequirementController::class, 'store'])->name('requirements.store');
     Route::put('management/requirements/{requirement}', [RequirementController::class, 'update'])->name('requirements.update');
     Route::delete('management/requirements/{requirement}', [RequirementController::class, 'destroy'])->name('requirements.destroy');
+
+    Route::get('management/templates', [TestTemplateController::class, 'index'])->name('test-templates.index');
+    Route::post('management/templates', [TestTemplateController::class, 'store'])->name('test-templates.store');
+    Route::put('management/templates/{testTemplate}', [TestTemplateController::class, 'update'])->name('test-templates.update');
+    Route::delete('management/templates/{testTemplate}', [TestTemplateController::class, 'destroy'])->name('test-templates.destroy');
 });

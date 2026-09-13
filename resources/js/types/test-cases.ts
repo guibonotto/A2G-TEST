@@ -8,6 +8,18 @@ export type TestTemplate = {
     title: string;
 };
 
+export type TestTemplateStep = {
+    description: string;
+    expected_result: string | null;
+};
+
+/** Payload returned by `test-templates.show`, used to pre-fill the test case form. */
+export type TestTemplateData = {
+    description: string | null;
+    classification_id: number | null;
+    steps: TestTemplateStep[];
+};
+
 export type TestCaseStatusColor = 'success' | 'destructive' | 'warning' | 'secondary' | 'info';
 
 export type TestCaseStatus = {

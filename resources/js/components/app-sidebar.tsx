@@ -5,6 +5,7 @@ import {
     FileText,
     FolderGit2,
     LayoutGrid,
+    LayoutTemplate,
     Plug,
     ShieldCheck,
     Tags,
@@ -31,6 +32,7 @@ import { index as requirementsIndex } from '@/routes/requirements';
 import { index as rolePermissionsIndex } from '@/routes/role-permissions';
 import { index as testCaseStatusesIndex } from '@/routes/test-case-statuses';
 import { index as testCasesIndex } from '@/routes/test-cases';
+import { index as testTemplatesIndex } from '@/routes/test-templates';
 import type { NavItem } from '@/types';
 
 const mainNavItems: NavItem[] = [
@@ -66,6 +68,11 @@ const managementNavItems: NavItem[] = [
         title: 'Manage Statuses',
         href: testCaseStatusesIndex(),
         icon: Tags,
+    },
+    {
+        title: 'Manage Templates',
+        href: testTemplatesIndex(),
+        icon: LayoutTemplate,
     },
     {
         title: 'Manage Requirements',
