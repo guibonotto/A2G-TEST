@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -11,8 +12,14 @@ return new class extends Migration
      */
     public function up(): void
     {
+        DB::table('test_cases')->delete();
+
         Schema::table('test_cases', function (Blueprint $table) {
-            $table->foreignId('project_id')->after('id')->constrained()->cascadeOnDelete();
+            $table->foreignId('project_id')->nullable()->after('id')->constrained()->cascadeOnDelete();
+        });
+
+        Schema::table('test_cases', function (Blueprint $table) {
+            $table->foreignId('project_id')->nullable(false)->change();
         });
     }
 

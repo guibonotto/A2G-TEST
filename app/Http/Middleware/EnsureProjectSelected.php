@@ -20,7 +20,7 @@ class EnsureProjectSelected
         if (! Project::current()) {
             Inertia::flash('toast', [
                 'type' => 'info',
-                'message' => __('Crie ou entre em um projeto para continuar.'),
+                'message' => __('Create or join a project to continue.'),
             ]);
 
             return redirect()->route('projects.index');

@@ -35,13 +35,13 @@ export default function ProjectsShow({ project }: { project: Project }) {
                     title={project.name}
                     description={
                         project.isOwner
-                            ? 'Compartilhe o ID abaixo e a senha do projeto com quem você quer convidar.'
-                            : 'Você faz parte deste projeto.'
+                            ? 'Share the ID below and the project password with whoever you want to invite.'
+                            : 'You are a member of this project.'
                     }
                 />
 
                 <div className="grid gap-2">
-                    <Label htmlFor="project-uuid">ID do projeto</Label>
+                    <Label htmlFor="project-uuid">Project ID</Label>
                     <div className="flex gap-2">
                         <Input
                             id="project-uuid"
@@ -55,7 +55,7 @@ export default function ProjectsShow({ project }: { project: Project }) {
                             variant="outline"
                             size="icon"
                             onClick={copyId}
-                            aria-label="Copiar ID do projeto"
+                            aria-label="Copy project ID"
                         >
                             {copied ? (
                                 <Check className="text-green-600" />
@@ -67,7 +67,7 @@ export default function ProjectsShow({ project }: { project: Project }) {
                 </div>
 
                 <Button asChild className="w-full">
-                    <Link href={dashboard()}>Ir para o Dashboard</Link>
+                    <Link href={dashboard()}>Go to Dashboard</Link>
                 </Button>
             </div>
         </>
@@ -76,7 +76,7 @@ export default function ProjectsShow({ project }: { project: Project }) {
 
 ProjectsShow.layout = (props: { project: Project }) => ({
     breadcrumbs: [
-        { title: 'Projetos', href: projectsIndex() },
+        { title: 'Projects', href: projectsIndex() },
         { title: props.project.name, href: projectsShow(props.project.uuid) },
     ],
 });

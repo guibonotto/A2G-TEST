@@ -13,31 +13,49 @@ import type { ProjectSummary } from '@/types/projects';
 
 type Mode = 'create' | 'join';
 
-export default function ProjectsIndex({ myProjects }: { myProjects: ProjectSummary[] }) {
+export default function ProjectsIndex({
+    myProjects,
+}: {
+    myProjects: ProjectSummary[];
+}) {
     const [mode, setMode] = useState<Mode>('create');
 
     return (
         <>
-            <Head title="Projetos" />
+            <Head title="Projects" />
 
             <div className="mx-auto w-full max-w-lg space-y-6">
                 <Heading
-                    title="Projetos"
-                    description="Crie um novo projeto ou entre em um projeto existente informando o ID e a senha."
+                    title="Projects"
+                    description="Create a new project or join an existing one with its ID and password."
                 />
 
                 {myProjects.length > 0 && (
                     <div className="space-y-2 rounded-lg border p-4">
-                        <p className="text-sm font-medium">Seus projetos</p>
+                        <p className="text-sm font-medium">Your projects</p>
                         <ul className="space-y-2">
                             {myProjects.map((project) => (
-                                <li key={project.id} className="flex items-center justify-between gap-2">
-                                    <span className="truncate text-sm">{project.name}</span>
-                                    <Form {...ProjectController.select.form(project.uuid)}>
+                                <li
+                                    key={project.id}
+                                    className="flex items-center justify-between gap-2"
+                                >
+                                    <span className="truncate text-sm">
+                                        {project.name}
+                                    </span>
+                                    <Form
+                                        {...ProjectController.select.form(
+                                            project.uuid,
+                                        )}
+                                    >
                                         {({ processing }) => (
-                                            <Button type="submit" variant="outline" size="sm" disabled={processing}>
+                                            <Button
+                                                type="submit"
+                                                variant="outline"
+                                                size="sm"
+                                                disabled={processing}
+                                            >
                                                 {processing && <Spinner />}
-                                                Entrar
+                                                Open
                                             </Button>
                                         )}
                                     </Form>
@@ -57,7 +75,7 @@ export default function ProjectsIndex({ myProjects }: { myProjects: ProjectSumma
                                 : 'text-muted-foreground hover:text-foreground'
                         }`}
                     >
-                        Criar projeto
+                        Create project
                     </button>
                     <button
                         type="button"
@@ -68,7 +86,7 @@ export default function ProjectsIndex({ myProjects }: { myProjects: ProjectSumma
                                 : 'text-muted-foreground hover:text-foreground'
                         }`}
                     >
-                        Entrar em um projeto
+                        Join a project
                     </button>
                 </div>
 
@@ -81,13 +99,11 @@ export default function ProjectsIndex({ myProjects }: { myProjects: ProjectSumma
                         {({ processing, errors }) => (
                             <>
                                 <div className="grid gap-2">
-                                    <Label htmlFor="name">
-                                        Nome do projeto
-                                    </Label>
+                                    <Label htmlFor="name">Project name</Label>
                                     <Input
                                         id="name"
                                         name="name"
-                                        placeholder="Ex: Projeto Alpha"
+                                        placeholder="e.g. Alpha Project"
                                         autoFocus
                                         autoComplete="off"
                                     />
@@ -96,7 +112,7 @@ export default function ProjectsIndex({ myProjects }: { myProjects: ProjectSumma
 
                                 <div className="grid gap-2">
                                     <Label htmlFor="password">
-                                        Senha do projeto
+                                        Project password
                                     </Label>
                                     <PasswordInput
                                         id="password"
@@ -109,7 +125,7 @@ export default function ProjectsIndex({ myProjects }: { myProjects: ProjectSumma
 
                                 <div className="grid gap-2">
                                     <Label htmlFor="password_confirmation">
-                                        Confirmar senha
+                                        Confirm password
                                     </Label>
                                     <PasswordInput
                                         id="password_confirmation"
@@ -128,7 +144,7 @@ export default function ProjectsIndex({ myProjects }: { myProjects: ProjectSumma
                                     disabled={processing}
                                 >
                                     {processing && <Spinner />}
-                                    Criar projeto
+                                    Create project
                                 </Button>
                             </>
                         )}
@@ -142,11 +158,11 @@ export default function ProjectsIndex({ myProjects }: { myProjects: ProjectSumma
                         {({ processing, errors }) => (
                             <>
                                 <div className="grid gap-2">
-                                    <Label htmlFor="uuid">ID do projeto</Label>
+                                    <Label htmlFor="uuid">Project ID</Label>
                                     <Input
                                         id="uuid"
                                         name="uuid"
-                                        placeholder="Cole aqui o ID compartilhado com você"
+                                        placeholder="Paste the ID shared with you"
                                         autoFocus
                                         autoComplete="off"
                                     />
@@ -155,7 +171,7 @@ export default function ProjectsIndex({ myProjects }: { myProjects: ProjectSumma
 
                                 <div className="grid gap-2">
                                     <Label htmlFor="join-password">
-                                        Senha do projeto
+                                        Project password
                                     </Label>
                                     <PasswordInput
                                         id="join-password"
@@ -172,7 +188,7 @@ export default function ProjectsIndex({ myProjects }: { myProjects: ProjectSumma
                                     disabled={processing}
                                 >
                                     {processing && <Spinner />}
-                                    Entrar no projeto
+                                    Join project
                                 </Button>
                             </>
                         )}
@@ -186,7 +202,7 @@ export default function ProjectsIndex({ myProjects }: { myProjects: ProjectSumma
 ProjectsIndex.layout = {
     breadcrumbs: [
         {
-            title: 'Projetos',
+            title: 'Projects',
             href: projectsIndex(),
         },
     ],

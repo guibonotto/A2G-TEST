@@ -35,12 +35,12 @@ class ProjectTest extends TestCase
         $user = User::factory()->create();
 
         $response = $this->actingAs($user)->post(route('projects.store'), [
-            'name' => 'Projeto Alpha',
+            'name' => 'Alpha Project',
             'password' => 'password',
             'password_confirmation' => 'password',
         ]);
 
-        $project = Project::whereName('Projeto Alpha')->first();
+        $project = Project::whereName('Alpha Project')->first();
 
         $response->assertSessionHasNoErrors();
         $response->assertRedirect(route('projects.show', $project));
@@ -99,7 +99,7 @@ class ProjectTest extends TestCase
             'password' => 'wrong-password',
         ]);
 
-        $response->assertSessionHasErrors('password');
+        $response->assertSessionHasErrors(['password' => 'The provided password is incorrect.']);
         $this->assertFalse($project->members()->whereKey($user->id)->exists());
     }
 
@@ -128,7 +128,7 @@ class ProjectTest extends TestCase
             'password' => 'secret-password',
         ]);
 
-        $response->assertSessionHasErrors('uuid');
+        $response->assertSessionHasErrors(['uuid' => 'You are already a member of this project.']);
     }
 
     public function test_only_members_can_view_a_project(): void
@@ -158,7 +158,7 @@ class ProjectTest extends TestCase
     public function test_projects_index_lists_the_users_projects(): void
     {
         $user = User::factory()->create();
-        $project = Project::factory()->create(['name' => 'Projeto Alpha']);
+        $project = Project::factory()->create(['name' => 'Alpha Project']);
         $project->members()->attach($user);
         Project::factory()->create();
 
@@ -167,7 +167,7 @@ class ProjectTest extends TestCase
         $response->assertInertia(fn (Assert $page) => $page
             ->component('projects/index')
             ->has('myProjects', 1)
-            ->where('myProjects.0.name', 'Projeto Alpha')
+            ->where('myProjects.0.name', 'Alpha Project')
         );
     }
 

@@ -1,5 +1,15 @@
 import { Link, usePage } from '@inertiajs/react';
-import { BookOpen, ClipboardList, FileText, FolderGit2, LayoutGrid, Plug, ShieldCheck, Tags, Users } from 'lucide-react';
+import {
+    BookOpen,
+    ClipboardList,
+    FileText,
+    FolderGit2,
+    LayoutGrid,
+    Plug,
+    ShieldCheck,
+    Tags,
+    Users,
+} from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
@@ -30,7 +40,7 @@ const mainNavItems: NavItem[] = [
         icon: LayoutGrid,
     },
     {
-        title: 'Projetos',
+        title: 'Projects',
         href: projectsIndex(),
         icon: Users,
     },
@@ -100,9 +110,14 @@ export function AppSidebar() {
                     {currentProject && (
                         <SidebarMenuItem>
                             <SidebarMenuButton size="sm" asChild>
-                                <Link href={projectsIndex()} className="text-muted-foreground">
+                                <Link
+                                    href={projectsIndex()}
+                                    className="text-muted-foreground"
+                                >
                                     <Users />
-                                    <span className="truncate">{currentProject.name}</span>
+                                    <span className="truncate">
+                                        {currentProject.name}
+                                    </span>
                                 </Link>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
@@ -112,7 +127,9 @@ export function AppSidebar() {
 
             <SidebarContent>
                 <NavMain items={mainNavItems} />
-                {isQa && <NavMain items={managementNavItems} label="Management" />}
+                {isQa && (
+                    <NavMain items={managementNavItems} label="Management" />
+                )}
             </SidebarContent>
 
             <SidebarFooter>

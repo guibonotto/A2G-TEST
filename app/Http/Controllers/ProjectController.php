@@ -36,7 +36,7 @@ class ProjectController extends Controller
 
         session(['current_project_id' => $project->id]);
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('Projeto criado com sucesso.')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Project created successfully.')]);
 
         return to_route('projects.show', $project);
     }
@@ -52,7 +52,7 @@ class ProjectController extends Controller
 
         session(['current_project_id' => $project->id]);
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('Você entrou no projeto ":name".', ['name' => $project->name])]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('You joined the ":name" project.', ['name' => $project->name])]);
 
         return to_route('projects.show', $project);
     }

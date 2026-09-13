@@ -42,13 +42,13 @@ class ProjectJoinRequest extends FormRequest
                 }
 
                 if (! Hash::check((string) $this->input('password'), $project->password)) {
-                    $validator->errors()->add('password', __('A senha informada está incorreta.'));
+                    $validator->errors()->add('password', __('The provided password is incorrect.'));
 
                     return;
                 }
 
                 if ($project->members()->whereKey($this->user()->id)->exists()) {
-                    $validator->errors()->add('uuid', __('Você já faz parte deste projeto.'));
+                    $validator->errors()->add('uuid', __('You are already a member of this project.'));
                 }
             },
         ];
