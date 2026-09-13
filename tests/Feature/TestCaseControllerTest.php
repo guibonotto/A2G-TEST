@@ -860,4 +860,117 @@ class TestCaseControllerTest extends TestCase
         $this->assertDatabaseMissing('test_cases', ['id' => $testCase->id]);
         $this->assertDatabaseMissing('test_steps', ['test_case_id' => $testCase->id]);
     }
+
+    public function test_show_includes_the_available_statuses(): void
+    {
+        $user = User::factory()->create();
+        $project = $this->actingAsProjectMember($user);
+        $classification = Classification::create(['name' => 'Funcional']);
+        $this->createStatus('Aardvark review', 'info');
+        $expectedNames = TestCaseStatus::query()->orderBy('name')->pluck('name')->all();
+
+        $testCase = TestCaseModel::create([
+            'title' => 'Login com credenciais válidas',
+            'classification_id' => $classification->id,
+            'created_by' => $user->id,
+            'project_id' => $project->id,
+        ]);
+
+        $this->get(route('test-cases.show', $testCase))
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('test-cases/show')
+                ->has('statuses', count($expectedNames))
+                ->where('statuses.0.name', 'Aardvark review')
+                ->where('statuses.0.color', 'info')
+                ->where('statuses', fn ($statuses) => collect($statuses)->pluck('name')->all() === $expectedNames)
+            );
+    }
+
+    public function test_project_member_can_change_the_status_of_a_test_case(): void
+    {
+        $user = User::factory()->create();
+        $project = $this->actingAsProjectMember($user);
+        $classification = Classification::create(['name' => 'Funcional']);
+        $pending = $this->createStatus('Pending', 'warning');
+        $failed = $this->createStatus('Failed', 'destructive');
+
+        $testCase = TestCaseModel::create([
+            'title' => 'Login com credenciais válidas',
+            'classification_id' => $classification->id,
+            'created_by' => $user->id,
+            'project_id' => $project->id,
+            'status_id' => $pending->id,
+        ]);
+
+        $response = $this->from(route('test-cases.show', $testCase))
+            ->patch(route('test-cases.status', $testCase), ['status_id' => $failed->id]);
+
+        $response->assertRedirect(route('test-cases.show', $testCase));
+        $this->assertDatabaseHas('test_cases', ['id' => $testCase->id, 'status_id' => $failed->id]);
+    }
+
+    public function test_status_of_a_test_case_can_be_cleared(): void
+    {
+        $user = User::factory()->create();
+        $project = $this->actingAsProjectMember($user);
+        $classification = Classification::create(['name' => 'Funcional']);
+        $pending = $this->createStatus('Pending', 'warning');
+
+        $testCase = TestCaseModel::create([
+            'title' => 'Login com credenciais válidas',
+            'classification_id' => $classification->id,
+            'created_by' => $user->id,
+            'project_id' => $project->id,
+            'status_id' => $pending->id,
+        ]);
+
+        $this->patch(route('test-cases.status', $testCase), ['status_id' => null])->assertRedirect();
+
+        $this->assertDatabaseHas('test_cases', ['id' => $testCase->id, 'status_id' => null]);
+    }
+
+    public function test_changing_status_rejects_an_unknown_status(): void
+    {
+        $user = User::factory()->create();
+        $project = $this->actingAsProjectMember($user);
+        $classification = Classification::create(['name' => 'Funcional']);
+        $pending = $this->createStatus('Pending', 'warning');
+
+        $testCase = TestCaseModel::create([
+            'title' => 'Login com credenciais válidas',
+            'classification_id' => $classification->id,
+            'created_by' => $user->id,
+            'project_id' => $project->id,
+            'status_id' => $pending->id,
+        ]);
+
+        $response = $this->patch(route('test-cases.status', $testCase), ['status_id' => 999]);
+
+        $response->assertSessionHasErrors('status_id');
+        $this->assertDatabaseHas('test_cases', ['id' => $testCase->id, 'status_id' => $pending->id]);
+    }
+
+    public function test_users_outside_the_project_cannot_change_the_status(): void
+    {
+        $owner = User::factory()->create();
+        $ownerProject = Project::factory()->create();
+        $ownerProject->members()->attach($owner);
+        $classification = Classification::create(['name' => 'Funcional']);
+        $pending = $this->createStatus('Pending', 'warning');
+        $failed = $this->createStatus('Failed', 'destructive');
+
+        $testCase = TestCaseModel::create([
+            'title' => 'Login com credenciais válidas',
+            'classification_id' => $classification->id,
+            'created_by' => $owner->id,
+            'project_id' => $ownerProject->id,
+            'status_id' => $pending->id,
+        ]);
+
+        $this->actingAsProjectMember(User::factory()->create());
+
+        $this->patch(route('test-cases.status', $testCase), ['status_id' => $failed->id])->assertForbidden();
+
+        $this->assertDatabaseHas('test_cases', ['id' => $testCase->id, 'status_id' => $pending->id]);
+    }
 }

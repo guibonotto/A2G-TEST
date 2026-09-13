@@ -5,11 +5,14 @@ namespace App\Http\Controllers;
 use App\Http\Requests\TestCases\AssignTestCaseRequest;
 use App\Http\Requests\TestCases\BulkUpdateTestCaseStatusRequest;
 use App\Http\Requests\TestCases\LinkRequirementRequest;
+use App\Http\Requests\TestCases\StoreEvidenceRequest;
 use App\Http\Requests\TestCases\StoreExecutionRequest;
 use App\Http\Requests\TestCases\StoreTestCaseRequest;
 use App\Http\Requests\TestCases\UpdateTestCaseRequest;
+use App\Http\Requests\TestCases\UpdateTestCaseStatusRequest;
 use App\Models\Classification;
 use App\Models\Evidence;
+use App\Models\Execution;
 use App\Models\Project;
 use App\Models\Requirement;
 use App\Models\TestCase;
@@ -143,27 +146,25 @@ class TestCaseController extends Controller
                     ->orderBy('name')
                     ->get(['id', 'name'])
                 : [],
+            'statuses' => TestCaseStatus::query()->orderBy('name')->get(['id', 'name', 'color']),
             'executionStatuses' => ['APROVADO', 'REPROVADO', 'BLOQUEADO', 'PENDENTE'],
             'availableRequirements' => Requirement::query()->orderBy('code')->get(['id', 'code', 'title']),
         ]);
     }
 
+    /**
+     * Record an execution of the test case, along with any evidence files.
+     */
     public function storeExecution(StoreExecutionRequest $request, TestCase $testCase): RedirectResponse
     {
-        $execution = $testCase->executions()->create([
-            ...$request->safe()->except('evidences'),
-            'executed_by' => $request->user()->id,
-        ]);
-
-        foreach ($request->file('evidences') ?? [] as $file) {
-            $execution->evidences()->create([
-                'file_name' => $file->getClientOriginalName(),
-                'file_path' => $file->store("evidences/{$execution->id}", 'local'),
-                'mime_type' => $file->getMimeType(),
-                'size' => $file->getSize(),
-                'uploaded_at' => now(),
+        DB::transaction(function () use ($request, $testCase): void {
+            $execution = $testCase->executions()->create([
+                ...$request->safe()->except('evidences'),
+                'executed_by' => $request->user()->id,
             ]);
-        }
+
+            $execution->attachEvidences($request->file('evidences') ?? []);
+        });
 
         Inertia::flash('toast', [
             'type' => 'success',
@@ -238,6 +239,21 @@ class TestCaseController extends Controller
     }
 
     /**
+     * Change the status of a single test case without going through the edit form.
+     */
+    public function updateStatus(UpdateTestCaseStatusRequest $request, TestCase $testCase): RedirectResponse
+    {
+        $testCase->update($request->safe()->only(['status_id']));
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => __('Test case status updated.'),
+        ]);
+
+        return back();
+    }
+
+    /**
      * Assign the specified test case to another user.
      */
     public function assign(AssignTestCaseRequest $request, TestCase $testCase): RedirectResponse
@@ -306,10 +322,28 @@ class TestCaseController extends Controller
     }
 
     /**
-     * Stream an evidence file to the browser, behind authentication.
+     * Attach additional evidence files to an existing execution.
      */
-    public function showEvidence(Evidence $evidence): StreamedResponse
+    public function storeEvidence(StoreEvidenceRequest $request, Execution $execution): RedirectResponse
     {
+        $files = $request->file('evidences');
+
+        DB::transaction(fn () => $execution->attachEvidences($files));
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => __(':count evidence file(s) attached.', ['count' => count($files)]),
+        ]);
+
+        return to_route('test-cases.show', $execution->testCase);
+    }
+
+    /**
+     * Stream an evidence file to the browser, restricted to members of the project.
+     */
+    public function showEvidence(Request $request, Evidence $evidence): StreamedResponse
+    {
+        abort_unless($request->user()->can('view', $evidence->execution->testCase), 403);
         abort_unless(Storage::disk('local')->exists($evidence->file_path), 404);
 
         return Storage::disk('local')->response($evidence->file_path, $evidence->file_name);
@@ -318,9 +352,12 @@ class TestCaseController extends Controller
     /**
      * Remove an evidence file from storage.
      */
-    public function destroyEvidence(Evidence $evidence): RedirectResponse
+    public function destroyEvidence(Request $request, Evidence $evidence): RedirectResponse
     {
         $testCase = $evidence->execution->testCase;
+
+        abort_unless($request->user()->can('view', $testCase), 403);
+
         $evidence->delete();
 
         Inertia::flash('toast', [

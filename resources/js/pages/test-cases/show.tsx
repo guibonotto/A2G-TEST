@@ -1,8 +1,9 @@
-import { Form, Head, Link, router, setLayoutProps, usePage } from '@inertiajs/react';
-import { ArrowLeft } from 'lucide-react';
+import { Form, Head, Link, router, setLayoutProps, useForm, usePage } from '@inertiajs/react';
+import { ArrowLeft, Trash2 } from 'lucide-react';
 import type { FormEvent } from 'react';
 import { useState } from 'react';
 import TestCaseController from '@/actions/App/Http/Controllers/TestCaseController';
+import EvidenceFilePicker from '@/components/evidence-file-picker';
 import Heading from '@/components/heading';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -28,24 +29,84 @@ import { Textarea } from '@/components/ui/textarea';
 import { executionStatusLabel } from '@/lib/execution-status';
 import { show as evidenceShow } from '@/routes/evidences';
 import { assign, edit, index, show } from '@/routes/test-cases';
-import type { AssignableUser, RequirementOption, TestCaseDetail } from '@/types';
+import type { AssignableUser, RequirementOption, TestCaseDetail, TestCaseStatus } from '@/types';
 
 type Props = {
     testCase: TestCaseDetail;
     assignableUsers: AssignableUser[];
+    statuses: TestCaseStatus[];
     executionStatuses: string[];
     availableRequirements: RequirementOption[];
 };
 
 const UNASSIGNED = 'unassigned';
+const NO_STATUS = 'none';
 
-export default function ShowTestCase({ testCase, assignableUsers, executionStatuses, availableRequirements }: Props) {
+type ExecutionFormData = {
+    status: string;
+    execution_date: string;
+    comment: string;
+    evidences: File[];
+};
+
+type FieldErrors = Record<string, string | string[] | undefined>;
+
+function localDateTimeNow(): string {
+    const now = new Date();
+    const offsetInMs = now.getTimezoneOffset() * 60_000;
+
+    return new Date(now.getTime() - offsetInMs).toISOString().slice(0, 16);
+}
+
+export default function ShowTestCase({
+    testCase,
+    assignableUsers,
+    statuses,
+    executionStatuses,
+    availableRequirements,
+}: Props) {
     const { auth } = usePage().props;
     const [selectedAssignee, setSelectedAssignee] = useState(
         testCase.assignee ? String(testCase.assignee.id) : UNASSIGNED,
     );
     const [assigning, setAssigning] = useState(false);
+    const [changingStatus, setChangingStatus] = useState(false);
     const [executionStatusFilter, setExecutionStatusFilter] = useState('all');
+
+    function changeStatus(value: string) {
+        setChangingStatus(true);
+
+        router.patch(
+            TestCaseController.updateStatus.url(testCase),
+            { status_id: value === NO_STATUS ? null : Number(value) },
+            {
+                preserveScroll: true,
+                onFinish: () => setChangingStatus(false),
+            },
+        );
+    }
+
+    const executionForm = useForm<ExecutionFormData>({
+        status: 'PENDENTE',
+        execution_date: localDateTimeNow(),
+        comment: '',
+        evidences: [],
+    });
+    const executionErrors = executionForm.errors as FieldErrors;
+
+    function submitExecution(e: FormEvent) {
+        e.preventDefault();
+
+        executionForm.post(TestCaseController.storeExecution.url(testCase), {
+            preserveScroll: true,
+            forceFormData: true,
+            onSuccess: () => {
+                executionForm.reset();
+                executionForm.setData('execution_date', localDateTimeNow());
+            },
+        });
+    }
+
     const filteredExecutions = testCase.executions.filter(
         (execution) =>
             executionStatusFilter === 'all' ||
@@ -262,9 +323,26 @@ export default function ShowTestCase({ testCase, assignableUsers, executionStatu
                                 {testCase.classification.name}
                             </Badge>
                         )}
-                        {testCase.status && (
-                            <Badge variant={testCase.status.color}>{testCase.status.name}</Badge>
-                        )}
+
+                        <Select
+                            value={testCase.status ? String(testCase.status.id) : NO_STATUS}
+                            onValueChange={changeStatus}
+                            disabled={changingStatus}
+                        >
+                            <SelectTrigger size="sm" aria-label="Test case status">
+                                <SelectValue placeholder="Set status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value={NO_STATUS}>
+                                    <span className="text-muted-foreground">No status</span>
+                                </SelectItem>
+                                {statuses.map((status) => (
+                                    <SelectItem key={status.id} value={String(status.id)}>
+                                        <Badge variant={status.color}>{status.name}</Badge>
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                     </div>
                 </div>
 
@@ -273,72 +351,67 @@ export default function ShowTestCase({ testCase, assignableUsers, executionStatu
                         <CardTitle>Record execution</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <Form
-                            action={`/test-cases/${testCase.id}/executions`}
-                            method="post"
-                            options={{ preserveScroll: true }}
-                            className="grid gap-4 md:grid-cols-3"
-                        >
-                            {({ processing, errors }) => (
-                                <>
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="execution_status">Result</Label>
-                                        <select
-                                            id="execution_status"
-                                            name="status"
-                                            defaultValue="PENDENTE"
-                                            className="border-input bg-background h-10 rounded-md border px-3 text-sm"
-                                            required
-                                        >
-                                            <option value="APROVADO">Passed</option>
-                                            <option value="REPROVADO">Failed</option>
-                                            <option value="BLOQUEADO">Blocked</option>
-                                            <option value="PENDENTE">Pending</option>
-                                        </select>
-                                        {errors.status && <p className="text-sm text-destructive">{errors.status}</p>}
-                                    </div>
+                        <form onSubmit={submitExecution} className="grid gap-4 md:grid-cols-3">
+                            <div className="grid gap-2">
+                                <Label htmlFor="execution_status">Result</Label>
+                                <select
+                                    id="execution_status"
+                                    value={executionForm.data.status}
+                                    onChange={(e) => executionForm.setData('status', e.target.value)}
+                                    className="border-input bg-background h-10 rounded-md border px-3 text-sm"
+                                    required
+                                >
+                                    <option value="APROVADO">Passed</option>
+                                    <option value="REPROVADO">Failed</option>
+                                    <option value="BLOQUEADO">Blocked</option>
+                                    <option value="PENDENTE">Pending</option>
+                                </select>
+                                {executionErrors.status && <p className="text-sm text-destructive">{executionErrors.status}</p>}
+                            </div>
 
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="execution_date">Date and time</Label>
-                                        <input
-                                            id="execution_date"
-                                            name="execution_date"
-                                            type="datetime-local"
-                                            defaultValue={new Date().toISOString().slice(0, 16)}
-                                            className="border-input bg-background h-10 rounded-md border px-3 text-sm"
-                                            required
-                                        />
-                                        {errors.execution_date && <p className="text-sm text-destructive">{errors.execution_date}</p>}
-                                    </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="execution_date">Date and time</Label>
+                                <input
+                                    id="execution_date"
+                                    type="datetime-local"
+                                    value={executionForm.data.execution_date}
+                                    onChange={(e) => executionForm.setData('execution_date', e.target.value)}
+                                    className="border-input bg-background h-10 rounded-md border px-3 text-sm"
+                                    required
+                                />
+                                {executionErrors.execution_date && (
+                                    <p className="text-sm text-destructive">{executionErrors.execution_date}</p>
+                                )}
+                            </div>
 
-                                    <div className="grid gap-2 md:row-span-2">
-                                        <Label htmlFor="execution_comment">Comment</Label>
-                                        <Textarea id="execution_comment" name="comment" placeholder="Execution notes" />
-                                        {errors.comment && <p className="text-sm text-destructive">{errors.comment}</p>}
-                                    </div>
+                            <div className="grid gap-2 md:row-span-2">
+                                <Label htmlFor="execution_comment">Comment</Label>
+                                <Textarea
+                                    id="execution_comment"
+                                    value={executionForm.data.comment}
+                                    onChange={(e) => executionForm.setData('comment', e.target.value)}
+                                    placeholder="Execution notes"
+                                />
+                                {executionErrors.comment && <p className="text-sm text-destructive">{executionErrors.comment}</p>}
+                            </div>
 
-                                    <div className="grid gap-2 md:col-span-2">
-                                        <Label htmlFor="evidences">Evidence (sreenshots, logs)</Label>
-                                        <input
-                                            id="evidences"
-                                            name="evidences[]"
-                                            type="file"
-                                            multiple
-                                            accept="image/png,image/jpeg,image/gif,image/webp,application/pdf,text/plain"
-                                            className="border-input bg-background rounded-md border px-3 py-2 text-sm file:mr-3 file:rounded file:border-0 file:bg-secondary file:px-3 file:py-1 file:text-sm"
-                                        />
-                                        <p className="text-xs text-muted-foreground">Up to 10 files, 10MB each.</p>
-                                        {errors['evidences.0'] && <p className="text-sm text-destructive">{errors['evidences.0']}</p>}
-                                    </div>
+                            <div className="grid gap-2 md:col-span-2">
+                                <Label htmlFor="evidences">Evidence (screenshots, logs)</Label>
+                                <EvidenceFilePicker
+                                    id="evidences"
+                                    files={executionForm.data.evidences}
+                                    onChange={(files) => executionForm.setData('evidences', files)}
+                                    errors={executionErrors}
+                                    disabled={executionForm.processing}
+                                />
+                            </div>
 
-                                    <div className="flex items-end">
-                                        <Button type="submit" disabled={processing}>
-                                            {processing ? 'Recording...' : 'Record execution'}
-                                        </Button>
-                                    </div>
-                                </>
-                            )}
-                        </Form>
+                            <div className="flex items-end">
+                                <Button type="submit" disabled={executionForm.processing}>
+                                    {executionForm.processing ? 'Recording...' : 'Record execution'}
+                                </Button>
+                            </div>
+                        </form>
                     </CardContent>
                 </Card>
 
@@ -503,30 +576,72 @@ export default function ShowTestCase({ testCase, assignableUsers, executionStatu
                                     {execution.evidences.length > 0 && (
                                         <div className="flex flex-wrap gap-3 pt-1">
                                             {execution.evidences.map((evidence) => (
-                                                <a
-                                                    key={evidence.id}
-                                                    href={evidenceShow.url(evidence.id)}
-                                                    target="_blank"
-                                                    rel="noreferrer"
-                                                    className="group flex flex-col gap-1"
-                                                    title={evidence.file_name}
-                                                >
-                                                    {evidence.mime_type.startsWith('image/') ? (
-                                                        <img
-                                                            src={evidenceShow.url(evidence.id)}
-                                                            alt={evidence.file_name}
-                                                            className="h-24 w-32 rounded border object-cover transition group-hover:opacity-80"
-                                                        />
-                                                    ) : (
-                                                        <span className="flex h-24 w-32 items-center justify-center rounded border bg-muted text-xs text-muted-foreground">
-                                                            {evidence.file_name.split('.').pop()?.toUpperCase()}
-                                                        </span>
-                                                    )}
-                                                    <span className="max-w-32 truncate text-xs text-muted-foreground">{evidence.file_name}</span>
-                                                </a>
+                                                <div key={evidence.id} className="group relative flex flex-col gap-1">
+                                                    <a
+                                                        href={evidenceShow.url(evidence.id)}
+                                                        target="_blank"
+                                                        rel="noreferrer"
+                                                        className="flex flex-col gap-1"
+                                                        title={evidence.file_name}
+                                                    >
+                                                        {evidence.mime_type.startsWith('image/') ? (
+                                                            <img
+                                                                src={evidenceShow.url(evidence.id)}
+                                                                alt={evidence.file_name}
+                                                                className="h-24 w-32 rounded border object-cover transition group-hover:opacity-80"
+                                                            />
+                                                        ) : (
+                                                            <span className="flex h-24 w-32 items-center justify-center rounded border bg-muted text-xs text-muted-foreground">
+                                                                {evidence.file_name.split('.').pop()?.toUpperCase()}
+                                                            </span>
+                                                        )}
+                                                        <span className="max-w-32 truncate text-xs text-muted-foreground">{evidence.file_name}</span>
+                                                    </a>
+
+                                                    <Dialog>
+                                                        <DialogTrigger asChild>
+                                                            <Button
+                                                                type="button"
+                                                                variant="destructive"
+                                                                size="icon"
+                                                                className="absolute top-1 right-1 size-7 opacity-0 transition group-hover:opacity-100 focus-visible:opacity-100"
+                                                                aria-label={`Delete ${evidence.file_name}`}
+                                                            >
+                                                                <Trash2 className="size-3.5" />
+                                                            </Button>
+                                                        </DialogTrigger>
+                                                        <DialogContent>
+                                                            <DialogTitle>Delete evidence?</DialogTitle>
+                                                            <DialogDescription>
+                                                                &quot;{evidence.file_name}&quot; will be permanently removed from this
+                                                                execution. This action cannot be undone.
+                                                            </DialogDescription>
+
+                                                            <Form
+                                                                {...TestCaseController.destroyEvidence.form(evidence.id)}
+                                                                options={{ preserveScroll: true }}
+                                                            >
+                                                                {({ processing }) => (
+                                                                    <DialogFooter className="gap-2">
+                                                                        <DialogClose asChild>
+                                                                            <Button type="button" variant="secondary">
+                                                                                Cancel
+                                                                            </Button>
+                                                                        </DialogClose>
+                                                                        <Button type="submit" variant="destructive" disabled={processing}>
+                                                                            Delete
+                                                                        </Button>
+                                                                    </DialogFooter>
+                                                                )}
+                                                            </Form>
+                                                        </DialogContent>
+                                                    </Dialog>
+                                                </div>
                                             ))}
                                         </div>
                                     )}
+
+                                    <ExecutionEvidenceForm executionId={execution.id} />
                                 </div>
                             ))
                         )}
@@ -577,5 +692,64 @@ export default function ShowTestCase({ testCase, assignableUsers, executionStatu
                 </Card>
             </div>
         </>
+    );
+}
+
+/**
+ * Lets the user attach more evidence files to an execution that was already recorded.
+ */
+function ExecutionEvidenceForm({ executionId }: { executionId: number }) {
+    const [open, setOpen] = useState(false);
+    const form = useForm<{ evidences: File[] }>({ evidences: [] });
+    const errors = form.errors as FieldErrors;
+
+    function submit(e: FormEvent) {
+        e.preventDefault();
+
+        form.post(TestCaseController.storeEvidence.url(executionId), {
+            preserveScroll: true,
+            forceFormData: true,
+            onSuccess: () => {
+                form.reset();
+                setOpen(false);
+            },
+        });
+    }
+
+    function cancel() {
+        form.reset();
+        form.clearErrors();
+        setOpen(false);
+    }
+
+    if (!open) {
+        return (
+            <div>
+                <Button type="button" variant="outline" size="sm" onClick={() => setOpen(true)}>
+                    Add evidence
+                </Button>
+            </div>
+        );
+    }
+
+    return (
+        <form onSubmit={submit} className="flex flex-col gap-3 rounded-md border border-dashed p-3">
+            <Label htmlFor={`evidences-${executionId}`}>Add evidence to this execution</Label>
+            <EvidenceFilePicker
+                id={`evidences-${executionId}`}
+                files={form.data.evidences}
+                onChange={(files) => form.setData('evidences', files)}
+                errors={errors}
+                disabled={form.processing}
+            />
+            <div className="flex gap-2">
+                <Button type="button" variant="secondary" size="sm" disabled={form.processing} onClick={cancel}>
+                    Cancel
+                </Button>
+                <Button type="submit" size="sm" disabled={form.processing || form.data.evidences.length === 0}>
+                    {form.processing ? 'Uploading...' : 'Upload'}
+                </Button>
+            </div>
+        </form>
     );
 }

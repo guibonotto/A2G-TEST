@@ -13,9 +13,11 @@ Route::middleware(['auth', 'verified', 'project'])->group(function () {
     Route::get('test-cases/{testCase}/edit', [TestCaseController::class, 'edit'])->name('test-cases.edit');
     Route::put('test-cases/{testCase}', [TestCaseController::class, 'update'])->name('test-cases.update');
     Route::patch('test-cases/{testCase}/assign', [TestCaseController::class, 'assign'])->name('test-cases.assign');
+    Route::patch('test-cases/{testCase}/status', [TestCaseController::class, 'updateStatus'])->name('test-cases.status');
     Route::delete('test-cases/{testCase}', [TestCaseController::class, 'deleteTestCase'])->name('test-cases.delete');
     Route::post('test-cases/{testCase}/requirements', [TestCaseController::class, 'linkRequirement'])->name('test-cases.requirements.link');
     Route::delete('test-cases/{testCase}/requirements', [TestCaseController::class, 'unlinkRequirement'])->name('test-cases.requirements.unlink');
+    Route::post('executions/{execution}/evidences', [TestCaseController::class, 'storeEvidence'])->name('executions.evidences.store');
     Route::get('evidences/{evidence}', [TestCaseController::class, 'showEvidence'])->name('evidences.show');
     Route::delete('evidences/{evidence}', [TestCaseController::class, 'destroyEvidence'])->name('evidences.destroy');
 });
