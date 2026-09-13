@@ -9,7 +9,7 @@ class LinkRequirementRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->hasRole('qa');
+        return $this->user()->hasRole('qa') && $this->user()->can('view', $this->route('testCase'));
     }
 
     /**

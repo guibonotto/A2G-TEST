@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Classification;
+use App\Models\Project;
 use App\Models\Role;
 use App\Models\TestCase as TestCaseModel;
 use App\Models\TestCaseStatus;
@@ -58,6 +59,7 @@ class TestCaseStatusControllerTest extends TestCase
             'classification_id' => $classification->id,
             'created_by' => $qa->id,
             'status_id' => $status->id,
+            'project_id' => Project::factory()->create()->id,
         ]);
 
         $response = $this->actingAs($qa)->get(route('test-case-statuses.index'));
@@ -150,6 +152,7 @@ class TestCaseStatusControllerTest extends TestCase
             'classification_id' => $classification->id,
             'created_by' => $qa->id,
             'status_id' => $status->id,
+            'project_id' => Project::factory()->create()->id,
         ]);
 
         $response = $this->actingAs($qa)->delete(route('test-case-statuses.destroy', $status));

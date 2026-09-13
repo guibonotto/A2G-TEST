@@ -5,11 +5,12 @@ use Illuminate\Support\Facades\Route;
 
 Route::inertia('/', 'welcome')->name('home');
 
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware(['auth', 'verified', 'project'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
 });
 
 require __DIR__.'/settings.php';
+require __DIR__.'/projects.php';
 require __DIR__.'/test-cases.php';
 require __DIR__.'/management.php';
 require __DIR__.'/jira.php';

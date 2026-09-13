@@ -16,6 +16,7 @@ import {
 import { dashboard } from '@/routes';
 import { index as accountsIndex } from '@/routes/accounts';
 import { edit as jiraEdit } from '@/routes/jira';
+import { index as projectsIndex } from '@/routes/projects';
 import { index as requirementsIndex } from '@/routes/requirements';
 import { index as rolePermissionsIndex } from '@/routes/role-permissions';
 import { index as testCaseStatusesIndex } from '@/routes/test-case-statuses';
@@ -29,7 +30,12 @@ const mainNavItems: NavItem[] = [
         icon: LayoutGrid,
     },
     {
-        title: 'Test Cases',
+        title: 'Projetos',
+        href: projectsIndex(),
+        icon: Users,
+    },
+    {
+        title: 'Casos de teste',
         href: testCasesIndex(),
         icon: ClipboardList,
     },
@@ -77,7 +83,7 @@ const footerNavItems: NavItem[] = [
 ];
 
 export function AppSidebar() {
-    const { auth } = usePage().props;
+    const { auth, currentProject } = usePage().props;
     const isQa = auth.user.role?.slug === 'qa';
 
     return (
@@ -91,6 +97,16 @@ export function AppSidebar() {
                             </Link>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
+                    {currentProject && (
+                        <SidebarMenuItem>
+                            <SidebarMenuButton size="sm" asChild>
+                                <Link href={projectsIndex()} className="text-muted-foreground">
+                                    <Users />
+                                    <span className="truncate">{currentProject.name}</span>
+                                </Link>
+                            </SidebarMenuButton>
+                        </SidebarMenuItem>
+                    )}
                 </SidebarMenu>
             </SidebarHeader>
 

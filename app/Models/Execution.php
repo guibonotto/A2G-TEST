@@ -58,3 +58,4 @@ class Execution extends Model
         static::deleting(fn (self $execution) => $execution->evidences->each->delete());
     }
 }
+
