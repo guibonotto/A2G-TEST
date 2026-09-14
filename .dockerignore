@@ -2,7 +2,6 @@
 .env
 .env.*
 !.env.example
-database/database.sqlite
 node_modules
 tests
 vendor
