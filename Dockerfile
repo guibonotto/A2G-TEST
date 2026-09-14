@@ -24,7 +24,10 @@ FROM base AS runtime
 WORKDIR /app
 
 COPY --from=build /app /app
-COPY Caddyfile /etc/caddy/Caddyfile
+# The base image's CMD reads /etc/frankenphp/Caddyfile; /etc/caddy/Caddyfile is
+# only a hard link that COPY breaks, so writing there alone leaves the default
+# config (auto-HTTPS on localhost) active and causes a 308 redirect loop.
+COPY Caddyfile /etc/frankenphp/Caddyfile
 
 ENV APP_ENV=production \
     APP_DEBUG=false \
