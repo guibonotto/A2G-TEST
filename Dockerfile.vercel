@@ -1,7 +1,7 @@
 # Base image with PHP + the extensions Laravel needs.
 # pdo_pgsql and pdo_mysql are both installed so either a Postgres or MySQL
 # external database can be used in production without changing this file.
-FROM dunglas/frankenphp:1-php8.3 AS base
+FROM dunglas/frankenphp:1-php8.5 AS base
 RUN install-php-extensions pdo_pgsql pdo_mysql intl zip opcache
 
 # Build stage: has Node + Composer so it can install dependencies and run
