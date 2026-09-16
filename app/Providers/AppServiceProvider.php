@@ -49,7 +49,7 @@ class AppServiceProvider extends ServiceProvider
                 ->letters()
                 // ->numbers()
                 // ->symbols()
-                ->uncompromised()
+                // ->uncompromised()
             : null,
         );
     }
