@@ -3,6 +3,7 @@
 namespace App\Http\Requests\RolePermissions;
 
 use App\Enums\Permission;
+use App\Models\Role;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -14,7 +15,10 @@ class UpdateRolePermissionsRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return true;
+        /** @var Role $role */
+        $role = $this->route('role');
+
+        return $this->user()->outranks($role);
     }
 
     /**

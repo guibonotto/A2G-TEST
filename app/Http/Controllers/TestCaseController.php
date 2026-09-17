@@ -140,7 +140,7 @@ class TestCaseController extends Controller
 
         return Inertia::render('test-cases/show', [
             'testCase' => $testCase,
-            'assignableUsers' => $request->user()->hasRole('qa')
+            'assignableUsers' => $request->user()->canManageAccess()
                 ? User::query()
                     ->whereHas('role', fn ($query) => $query->whereIn('slug', ['qa', 'developer']))
                     ->orderBy('name')
@@ -309,7 +309,7 @@ class TestCaseController extends Controller
      */
     public function unlinkRequirement(Request $request, TestCase $testCase): RedirectResponse
     {
-        abort_unless($request->user()->hasRole('qa') && $request->user()->can('view', $testCase), 403);
+        abort_unless($request->user()->canManageAccess() && $request->user()->can('view', $testCase), 403);
 
         $testCase->requirements()->detach($request->integer('requirement_id'));
 

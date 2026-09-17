@@ -13,12 +13,12 @@ class RequirementControllerTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function createUserWithRole(string $slug): User
-    {
-        $role = Role::firstOrCreate(['slug' => $slug], ['name' => $slug]);
+    // private function createUserWithRole(string $slug): User
+    // {
+    //     $role = Role::firstOrCreate(['slug' => $slug], ['name' => $slug]);
 
-        return User::factory()->create(['role_id' => $role->id]);
-    }
+    //     return User::factory()->create(['role_id' => $role->id]);
+    // }
 
     public function test_guests_cannot_access_requirement_management(): void
     {

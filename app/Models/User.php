@@ -60,4 +60,19 @@ class User extends Authenticatable implements PasskeyUser
     {
         return in_array($permission->value, $this->role?->permissions ?? [], true);
     }
+
+    public function level(): int
+    {
+        return $this->role?->level() ?? 0;
+    }
+
+    public function outranks(Role|User $other): bool
+    {
+        return $this->level() > $other->level();
+    }
+
+    public function canManageAccess(): bool
+    {
+        return $this->hasRole('qa', 'admin');
+    }
 }

@@ -15,13 +15,6 @@ class JiraIntegrationControllerTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function createUserWithRole(string $slug): User
-    {
-        $role = Role::firstOrCreate(['slug' => $slug], ['name' => $slug]);
-
-        return User::factory()->create(['role_id' => $role->id]);
-    }
-
     private function createIntegrationFor(User $user): JiraIntegration
     {
         return JiraIntegration::create([

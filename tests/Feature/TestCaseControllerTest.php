@@ -17,12 +17,12 @@ class TestCaseControllerTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function createUserWithRole(string $slug): User
-    {
-        $role = Role::firstOrCreate(['slug' => $slug], ['name' => $slug]);
+    // private function createUserWithRole(string $slug): User
+    // {
+    //     $role = Role::firstOrCreate(['slug' => $slug], ['name' => $slug]);
 
-        return User::factory()->create(['role_id' => $role->id]);
-    }
+    //     return User::factory()->create(['role_id' => $role->id]);
+    // }
 
     private function createStatus(string $name, string $color = 'secondary'): TestCaseStatus
     {
@@ -269,7 +269,7 @@ class TestCaseControllerTest extends TestCase
 
         $response->assertInertia(fn (Assert $page) => $page
             ->component('test-cases/create')
-            ->has('classifications', 1)
+            ->has('classifications', Classification::count())
         );
     }
 
@@ -520,7 +520,7 @@ class TestCaseControllerTest extends TestCase
         $response->assertInertia(fn (Assert $page) => $page
             ->component('test-cases/edit')
             ->where('testCase.title', 'Login com credenciais válidas')
-            ->has('classifications', 1)
+            ->has('classifications', Classification::count())
         );
     }
 

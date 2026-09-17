@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Enums\Permission;
 use App\Models\TestCase;
 use App\Models\User;
 
@@ -20,7 +21,7 @@ class TestCasePolicy
      */
     public function update(User $user, TestCase $testCase): bool
     {
-        return $this->belongsToProject($user, $testCase);
+        return ! $user->hasRole('viewer') && $this->belongsToProject($user, $testCase);
     }
 
     /**
@@ -28,7 +29,7 @@ class TestCasePolicy
      */
     public function delete(User $user, TestCase $testCase): bool
     {
-        return $this->belongsToProject($user, $testCase);
+        return ! $user->hasRole('viewer') && $this->belongsToProject($user, $testCase);
     }
 
     /**
@@ -36,7 +37,7 @@ class TestCasePolicy
      */
     public function assign(User $user, TestCase $testCase): bool
     {
-        return $user->hasRole('qa') && $this->belongsToProject($user, $testCase);
+        return $user->hasPermission(Permission::AssignTestCases) && $this->belongsToProject($user, $testCase);
     }
 
     /**
