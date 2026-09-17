@@ -75,4 +75,31 @@ class User extends Authenticatable implements PasskeyUser
     {
         return $this->hasRole('qa', 'admin');
     }
+
+    /**
+     * A role's permissions may only be edited by someone strictly above it,
+     * so nobody can touch their own role or the admin role.
+     */
+    public function canEditPermissionsOf(Role $role): bool
+    {
+        return $this->canManageAccess() && $this->outranks($role);
+    }
+
+    /**
+     * Another user's role may only be changed by someone strictly above them;
+     * users never change their own role.
+     */
+    public function canChangeRoleOf(User $target): bool
+    {
+        return $this->canManageAccess() && $target->isNot($this) && $this->outranks($target);
+    }
+
+    /**
+     * Admins may hand out any role (including admin); everyone else only roles
+     * below their own. Removing the role (null) is always allowed.
+     */
+    public function canAssignRole(?Role $role): bool
+    {
+        return $role === null || $this->hasRole(Role::ADMIN) || $this->outranks($role);
+    }
 }

@@ -18,14 +18,8 @@ class UpdateAccountRoleRequest extends FormRequest
         $target = $this->route('account');
         $newRole = Role::find($this->input('role_id'));
 
-        if ($target->is($this->user()) || ! $this->user()->outranks($target)) {
-            return false;
-        }
-
-        // Admin may promote up to admin; everyone else only below their own level.
-        return $newRole === null
-            || $this->user()->hasRole('admin')
-            || $this->user()->outranks($newRole);
+        return $this->user()->canChangeRoleOf($target)
+            && $this->user()->canAssignRole($newRole);
     }
 
     /**

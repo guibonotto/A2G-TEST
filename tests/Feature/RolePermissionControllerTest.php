@@ -112,4 +112,22 @@ class RolePermissionControllerTest extends TestCase
 
         $this->actingAs($qa)->get(route('role-permissions.index'))->assertForbidden();
     }
+
+    public function test_the_permission_list_tells_the_viewer_which_roles_they_can_edit(): void
+    {
+        $qa = $this->createUserWithRole('qa');
+        $this->createUserWithRole('admin');
+        $this->createUserWithRole('developer');
+
+        $response = $this->actingAs($qa)->get(route('role-permissions.index'));
+
+        $response->assertInertia(fn (Assert $page) => $page
+            ->component('management/permissions/index')
+            ->where('roles', fn ($roles) => collect($roles)->pluck('can_edit', 'slug')->all() === [
+                'admin' => false,
+                'developer' => true,
+                'qa' => false,
+            ])
+        );
+    }
 }

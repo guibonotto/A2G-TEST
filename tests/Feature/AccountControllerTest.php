@@ -146,4 +146,29 @@ class AccountControllerTest extends TestCase
 
         $this->actingAs($admin)->put(route('accounts.update', $admin), ['role_id' => $viewerRole->id])->assertForbidden();
     }
+
+    public function test_the_account_list_tells_the_viewer_who_they_can_change_and_which_roles_they_can_assign(): void
+    {
+        $qa = $this->createUserWithRole('qa');
+        $admin = $this->createUserWithRole('admin');
+        $developer = $this->createUserWithRole('developer');
+        Role::firstOrCreate(['slug' => 'viewer'], ['name' => 'viewer']);
+
+        $response = $this->actingAs($qa)->get(route('accounts.index'));
+
+        $response->assertInertia(fn (Assert $page) => $page
+            ->component('management/accounts/index')
+            ->where('accounts', fn ($accounts) => collect($accounts)->pluck('can_change_role', 'id')->sortKeys()->all() === [
+                $qa->id => false,
+                $admin->id => false,
+                $developer->id => true,
+            ])
+            ->where('roles', fn ($roles) => collect($roles)->pluck('assignable', 'slug')->all() === [
+                'admin' => false,
+                'developer' => true,
+                'qa' => false,
+                'viewer' => true,
+            ])
+        );
+    }
 }

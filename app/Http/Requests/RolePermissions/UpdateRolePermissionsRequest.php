@@ -18,7 +18,7 @@ class UpdateRolePermissionsRequest extends FormRequest
         /** @var Role $role */
         $role = $this->route('role');
 
-        return $this->user()->outranks($role);
+        return $this->user()->canEditPermissionsOf($role);
     }
 
     /**

@@ -1,4 +1,4 @@
-import { Head, router } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import Heading from '@/components/heading';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
@@ -10,14 +10,16 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { index, update } from '@/routes/accounts';
-import type { Role, User } from '@/types';
+import type { Account, AssignableRole } from '@/types';
 
 type Props = {
-    accounts: User[];
-    roles: Role[];
+    accounts: Account[];
+    roles: AssignableRole[];
 };
 
 export default function ManageAccounts({ accounts, roles }: Props) {
+    const { auth } = usePage().props;
+
     function handleRoleChange(userId: number, value: string) {
         router.put(
             update.url(userId),
@@ -33,7 +35,7 @@ export default function ManageAccounts({ accounts, roles }: Props) {
             <div className="flex flex-col gap-6 p-4">
                 <Heading
                     title="Manage accounts"
-                    description="Set the role of each user registered in the system."
+                    description="Set the role of each user registered in the system. You can only change users below your own role, and only to roles you outrank."
                 />
 
                 <Card className="overflow-hidden py-0">
@@ -49,33 +51,50 @@ export default function ManageAccounts({ accounts, roles }: Props) {
                                 </tr>
                             </thead>
                             <tbody>
-                                {accounts.map((account) => (
-                                    <tr key={account.id} className="border-b last:border-0 hover:bg-muted/50">
-                                        <td className="px-4 py-3">{account.name}</td>
-                                        <td className="px-4 py-3 text-muted-foreground">{account.email}</td>
-                                        <td className="px-4 py-3">
-                                            <div className="flex items-center gap-2">
-                                                <Select
-                                                    value={account.role ? String(account.role.id) : 'none'}
-                                                    onValueChange={(value) => handleRoleChange(account.id, value)}
-                                                >
-                                                    <SelectTrigger className="w-48">
-                                                        <SelectValue />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        <SelectItem value="none">No role</SelectItem>
-                                                        {roles.map((role) => (
-                                                            <SelectItem key={role.id} value={String(role.id)}>
-                                                                {role.name}
-                                                            </SelectItem>
-                                                        ))}
-                                                    </SelectContent>
-                                                </Select>
-                                                {account.role && <Badge variant="secondary">{account.role.slug}</Badge>}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
+                                {accounts.map((account) => {
+                                    const isSelf = account.id === auth.user.id;
+
+                                    return (
+                                        <tr key={account.id} className="border-b last:border-0 hover:bg-muted/50">
+                                            <td className="px-4 py-3">
+                                                {account.name}
+                                                {isSelf && <span className="ml-2 text-xs text-muted-foreground">(you)</span>}
+                                            </td>
+                                            <td className="px-4 py-3 text-muted-foreground">{account.email}</td>
+                                            <td className="px-4 py-3">
+                                                <div className="flex items-center gap-2">
+                                                    {account.can_change_role ? (
+                                                        <Select
+                                                            value={account.role ? String(account.role.id) : 'none'}
+                                                            onValueChange={(value) => handleRoleChange(account.id, value)}
+                                                        >
+                                                            <SelectTrigger className="w-48">
+                                                                <SelectValue />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                <SelectItem value="none">No role</SelectItem>
+                                                                {roles.map((role) => (
+                                                                    <SelectItem
+                                                                        key={role.id}
+                                                                        value={String(role.id)}
+                                                                        disabled={!role.assignable}
+                                                                    >
+                                                                        {role.name}
+                                                                    </SelectItem>
+                                                                ))}
+                                                            </SelectContent>
+                                                        </Select>
+                                                    ) : (
+                                                        <span className="inline-flex h-9 w-48 items-center text-muted-foreground">
+                                                            {account.role?.name ?? 'No role'}
+                                                        </span>
+                                                    )}
+                                                    {account.role && <Badge variant="secondary">{account.role.slug}</Badge>}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
                             </tbody>
                         </table>
                     )}
