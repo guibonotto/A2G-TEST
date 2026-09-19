@@ -1,10 +1,20 @@
 import { Head, useForm } from '@inertiajs/react';
 import { Plus, Trash2 } from 'lucide-react';
 import type { FormEvent } from 'react';
+import { useState } from 'react';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    Dialog,
+    DialogClose,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogTitle,
+    DialogTrigger,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -16,7 +26,12 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { index, store } from '@/routes/test-cases';
-import type { Classification, TestCaseStatus, TestTemplate } from '@/types';
+import type {
+    Classification,
+    RequirementOption,
+    TestCaseStatus,
+    TestTemplate,
+} from '@/types';
 
 
 type Props = {
@@ -24,6 +39,7 @@ type Props = {
     templates: TestTemplate[];
     statuses: TestCaseStatus[];
     defaultStatusId: number;
+    availableRequirements: RequirementOption[];
 };
 
 type StepForm = {
@@ -38,6 +54,7 @@ export default function CreateTestCase({
     templates,
     statuses,
     defaultStatusId,
+    availableRequirements,
 }: Props) {
     const { data, setData, post, processing, errors } = useForm({
         title: '',
@@ -46,7 +63,36 @@ export default function CreateTestCase({
         template_id: '',
         status_id: String(defaultStatusId),
         steps: [{ ...emptyStep }] as StepForm[],
+        requirement_ids: [] as number[],
     });
+
+    const [linkRequirementOpen, setLinkRequirementOpen] = useState(false);
+    const [selectedRequirementId, setSelectedRequirementId] = useState('');
+
+    const linkedRequirements = data.requirement_ids
+        .map((id) => availableRequirements.find((requirement) => requirement.id === id))
+        .filter((requirement) => requirement !== undefined);
+    const linkableRequirements = availableRequirements.filter(
+        (requirement) => !data.requirement_ids.includes(requirement.id),
+    );
+
+    function submitLinkRequirement(e: FormEvent) {
+        e.preventDefault();
+
+        setData('requirement_ids', [
+            ...data.requirement_ids,
+            Number(selectedRequirementId),
+        ]);
+        setSelectedRequirementId('');
+        setLinkRequirementOpen(false);
+    }
+
+    function unlinkRequirement(requirementId: number) {
+        setData(
+            'requirement_ids',
+            data.requirement_ids.filter((id) => id !== requirementId),
+        );
+    }
 
     const stepErrors = errors as Record<string, string | undefined>;
 
@@ -281,6 +327,104 @@ export default function CreateTestCase({
                             ))}
                         </CardContent>
                     </Card>
+
+                    {availableRequirements.length > 0 && (
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between">
+                                <CardTitle>
+                                    Linked requirements ({linkedRequirements.length})
+                                </CardTitle>
+
+                                {linkableRequirements.length > 0 && (
+                                    <Dialog
+                                        open={linkRequirementOpen}
+                                        onOpenChange={setLinkRequirementOpen}
+                                    >
+                                        <DialogTrigger asChild>
+                                            <Button type="button" variant="outline" size="sm">
+                                                Link requirement
+                                            </Button>
+                                        </DialogTrigger>
+                                        <DialogContent>
+                                            <DialogTitle>Link requirement</DialogTitle>
+                                            <DialogDescription>
+                                                Select a requirement to link to this test case.
+                                            </DialogDescription>
+
+                                            <div className="flex flex-col gap-4">
+                                                <Select
+                                                    value={selectedRequirementId}
+                                                    onValueChange={setSelectedRequirementId}
+                                                >
+                                                    <SelectTrigger className="w-full">
+                                                        <SelectValue placeholder="Select a requirement" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {linkableRequirements.map((requirement) => (
+                                                            <SelectItem
+                                                                key={requirement.id}
+                                                                value={String(requirement.id)}
+                                                            >
+                                                                {requirement.code} — {requirement.title}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+
+                                                <DialogFooter className="gap-2">
+                                                    <DialogClose asChild>
+                                                        <Button type="button" variant="secondary">
+                                                            Cancel
+                                                        </Button>
+                                                    </DialogClose>
+                                                    <Button
+                                                        type="button"
+                                                        disabled={!selectedRequirementId}
+                                                        onClick={submitLinkRequirement}
+                                                    >
+                                                        Link
+                                                    </Button>
+                                                </DialogFooter>
+                                            </div>
+                                        </DialogContent>
+                                    </Dialog>
+                                )}
+                            </CardHeader>
+
+                            <CardContent className="flex flex-col gap-2">
+                                <InputError message={errors.requirement_ids} />
+
+                                {linkedRequirements.length === 0 ? (
+                                    <p className="text-sm text-muted-foreground">
+                                        No requirements linked.
+                                    </p>
+                                ) : (
+                                    linkedRequirements.map((requirement) => (
+                                        <div
+                                            key={requirement.id}
+                                            className="flex items-center justify-between gap-2 rounded-lg border p-3"
+                                        >
+                                            <div className="text-sm">
+                                                <span className="font-medium">
+                                                    {requirement.code}
+                                                </span>{' '}
+                                                — {requirement.title}
+                                            </div>
+
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => unlinkRequirement(requirement.id)}
+                                            >
+                                                Unlink
+                                            </Button>
+                                        </div>
+                                    ))
+                                )}
+                            </CardContent>
+                        </Card>
+                    )}
 
                     <div className="flex items-center gap-4">
                         <Button type="submit" disabled={processing}>

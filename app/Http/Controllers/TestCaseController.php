@@ -76,13 +76,16 @@ class TestCaseController extends Controller
     /**
      * Show the form for creating a new test case.
      */
-    public function create(): Response
+    public function create(Request $request): Response
     {
         return Inertia::render('test-cases/create', [
             'classifications' => Classification::query()->orderBy('name')->get(['id', 'name']),
             'templates' => TestTemplate::query()->orderBy('title')->get(['id', 'title']),
             'statuses' => TestCaseStatus::query()->orderBy('name')->get(['id', 'name', 'color']),
             'defaultStatusId' => TestCaseStatus::default()->id,
+            'availableRequirements' => $request->user()->canManageAccess()
+                ? Requirement::query()->orderBy('code')->get(['id', 'code', 'title'])
+                : [],
         ]);
     }
 
@@ -109,6 +112,7 @@ class TestCaseController extends Controller
                     'expected_result' => $step['expected_result'] ?? null,
                 ]);
             }
+
             $testCase->requirements()->sync($request->safe()->array('requirement_ids'));
 
             return $testCase;
