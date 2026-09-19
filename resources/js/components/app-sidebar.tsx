@@ -45,7 +45,7 @@ const mainNavItems: NavItem[] = [
         icon: Users,
     },
     {
-        title: 'Casos de teste',
+        title: 'Test Cases',
         href: testCasesIndex(),
         icon: ClipboardList,
     },

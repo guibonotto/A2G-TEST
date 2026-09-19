@@ -82,6 +82,7 @@ class TestCaseController extends Controller
             'classifications' => Classification::query()->orderBy('name')->get(['id', 'name']),
             'templates' => TestTemplate::query()->orderBy('title')->get(['id', 'title']),
             'statuses' => TestCaseStatus::query()->orderBy('name')->get(['id', 'name', 'color']),
+            'defaultStatusId' => TestCaseStatus::default()->id,
         ]);
     }
 
@@ -96,6 +97,7 @@ class TestCaseController extends Controller
         $testCase = DB::transaction(function () use ($request, $project) {
             $testCase = TestCase::create([
                 ...$request->safe()->only(['title', 'description', 'classification_id', 'template_id', 'status_id']),
+                'status_id' => $request->validated('status_id') ?: TestCaseStatus::default()->id,
                 'created_by' => $request->user()->id,
                 'project_id' => $project->id,
             ]);
@@ -107,6 +109,7 @@ class TestCaseController extends Controller
                     'expected_result' => $step['expected_result'] ?? null,
                 ]);
             }
+            $testCase->requirements()->sync($request->safe()->array('requirement_ids'));
 
             return $testCase;
         });

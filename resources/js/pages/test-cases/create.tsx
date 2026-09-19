@@ -23,6 +23,7 @@ type Props = {
     classifications: Classification[];
     templates: TestTemplate[];
     statuses: TestCaseStatus[];
+    defaultStatusId: number;
 };
 
 type StepForm = {
@@ -32,13 +33,18 @@ type StepForm = {
 
 const emptyStep: StepForm = { description: '', expected_result: '' };
 
-export default function CreateTestCase({ classifications, templates, statuses }: Props) {
+export default function CreateTestCase({
+    classifications,
+    templates,
+    statuses,
+    defaultStatusId,
+}: Props) {
     const { data, setData, post, processing, errors } = useForm({
         title: '',
         description: '',
         classification_id: '',
         template_id: '',
-        status_id: '',
+        status_id: String(defaultStatusId),
         steps: [{ ...emptyStep }] as StepForm[],
     });
 
@@ -161,7 +167,7 @@ export default function CreateTestCase({ classifications, templates, statuses }:
                                         onValueChange={(value) => setData('status_id', value)}
                                     >
                                         <SelectTrigger id="status_id" className="w-full">
-                                            <SelectValue placeholder="Select a status" />
+                                            <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
                                             {statuses.map((status) => (

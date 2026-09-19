@@ -334,6 +334,76 @@ class TestCaseControllerTest extends TestCase
         ]);
     }
 
+    public function test_creation_falls_back_to_the_default_status(): void
+    {
+        $user = User::factory()->create();
+        $this->actingAsProjectMember($user);
+        $classification = Classification::create(['name' => 'Funcional']);
+
+        $this->post(route('test-cases.store'), [
+            'title' => 'Login com credenciais válidas',
+            'classification_id' => $classification->id,
+            'steps' => [
+                ['description' => 'Acessar a tela de login'],
+            ],
+        ]);
+
+        $testCase = TestCaseModel::where('title', 'Login com credenciais válidas')->firstOrFail();
+
+        $this->assertNotNull($testCase->status_id);
+        $this->assertSame(TestCaseStatus::DEFAULT_NAME, $testCase->status->name);
+    }
+
+    public function test_an_explicit_status_is_not_replaced_by_the_default(): void
+    {
+        $user = User::factory()->create();
+        $this->actingAsProjectMember($user);
+        $classification = Classification::create(['name' => 'Funcional']);
+        $status = $this->createStatus('Regressão', 'info');
+
+        $this->post(route('test-cases.store'), [
+            'title' => 'Login com credenciais válidas',
+            'classification_id' => $classification->id,
+            'status_id' => $status->id,
+            'steps' => [
+                ['description' => 'Acessar a tela de login'],
+            ],
+        ]);
+
+        $this->assertDatabaseHas('test_cases', [
+            'title' => 'Login com credenciais válidas',
+            'status_id' => $status->id,
+        ]);
+    }
+
+    public function test_create_screen_exposes_the_default_status(): void
+    {
+        $user = User::factory()->create();
+        $this->actingAsProjectMember($user);
+        Classification::create(['name' => 'Funcional']);
+
+        $response = $this->get(route('test-cases.create'));
+
+        $default = TestCaseStatus::where('name', TestCaseStatus::DEFAULT_NAME)->firstOrFail();
+
+        $response->assertInertia(fn (Assert $page) => $page
+            ->component('test-cases/create')
+            ->where('defaultStatusId', $default->id)
+        );
+    }
+
+    public function test_the_default_status_is_created_when_missing(): void
+    {
+        TestCaseStatus::query()->delete();
+
+        $default = TestCaseStatus::default();
+
+        $this->assertSame(TestCaseStatus::DEFAULT_NAME, $default->name);
+        $this->assertDatabaseCount('test_case_statuses', 1);
+        $this->assertSame($default->id, TestCaseStatus::default()->id);
+        $this->assertDatabaseCount('test_case_statuses', 1);
+    }
+
     public function test_a_test_case_can_be_viewed(): void
     {
         $user = User::factory()->create();
