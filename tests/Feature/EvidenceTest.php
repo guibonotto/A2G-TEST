@@ -18,12 +18,12 @@ class EvidenceTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function createUserWithRole(string $slug): User
-    {
-        $role = Role::firstOrCreate(['slug' => $slug], ['name' => $slug]);
+    // private function createUserWithRole(string $slug): User
+    // {
+    //     $role = Role::firstOrCreate(['slug' => $slug], ['name' => $slug]);
 
-        return User::factory()->create(['role_id' => $role->id]);
-    }
+    //     return User::factory()->create(['role_id' => $role->id]);
+    // }
 
     /**
      * Create a project the user belongs to, mark it as the active project in

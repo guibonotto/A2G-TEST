@@ -42,6 +42,24 @@ class RegistrationTest extends TestCase
         $response->assertRedirect(route('login'));
     }
 
+    public function test_registration_does_not_allow_the_admin_role(): void
+    {
+        Role::create(['name' => 'Administrator', 'slug' => 'admin']);
+
+        $response = $this->post(route('register.store'), [
+            'first_name' => 'João',
+            'last_name' => 'Silva',
+            'email' => 'joao@example.com',
+            'password' => 'password',
+            'password_confirmation' => 'password',
+            'role' => 'admin',
+        ]);
+
+        $response->assertSessionHasErrors('role');
+        $this->assertGuest();
+        $this->assertDatabaseMissing('users', ['email' => 'joao@example.com']);
+    }
+
     public function test_registration_fails_with_an_unknown_role(): void
     {
         Role::create(['name' => 'QA / Tester', 'slug' => 'qa']);

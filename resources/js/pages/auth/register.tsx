@@ -24,12 +24,6 @@ const roles = [
         desc: 'View and execute',
     },
     {
-        id: 'role-admin',
-        value: 'admin',
-        name: 'Administrator',
-        desc: 'Full access',
-    },
-    {
         id: 'role-viewer',
         value: 'viewer',
         name: 'Viewer',

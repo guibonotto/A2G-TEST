@@ -6,6 +6,7 @@ use App\Concerns\PasswordValidationRules;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 use Laravel\Fortify\Contracts\CreatesNewUsers;
 
 class CreateNewUser implements CreatesNewUsers
@@ -22,7 +23,7 @@ class CreateNewUser implements CreatesNewUsers
             'last_name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
             'password' => $this->passwordRules(),
-            'role' => ['required', 'string', 'exists:roles,slug'],
+            'role' => ['required', 'string', 'exists:roles,slug', Rule::notIn([Role::ADMIN])],
         ])->validate();
 
         $role = Role::where('slug', $input['role'])->first();

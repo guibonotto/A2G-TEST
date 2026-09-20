@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Classification;
 use App\Models\Project;
+use App\Models\Requirement;
 use App\Models\Role;
 use App\Models\TestCase as TestCaseModel;
 use App\Models\TestCaseStatus;
@@ -17,12 +18,12 @@ class TestCaseControllerTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function createUserWithRole(string $slug): User
-    {
-        $role = Role::firstOrCreate(['slug' => $slug], ['name' => $slug]);
+    // private function createUserWithRole(string $slug): User
+    // {
+    //     $role = Role::firstOrCreate(['slug' => $slug], ['name' => $slug]);
 
-        return User::factory()->create(['role_id' => $role->id]);
-    }
+    //     return User::factory()->create(['role_id' => $role->id]);
+    // }
 
     private function createStatus(string $name, string $color = 'secondary'): TestCaseStatus
     {
@@ -269,7 +270,7 @@ class TestCaseControllerTest extends TestCase
 
         $response->assertInertia(fn (Assert $page) => $page
             ->component('test-cases/create')
-            ->has('classifications', 1)
+            ->has('classifications', Classification::count())
         );
     }
 
@@ -332,6 +333,181 @@ class TestCaseControllerTest extends TestCase
             'title' => 'Login com credenciais válidas',
             'status_id' => $status->id,
         ]);
+    }
+
+    public function test_creation_falls_back_to_the_default_status(): void
+    {
+        $user = User::factory()->create();
+        $this->actingAsProjectMember($user);
+        $classification = Classification::create(['name' => 'Funcional']);
+
+        $this->post(route('test-cases.store'), [
+            'title' => 'Login com credenciais válidas',
+            'classification_id' => $classification->id,
+            'steps' => [
+                ['description' => 'Acessar a tela de login'],
+            ],
+        ]);
+
+        $testCase = TestCaseModel::where('title', 'Login com credenciais válidas')->firstOrFail();
+
+        $this->assertNotNull($testCase->status_id);
+        $this->assertSame(TestCaseStatus::DEFAULT_NAME, $testCase->status->name);
+    }
+
+    public function test_an_explicit_status_is_not_replaced_by_the_default(): void
+    {
+        $user = User::factory()->create();
+        $this->actingAsProjectMember($user);
+        $classification = Classification::create(['name' => 'Funcional']);
+        $status = $this->createStatus('Regressão', 'info');
+
+        $this->post(route('test-cases.store'), [
+            'title' => 'Login com credenciais válidas',
+            'classification_id' => $classification->id,
+            'status_id' => $status->id,
+            'steps' => [
+                ['description' => 'Acessar a tela de login'],
+            ],
+        ]);
+
+        $this->assertDatabaseHas('test_cases', [
+            'title' => 'Login com credenciais válidas',
+            'status_id' => $status->id,
+        ]);
+    }
+
+    public function test_create_screen_exposes_the_default_status(): void
+    {
+        $user = User::factory()->create();
+        $this->actingAsProjectMember($user);
+        Classification::create(['name' => 'Funcional']);
+
+        $response = $this->get(route('test-cases.create'));
+
+        $default = TestCaseStatus::where('name', TestCaseStatus::DEFAULT_NAME)->firstOrFail();
+
+        $response->assertInertia(fn (Assert $page) => $page
+            ->component('test-cases/create')
+            ->where('defaultStatusId', $default->id)
+        );
+    }
+
+    public function test_the_default_status_is_created_when_missing(): void
+    {
+        TestCaseStatus::query()->delete();
+
+        $default = TestCaseStatus::default();
+
+        $this->assertSame(TestCaseStatus::DEFAULT_NAME, $default->name);
+        $this->assertDatabaseCount('test_case_statuses', 1);
+        $this->assertSame($default->id, TestCaseStatus::default()->id);
+        $this->assertDatabaseCount('test_case_statuses', 1);
+    }
+
+    public function test_create_screen_offers_requirements_only_to_qa(): void
+    {
+        $qa = $this->createUserWithRole('qa');
+        $developer = $this->createUserWithRole('developer');
+        Classification::create(['name' => 'Funcional']);
+        Requirement::create(['code' => 'RF001', 'type' => 'funcional', 'title' => 'Cadastro']);
+
+        $this->actingAsProjectMember($qa);
+        $this->get(route('test-cases.create'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('test-cases/create')
+                ->has('availableRequirements', 1)
+            );
+
+        $this->actingAsProjectMember($developer);
+        $this->get(route('test-cases.create'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('test-cases/create')
+                ->has('availableRequirements', 0)
+            );
+    }
+
+    public function test_qa_can_link_requirements_while_creating_a_test_case(): void
+    {
+        $qa = $this->createUserWithRole('qa');
+        $this->actingAsProjectMember($qa);
+        $classification = Classification::create(['name' => 'Funcional']);
+        $first = Requirement::create(['code' => 'RF001', 'type' => 'funcional', 'title' => 'Cadastro']);
+        $second = Requirement::create(['code' => 'RF002', 'type' => 'funcional', 'title' => 'Login']);
+
+        $this->post(route('test-cases.store'), [
+            'title' => 'Login com credenciais válidas',
+            'classification_id' => $classification->id,
+            'steps' => [
+                ['description' => 'Acessar a tela de login'],
+            ],
+            'requirement_ids' => [$first->id, $second->id],
+        ]);
+
+        $testCase = TestCaseModel::where('title', 'Login com credenciais válidas')->firstOrFail();
+
+        $this->assertEqualsCanonicalizing(
+            [$first->id, $second->id],
+            $testCase->requirements()->pluck('requirements.id')->all()
+        );
+    }
+
+    public function test_a_test_case_can_be_created_without_requirements(): void
+    {
+        $qa = $this->createUserWithRole('qa');
+        $this->actingAsProjectMember($qa);
+        $classification = Classification::create(['name' => 'Funcional']);
+
+        $this->post(route('test-cases.store'), [
+            'title' => 'Login com credenciais válidas',
+            'classification_id' => $classification->id,
+            'steps' => [
+                ['description' => 'Acessar a tela de login'],
+            ],
+        ]);
+
+        $testCase = TestCaseModel::where('title', 'Login com credenciais válidas')->firstOrFail();
+
+        $this->assertCount(0, $testCase->requirements);
+    }
+
+    public function test_creation_fails_with_an_unknown_requirement(): void
+    {
+        $qa = $this->createUserWithRole('qa');
+        $this->actingAsProjectMember($qa);
+        $classification = Classification::create(['name' => 'Funcional']);
+
+        $response = $this->post(route('test-cases.store'), [
+            'title' => 'Login com credenciais válidas',
+            'classification_id' => $classification->id,
+            'steps' => [
+                ['description' => 'Acessar a tela de login'],
+            ],
+            'requirement_ids' => [999],
+        ]);
+
+        $response->assertSessionHasErrors('requirement_ids.0');
+        $this->assertDatabaseCount('test_cases', 0);
+    }
+
+    public function test_non_qa_users_cannot_link_requirements_while_creating_a_test_case(): void
+    {
+        $developer = $this->createUserWithRole('developer');
+        $this->actingAsProjectMember($developer);
+        $classification = Classification::create(['name' => 'Funcional']);
+        $requirement = Requirement::create(['code' => 'RF001', 'type' => 'funcional', 'title' => 'Cadastro']);
+
+        $response = $this->post(route('test-cases.store'), [
+            'title' => 'Login com credenciais válidas',
+            'classification_id' => $classification->id,
+            'steps' => [
+                ['description' => 'Acessar a tela de login'],
+            ],
+            'requirement_ids' => [$requirement->id],
+        ]);
+
+        $response->assertSessionHasErrors('requirement_ids');
+        $this->assertDatabaseCount('test_case_requirements', 0);
     }
 
     public function test_a_test_case_can_be_viewed(): void
@@ -520,7 +696,7 @@ class TestCaseControllerTest extends TestCase
         $response->assertInertia(fn (Assert $page) => $page
             ->component('test-cases/edit')
             ->where('testCase.title', 'Login com credenciais válidas')
-            ->has('classifications', 1)
+            ->has('classifications', Classification::count())
         );
     }
 

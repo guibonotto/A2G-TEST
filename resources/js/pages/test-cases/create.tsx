@@ -1,4 +1,5 @@
 import { Head, useForm } from '@inertiajs/react';
+// import { Plus, Trash2 } from 'lucide-react'; // desativado: steps múltiplos fora de uso (testes unitários/integração usam só entrada e saída esperada)
 import type { FormEvent } from 'react';
 import { useState } from 'react';
 import Heading from '@/components/heading';
@@ -6,13 +7,15 @@ import InputError from '@/components/input-error';
 import StepsEditor, { emptyStep  } from '@/components/steps-editor';
 import type {StepFormValue} from '@/components/steps-editor';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
     Dialog,
+    DialogClose,
     DialogContent,
     DialogDescription,
     DialogFooter,
     DialogTitle,
+    DialogTrigger,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -25,102 +28,95 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { index, store } from '@/routes/test-cases';
-import { show as templateShow } from '@/routes/test-templates';
-import type { Classification, TestCaseStatus, TestTemplate, TestTemplateData } from '@/types';
+import type {
+    Classification,
+    RequirementOption,
+    TestCaseStatus,
+    TestTemplate,
+} from '@/types';
+
 
 type Props = {
     classifications: Classification[];
     templates: TestTemplate[];
     statuses: TestCaseStatus[];
+    defaultStatusId: number;
+    availableRequirements: RequirementOption[];
 };
 
-const NO_TEMPLATE = 'none';
+type StepForm = {
+    description: string;
+    expected_result: string;
+};
 
-export default function CreateTestCase({ classifications, templates, statuses }: Props) {
+const emptyStep: StepForm = { description: '', expected_result: '' };
+
+export default function CreateTestCase({
+    classifications,
+    // templates, // desativado: templates fora de uso
+    statuses,
+    defaultStatusId,
+    availableRequirements,
+}: Props) {
     const { data, setData, post, processing, errors } = useForm({
         title: '',
         description: '',
         classification_id: '',
         template_id: '',
-        status_id: '',
-        steps: [{ ...emptyStep }] as StepFormValue[],
+        status_id: String(defaultStatusId),
+        steps: [{ ...emptyStep }] as StepForm[],
+        requirement_ids: [] as number[],
     });
 
-    const stepErrors = errors as Record<string, string | undefined>;
+    const [linkRequirementOpen, setLinkRequirementOpen] = useState(false);
+    const [selectedRequirementId, setSelectedRequirementId] = useState('');
 
-    const [pendingTemplateId, setPendingTemplateId] = useState<string | null>(null);
-    const [applyingTemplate, setApplyingTemplate] = useState(false);
-    const [templateError, setTemplateError] = useState<string | null>(null);
+    const linkedRequirements = data.requirement_ids
+        .map((id) => availableRequirements.find((requirement) => requirement.id === id))
+        .filter((requirement) => requirement !== undefined);
+    const linkableRequirements = availableRequirements.filter(
+        (requirement) => !data.requirement_ids.includes(requirement.id),
+    );
 
-    /**
-     * Whether the user already typed something the template would overwrite.
-     */
-    function formHasContent(): boolean {
-        return (
-            data.description.trim() !== '' ||
-            data.steps.some((step) => step.description.trim() !== '' || step.expected_result.trim() !== '')
+    function submitLinkRequirement(e: FormEvent) {
+        e.preventDefault();
+
+        setData('requirement_ids', [
+            ...data.requirement_ids,
+            Number(selectedRequirementId),
+        ]);
+        setSelectedRequirementId('');
+        setLinkRequirementOpen(false);
+    }
+
+    function unlinkRequirement(requirementId: number) {
+        setData(
+            'requirement_ids',
+            data.requirement_ids.filter((id) => id !== requirementId),
         );
     }
 
-    function handleTemplateChange(value: string) {
-        setTemplateError(null);
+    const stepErrors = errors as Record<string, string | undefined>;
 
-        if (value === NO_TEMPLATE) {
-            setData('template_id', '');
-
-            return;
-        }
-
-        if (formHasContent()) {
-            setPendingTemplateId(value);
-
-            return;
-        }
-
-        void applyTemplate(value);
+    function updateStep(stepIndex: number, field: keyof StepForm, value: string) {
+        const steps = data.steps.map((step, i) =>
+            i === stepIndex ? { ...step, [field]: value } : step,
+        );
+        setData('steps', steps);
     }
 
-    /**
-     * Copy the template's description, classification and steps into the form.
-     * The test case keeps its own copy, so later edits to the template do not
-     * affect it.
-     */
-    async function applyTemplate(templateId: string) {
-        setApplyingTemplate(true);
-
-        try {
-            const response = await fetch(templateShow.url(Number(templateId)), {
-                headers: { Accept: 'application/json' },
-            });
-
-            if (!response.ok) {
-                throw new Error('request failed');
-            }
-
-            const template: TestTemplateData = await response.json();
-
-            setData({
-                ...data,
-                template_id: templateId,
-                description: template.description ?? '',
-                classification_id: template.classification_id
-                    ? String(template.classification_id)
-                    : data.classification_id,
-                steps:
-                    template.steps.length > 0
-                        ? template.steps.map((step) => ({
-                              description: step.description,
-                              expected_result: step.expected_result ?? '',
-                          }))
-                        : [{ ...emptyStep }],
-            });
-        } catch {
-            setTemplateError('Could not load the template. Please try again.');
-        } finally {
-            setApplyingTemplate(false);
-            setPendingTemplateId(null);
-        }
+    /* desativado: steps múltiplos fora de uso (testes unitários/integração usam só entrada e saída esperada)
+    function addStep() {
+        setData('steps', [...data.steps, { ...emptyStep }]);
     }
+
+    function removeStep(stepIndex: number) {
+        setData(
+            'steps',
+            data.steps.filter((_, i) => i !== stepIndex),
+        );
+    }
+    */
 
     function submit(e: FormEvent) {
         e.preventDefault();
@@ -187,6 +183,7 @@ export default function CreateTestCase({ classifications, templates, statuses }:
                                     <InputError message={errors.classification_id} />
                                 </div>
 
+                                {/* Template de caso de teste desativado (funcionalidade fora de uso)
                                 <div className="grid gap-2">
                                     <Label htmlFor="template_id">
                                         Template (optional)
@@ -218,6 +215,7 @@ export default function CreateTestCase({ classifications, templates, statuses }:
                                     </p>
                                     <InputError message={templateError ?? errors.template_id} />
                                 </div>
+                                */}
 
                                 <div className="grid gap-2">
                                     <Label htmlFor="status_id">Status</Label>
@@ -226,7 +224,7 @@ export default function CreateTestCase({ classifications, templates, statuses }:
                                         onValueChange={(value) => setData('status_id', value)}
                                     >
                                         <SelectTrigger id="status_id" className="w-full">
-                                            <SelectValue placeholder="Select a status" />
+                                            <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
                                             {statuses.map((status) => (
@@ -243,15 +241,243 @@ export default function CreateTestCase({ classifications, templates, statuses }:
                     </Card>
 
                     <Card>
-                        <CardContent>
-                            <StepsEditor
-                                steps={data.steps}
-                                onChange={(steps) => setData('steps', steps)}
-                                errors={stepErrors}
-                                disabled={applyingTemplate}
+                        <CardContent className="flex flex-col gap-4">
+                            <Heading
+                                variant="small"
+                                title="Test data"
+                                description="Input and expected output for the test case."
                             />
+
+                            <InputError message={errors.steps} />
+
+                            <div className="grid gap-2">
+                                <Label htmlFor="step-input">Input</Label>
+
+                                <Textarea
+                                    id="step-input"
+                                    value={data.steps[0].description}
+                                    onChange={(e) =>
+                                        updateStep(0, 'description', e.target.value)
+                                    }
+                                />
+
+                                <InputError
+                                    message={stepErrors['steps.0.description']}
+                                />
+                            </div>
+
+                            <div className="grid gap-2">
+                                <Label htmlFor="step-expected">Expected output</Label>
+
+                                <Textarea
+                                    id="step-expected"
+                                    value={data.steps[0].expected_result}
+                                    onChange={(e) =>
+                                        updateStep(0, 'expected_result', e.target.value)
+                                    }
+                                />
+
+                                <InputError
+                                    message={stepErrors['steps.0.expected_result']}
+                                />
+                            </div>
+
+                            {/* desativado: steps múltiplos fora de uso (testes unitários/integração usam só entrada e saída esperada)
+                            <div className="flex items-center justify-between">
+                                <Heading
+                                    variant="small"
+                                    title="Steps"
+                                    description="Add at least one step."
+                                />
+
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={addStep}
+                                >
+                                    <Plus /> Add step
+                                </Button>
+                            </div>
+
+                            <InputError message={errors.steps} />
+
+                            {data.steps.map((step, stepIndex) => (
+                                <div
+                                    key={stepIndex}
+                                    className="flex flex-col gap-3 rounded-lg border p-4"
+                                >
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-sm font-medium">
+                                            Step {stepIndex + 1}
+                                        </span>
+
+                                        {data.steps.length > 1 && (
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={() => removeStep(stepIndex)}
+                                            >
+                                                <Trash2 />
+                                            </Button>
+                                        )}
+                                    </div>
+
+                                    <div className="grid gap-2">
+                                        <Label htmlFor={`step-description-${stepIndex}`}>
+                                            Action
+                                        </Label>
+
+                                        <Textarea
+                                            id={`step-description-${stepIndex}`}
+                                            value={step.description}
+                                            onChange={(e) =>
+                                                updateStep(
+                                                    stepIndex,
+                                                    'description',
+                                                    e.target.value,
+                                                )
+                                            }
+                                        />
+
+                                        <InputError
+                                            message={
+                                                stepErrors[
+                                                    `steps.${stepIndex}.description`
+                                                ]
+                                            }
+                                        />
+                                    </div>
+
+                                    <div className="grid gap-2">
+                                        <Label htmlFor={`step-expected-${stepIndex}`}>
+                                            Expected result
+                                        </Label>
+
+                                        <Textarea
+                                            id={`step-expected-${stepIndex}`}
+                                            value={step.expected_result}
+                                            onChange={(e) =>
+                                                updateStep(
+                                                    stepIndex,
+                                                    'expected_result',
+                                                    e.target.value,
+                                                )
+                                            }
+                                        />
+
+                                        <InputError
+                                            message={
+                                                stepErrors[
+                                                    `steps.${stepIndex}.expected_result`
+                                                ]
+                                            }
+                                        />
+                                    </div>
+                                </div>
+                            ))}
+                            */}
                         </CardContent>
                     </Card>
+
+                    {availableRequirements.length > 0 && (
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between">
+                                <CardTitle>
+                                    Linked requirements ({linkedRequirements.length})
+                                </CardTitle>
+
+                                {linkableRequirements.length > 0 && (
+                                    <Dialog
+                                        open={linkRequirementOpen}
+                                        onOpenChange={setLinkRequirementOpen}
+                                    >
+                                        <DialogTrigger asChild>
+                                            <Button type="button" variant="outline" size="sm">
+                                                Link requirement
+                                            </Button>
+                                        </DialogTrigger>
+                                        <DialogContent>
+                                            <DialogTitle>Link requirement</DialogTitle>
+                                            <DialogDescription>
+                                                Select a requirement to link to this test case.
+                                            </DialogDescription>
+
+                                            <div className="flex flex-col gap-4">
+                                                <Select
+                                                    value={selectedRequirementId}
+                                                    onValueChange={setSelectedRequirementId}
+                                                >
+                                                    <SelectTrigger className="w-full">
+                                                        <SelectValue placeholder="Select a requirement" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {linkableRequirements.map((requirement) => (
+                                                            <SelectItem
+                                                                key={requirement.id}
+                                                                value={String(requirement.id)}
+                                                            >
+                                                                {requirement.code} — {requirement.title}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+
+                                                <DialogFooter className="gap-2">
+                                                    <DialogClose asChild>
+                                                        <Button type="button" variant="secondary">
+                                                            Cancel
+                                                        </Button>
+                                                    </DialogClose>
+                                                    <Button
+                                                        type="button"
+                                                        disabled={!selectedRequirementId}
+                                                        onClick={submitLinkRequirement}
+                                                    >
+                                                        Link
+                                                    </Button>
+                                                </DialogFooter>
+                                            </div>
+                                        </DialogContent>
+                                    </Dialog>
+                                )}
+                            </CardHeader>
+
+                            <CardContent className="flex flex-col gap-2">
+                                <InputError message={errors.requirement_ids} />
+
+                                {linkedRequirements.length === 0 ? (
+                                    <p className="text-sm text-muted-foreground">
+                                        No requirements linked.
+                                    </p>
+                                ) : (
+                                    linkedRequirements.map((requirement) => (
+                                        <div
+                                            key={requirement.id}
+                                            className="flex items-center justify-between gap-2 rounded-lg border p-3"
+                                        >
+                                            <div className="text-sm">
+                                                <span className="font-medium">
+                                                    {requirement.code}
+                                                </span>{' '}
+                                                — {requirement.title}
+                                            </div>
+
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => unlinkRequirement(requirement.id)}
+                                            >
+                                                Unlink
+                                            </Button>
+                                        </div>
+                                    ))
+                                )}
+                            </CardContent>
+                        </Card>
+                    )}
 
                     <div className="flex items-center gap-4">
                         <Button type="submit" disabled={processing || applyingTemplate}>

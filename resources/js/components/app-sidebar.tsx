@@ -47,7 +47,7 @@ const mainNavItems: NavItem[] = [
         icon: Users,
     },
     {
-        title: 'Casos de teste',
+        title: 'Test Cases',
         href: testCasesIndex(),
         icon: ClipboardList,
     },
@@ -101,7 +101,7 @@ const footerNavItems: NavItem[] = [
 
 export function AppSidebar() {
     const { auth, currentProject } = usePage().props;
-    const isQa = auth.user.role?.slug === 'qa';
+    const canManage = ['qa', 'admin'].includes(auth.user.role?.slug ?? '');
 
     return (
         <Sidebar collapsible="icon" variant="inset">
@@ -134,7 +134,7 @@ export function AppSidebar() {
 
             <SidebarContent>
                 <NavMain items={mainNavItems} />
-                {isQa && (
+                {canManage && (
                     <NavMain items={managementNavItems} label="Management" />
                 )}
             </SidebarContent>

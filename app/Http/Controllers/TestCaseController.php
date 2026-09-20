@@ -76,12 +76,16 @@ class TestCaseController extends Controller
     /**
      * Show the form for creating a new test case.
      */
-    public function create(): Response
+    public function create(Request $request): Response
     {
         return Inertia::render('test-cases/create', [
             'classifications' => Classification::query()->orderBy('name')->get(['id', 'name']),
             'templates' => TestTemplate::query()->orderBy('title')->get(['id', 'title']),
             'statuses' => TestCaseStatus::query()->orderBy('name')->get(['id', 'name', 'color']),
+            'defaultStatusId' => TestCaseStatus::default()->id,
+            'availableRequirements' => $request->user()->canManageAccess()
+                ? Requirement::query()->orderBy('code')->get(['id', 'code', 'title'])
+                : [],
         ]);
     }
 
@@ -96,6 +100,7 @@ class TestCaseController extends Controller
         $testCase = DB::transaction(function () use ($request, $project) {
             $testCase = TestCase::create([
                 ...$request->safe()->only(['title', 'description', 'classification_id', 'template_id', 'status_id']),
+                'status_id' => $request->validated('status_id') ?: TestCaseStatus::default()->id,
                 'created_by' => $request->user()->id,
                 'project_id' => $project->id,
             ]);
@@ -107,6 +112,8 @@ class TestCaseController extends Controller
                     'expected_result' => $step['expected_result'] ?? null,
                 ]);
             }
+
+            $testCase->requirements()->sync($request->safe()->array('requirement_ids'));
 
             return $testCase;
         });
@@ -140,7 +147,7 @@ class TestCaseController extends Controller
 
         return Inertia::render('test-cases/show', [
             'testCase' => $testCase,
-            'assignableUsers' => $request->user()->hasRole('qa')
+            'assignableUsers' => $request->user()->canManageAccess()
                 ? User::query()
                     ->whereHas('role', fn ($query) => $query->whereIn('slug', ['qa', 'developer']))
                     ->orderBy('name')
@@ -309,7 +316,7 @@ class TestCaseController extends Controller
      */
     public function unlinkRequirement(Request $request, TestCase $testCase): RedirectResponse
     {
-        abort_unless($request->user()->hasRole('qa') && $request->user()->can('view', $testCase), 403);
+        abort_unless($request->user()->canManageAccess() && $request->user()->can('view', $testCase), 403);
 
         $testCase->requirements()->detach($request->integer('requirement_id'));
 

@@ -4,6 +4,7 @@ namespace App\Http\Requests\TestCases;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreTestCaseRequest extends FormRequest
 {
@@ -31,6 +32,8 @@ class StoreTestCaseRequest extends FormRequest
             'steps' => ['required', 'array', 'min:1'],
             'steps.*.description' => ['required', 'string'],
             'steps.*.expected_result' => ['nullable', 'string'],
+            'requirement_ids' => [Rule::prohibitedIf(fn () => ! $this->user()->canManageAccess()), 'array'],
+            'requirement_ids.*' => ['integer', 'exists:requirements,id'],
         ];
     }
 }

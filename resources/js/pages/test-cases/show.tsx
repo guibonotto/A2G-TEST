@@ -432,6 +432,7 @@ export default function ShowTestCase({
                             </div>
                         </div>
 
+                        {/* Template de caso de teste desativado (funcionalidade fora de uso)
                         <div>
                             <div className="text-muted-foreground">
                                 Template
@@ -440,6 +441,7 @@ export default function ShowTestCase({
                                 {testCase.template?.title ?? '—'}
                             </div>
                         </div>
+                        */}
 
                         <div>
                             <div className="text-muted-foreground">
@@ -651,6 +653,37 @@ export default function ShowTestCase({
                 <Card>
                     <CardHeader>
                         <CardTitle className="text-sm font-medium text-muted-foreground">
+                            Test data
+                        </CardTitle>
+                    </CardHeader>
+
+                    <CardContent className="flex flex-col gap-3">
+                        <div>
+                            <div className="text-xs text-muted-foreground">
+                                Input
+                            </div>
+
+                            <p className="text-sm">
+                                {testCase.steps[0]?.description ?? '—'}
+                            </p>
+                        </div>
+
+                        <div>
+                            <div className="text-xs text-muted-foreground">
+                                Expected output
+                            </div>
+
+                            <p className="text-sm">
+                                {testCase.steps[0]?.expected_result ?? '—'}
+                            </p>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {/* desativado: steps múltiplos fora de uso (testes unitários/integração usam só entrada e saída esperada)
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="text-sm font-medium text-muted-foreground">
                             Steps ({testCase.steps.length})
                         </CardTitle>
                     </CardHeader>
@@ -690,6 +723,7 @@ export default function ShowTestCase({
                         ))}
                     </CardContent>
                 </Card>
+                */}
             </div>
         </>
     );

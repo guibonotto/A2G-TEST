@@ -8,7 +8,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('jira/oauth/callback', [JiraIntegrationController::class, 'callback'])->name('jira.callback');
 });
 
-Route::middleware(['auth', 'verified', 'role:qa'])->group(function () {
+Route::middleware(['auth', 'verified', 'role:qa,admin'])->group(function () {
     Route::get('management/jira', [JiraIntegrationController::class, 'edit'])->name('jira.edit');
     Route::delete('management/jira', [JiraIntegrationController::class, 'destroy'])->name('jira.destroy');
     Route::post('management/jira/import', [JiraIntegrationController::class, 'import'])->name('jira.import');

@@ -15,6 +15,28 @@ use Illuminate\Support\Str;
 ])]
 class Role extends Model
 {
+    public const string ADMIN = 'admin';
+
+    /**
+     * Fixed hierarchy: a role may only manage roles and users strictly below its own level.
+     */
+    public const array LEVELS = [
+        'admin' => 100,
+        'qa' => 50,
+        'developer' => 30,
+        'viewer' => 10,
+    ];
+
+    public function level(): int
+    {
+        return self::LEVELS[$this->slug] ?? 0;
+    }
+
+    public function outranks(self $other): bool
+    {
+        return $this->level() > $other->level();
+    }
+
     /**
      * The table associated with the model.
      */
