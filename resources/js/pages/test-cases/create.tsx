@@ -1,5 +1,5 @@
 import { Head, useForm } from '@inertiajs/react';
-import { Plus, Trash2 } from 'lucide-react';
+// import { Plus, Trash2 } from 'lucide-react'; // desativado: steps múltiplos fora de uso (testes unitários/integração usam só entrada e saída esperada)
 import type { FormEvent } from 'react';
 import { useState } from 'react';
 import Heading from '@/components/heading';
@@ -103,6 +103,7 @@ export default function CreateTestCase({
         setData('steps', steps);
     }
 
+    /* desativado: steps múltiplos fora de uso (testes unitários/integração usam só entrada e saída esperada)
     function addStep() {
         setData('steps', [...data.steps, { ...emptyStep }]);
     }
@@ -113,6 +114,7 @@ export default function CreateTestCase({
             data.steps.filter((_, i) => i !== stepIndex),
         );
     }
+    */
 
     function submit(e: FormEvent) {
         e.preventDefault();
@@ -233,6 +235,47 @@ export default function CreateTestCase({
 
                     <Card>
                         <CardContent className="flex flex-col gap-4">
+                            <Heading
+                                variant="small"
+                                title="Test data"
+                                description="Input and expected output for the test case."
+                            />
+
+                            <InputError message={errors.steps} />
+
+                            <div className="grid gap-2">
+                                <Label htmlFor="step-input">Input</Label>
+
+                                <Textarea
+                                    id="step-input"
+                                    value={data.steps[0].description}
+                                    onChange={(e) =>
+                                        updateStep(0, 'description', e.target.value)
+                                    }
+                                />
+
+                                <InputError
+                                    message={stepErrors['steps.0.description']}
+                                />
+                            </div>
+
+                            <div className="grid gap-2">
+                                <Label htmlFor="step-expected">Expected output</Label>
+
+                                <Textarea
+                                    id="step-expected"
+                                    value={data.steps[0].expected_result}
+                                    onChange={(e) =>
+                                        updateStep(0, 'expected_result', e.target.value)
+                                    }
+                                />
+
+                                <InputError
+                                    message={stepErrors['steps.0.expected_result']}
+                                />
+                            </div>
+
+                            {/* desativado: steps múltiplos fora de uso (testes unitários/integração usam só entrada e saída esperada)
                             <div className="flex items-center justify-between">
                                 <Heading
                                     variant="small"
@@ -327,6 +370,7 @@ export default function CreateTestCase({
                                     </div>
                                 </div>
                             ))}
+                            */}
                         </CardContent>
                     </Card>
 
