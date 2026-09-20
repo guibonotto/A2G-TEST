@@ -4,8 +4,6 @@ import type { FormEvent } from 'react';
 import { useState } from 'react';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
-import StepsEditor, { emptyStep  } from '@/components/steps-editor';
-import type {StepFormValue} from '@/components/steps-editor';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -189,17 +187,15 @@ export default function CreateTestCase({
                                         Template (optional)
                                     </Label>
                                     <Select
-                                        value={data.template_id || NO_TEMPLATE}
-                                        onValueChange={handleTemplateChange}
-                                        disabled={applyingTemplate}
+                                        value={data.template_id}
+                                        onValueChange={(value) =>
+                                            setData('template_id', value)
+                                        }
                                     >
                                         <SelectTrigger id="template_id" className="w-full">
                                             <SelectValue placeholder="No template" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value={NO_TEMPLATE}>
-                                                <span className="text-muted-foreground">No template</span>
-                                            </SelectItem>
                                             {templates.map((template) => (
                                                 <SelectItem
                                                     key={template.id}
@@ -210,10 +206,7 @@ export default function CreateTestCase({
                                             ))}
                                         </SelectContent>
                                     </Select>
-                                    <p className="text-xs text-muted-foreground">
-                                        Copies the template's description and steps into this form.
-                                    </p>
-                                    <InputError message={templateError ?? errors.template_id} />
+                                    <InputError message={errors.template_id} />
                                 </div>
                                 */}
 
@@ -480,41 +473,12 @@ export default function CreateTestCase({
                     )}
 
                     <div className="flex items-center gap-4">
-                        <Button type="submit" disabled={processing || applyingTemplate}>
+                        <Button type="submit" disabled={processing}>
                             Create test case
                         </Button>
                     </div>
                 </form>
             </div>
-
-            <Dialog
-                open={pendingTemplateId !== null}
-                onOpenChange={(open) => {
-                    if (!open) {
-                        setPendingTemplateId(null);
-                    }
-                }}
-            >
-                <DialogContent>
-                    <DialogTitle>Apply template?</DialogTitle>
-                    <DialogDescription>
-                        The description and steps you typed will be replaced with the template's content.
-                    </DialogDescription>
-
-                    <DialogFooter className="gap-2">
-                        <Button type="button" variant="secondary" onClick={() => setPendingTemplateId(null)}>
-                            Keep my changes
-                        </Button>
-                        <Button
-                            type="button"
-                            disabled={applyingTemplate}
-                            onClick={() => pendingTemplateId && void applyTemplate(pendingTemplateId)}
-                        >
-                            {applyingTemplate ? 'Applying...' : 'Replace'}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
         </>
     );
 }
