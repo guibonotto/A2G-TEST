@@ -40,7 +40,7 @@ const emptyStep: StepForm = { description: '', expected_result: '' };
 export default function EditTestCase({
     testCase,
     classifications,
-    templates,
+    // templates, // desativado: templates fora de uso
     statuses,
 }: Props) {
     const { data, setData, put, processing, errors } = useForm({
@@ -187,6 +187,7 @@ export default function EditTestCase({
                                     />
                                 </div>
 
+                                {/* Template de caso de teste desativado (funcionalidade fora de uso)
                                 <div className="grid gap-2">
                                     <Label htmlFor="template_id">
                                         Template (optional)
@@ -226,6 +227,7 @@ export default function EditTestCase({
                                         message={errors.template_id}
                                     />
                                 </div>
+                                */}
 
                                 <div className="grid gap-2">
                                     <Label htmlFor="status_id">Status</Label>

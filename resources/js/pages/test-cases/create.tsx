@@ -51,7 +51,7 @@ const emptyStep: StepForm = { description: '', expected_result: '' };
 
 export default function CreateTestCase({
     classifications,
-    templates,
+    // templates, // desativado: templates fora de uso
     statuses,
     defaultStatusId,
     availableRequirements,
@@ -179,6 +179,7 @@ export default function CreateTestCase({
                                     <InputError message={errors.classification_id} />
                                 </div>
 
+                                {/* Template de caso de teste desativado (funcionalidade fora de uso)
                                 <div className="grid gap-2">
                                     <Label htmlFor="template_id">
                                         Template (optional)
@@ -205,6 +206,7 @@ export default function CreateTestCase({
                                     </Select>
                                     <InputError message={errors.template_id} />
                                 </div>
+                                */}
 
                                 <div className="grid gap-2">
                                     <Label htmlFor="status_id">Status</Label>

@@ -432,6 +432,7 @@ export default function ShowTestCase({
                             </div>
                         </div>
 
+                        {/* Template de caso de teste desativado (funcionalidade fora de uso)
                         <div>
                             <div className="text-muted-foreground">
                                 Template
@@ -440,6 +441,7 @@ export default function ShowTestCase({
                                 {testCase.template?.title ?? '—'}
                             </div>
                         </div>
+                        */}
 
                         <div>
                             <div className="text-muted-foreground">
