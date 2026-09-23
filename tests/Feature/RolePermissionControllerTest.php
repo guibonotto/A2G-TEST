@@ -113,6 +113,61 @@ class RolePermissionControllerTest extends TestCase
         $this->actingAs($qa)->get(route('role-permissions.index'))->assertForbidden();
     }
 
+    public function test_admins_keep_access_even_when_their_stored_permissions_are_empty(): void
+    {
+        $admin = $this->createUserWithRole('admin');
+        $admin->role->update(['permissions' => []]);
+
+        $this->actingAs($admin)->get(route('role-permissions.index'))->assertOk();
+        $this->actingAs($admin)->get(route('test-case-statuses.index'))->assertOk();
+        $this->actingAs($admin)->get(route('accounts.index'))->assertOk();
+    }
+
+    public function test_management_roles_that_were_never_configured_keep_full_access(): void
+    {
+        $qa = $this->createUserWithRole('qa');
+        $qa->role->update(['permissions' => null]);
+
+        $this->actingAs($qa)->get(route('role-permissions.index'))->assertOk();
+        $this->actingAs($qa)->get(route('test-case-statuses.index'))->assertOk();
+        $this->actingAs($qa)->get(route('accounts.index'))->assertOk();
+    }
+
+    public function test_roles_below_management_that_were_never_configured_get_nothing(): void
+    {
+        $developer = $this->createUserWithRole('developer');
+        $developer->role->update(['permissions' => null]);
+
+        $this->assertFalse($developer->fresh()->hasPermission(Permission::ManageStatuses));
+    }
+
+    public function test_an_explicitly_empty_set_is_still_honoured(): void
+    {
+        $qa = $this->createUserWithRole('qa');
+        $qa->role->update(['permissions' => []]);
+
+        $this->actingAs($qa)->get(route('role-permissions.index'))->assertForbidden();
+    }
+
+    public function test_the_permission_list_exposes_the_enforced_permission_set(): void
+    {
+        $qa = $this->createUserWithRole('qa');
+        $developer = $this->createUserWithRole('developer');
+        $developer->role->update(['permissions' => null]);
+
+        $response = $this->actingAs($qa)->get(route('role-permissions.index'));
+
+        $response->assertInertia(fn (Assert $page) => $page
+            ->component('management/permissions/index')
+            ->where('roles', fn ($roles) => collect($roles)
+                ->pluck('effective_permissions', 'slug')
+                ->all() === [
+                    'developer' => [],
+                    'qa' => array_column(Permission::cases(), 'value'),
+                ])
+        );
+    }
+
     public function test_the_permission_list_tells_the_viewer_which_roles_they_can_edit(): void
     {
         $qa = $this->createUserWithRole('qa');

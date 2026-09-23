@@ -25,6 +25,7 @@ class RolePermissionController extends Controller
                 ->get(['id', 'name', 'slug', 'permissions'])
                 ->map(fn (Role $role): array => [
                     ...$role->only(['id', 'name', 'slug', 'permissions']),
+                    'effective_permissions' => $role->effectivePermissions(),
                     'can_edit' => $user->canEditPermissionsOf($role),
                 ]),
             'availablePermissions' => collect(Permission::cases())

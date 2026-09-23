@@ -56,9 +56,18 @@ class User extends Authenticatable implements PasskeyUser
         return in_array($this->role?->slug, $slugs, true);
     }
 
+    /**
+     * Admins always hold every permission: their stored set is never editable
+     * (see canEditPermissionsOf), so reading it would let a missing or empty
+     * set lock the last account out of the screens that could repair it.
+     */
     public function hasPermission(Permission $permission): bool
     {
-        return in_array($permission->value, $this->role?->permissions ?? [], true);
+        if ($this->hasRole(Role::ADMIN)) {
+            return true;
+        }
+
+        return in_array($permission->value, $this->role?->effectivePermissions() ?? [], true);
     }
 
     public function level(): int

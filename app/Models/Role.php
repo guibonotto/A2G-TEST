@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\Permission;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -27,9 +28,34 @@ class Role extends Model
         'viewer' => 10,
     ];
 
+    /**
+     * Roles that hold every permission whenever their set was never configured.
+     */
+    public const array MANAGEMENT_SLUGS = ['qa', self::ADMIN];
+
     public function level(): int
     {
         return self::LEVELS[$this->slug] ?? 0;
+    }
+
+    /**
+     * The permissions actually enforced for this role.
+     *
+     * A null set means the role predates permission enforcement and was never
+     * configured, which for the management roles means full access; an empty
+     * array is an explicit "none" and is honoured as such.
+     *
+     * @return array<int, string>
+     */
+    public function effectivePermissions(): array
+    {
+        if ($this->permissions !== null) {
+            return $this->permissions;
+        }
+
+        return in_array($this->slug, self::MANAGEMENT_SLUGS, true)
+            ? array_column(Permission::cases(), 'value')
+            : [];
     }
 
     public function outranks(self $other): bool
@@ -52,6 +78,21 @@ class Role extends Model
         return [
             'permissions' => 'array',
         ];
+    }
+
+    /**
+     * Exposed so the frontend gates on what is enforced, not on the raw column.
+     *
+     * @var list<string>
+     */
+    protected $appends = ['effective_permissions'];
+
+    /**
+     * @return array<int, string>
+     */
+    public function getEffectivePermissionsAttribute(): array
+    {
+        return $this->effectivePermissions();
     }
 
     protected static function booted(): void

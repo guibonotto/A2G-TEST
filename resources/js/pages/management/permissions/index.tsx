@@ -15,7 +15,10 @@ type Props = {
     availablePermissions: AvailablePermission[];
 };
 
-export default function ManageRolePermissions({ roles, availablePermissions }: Props) {
+export default function ManageRolePermissions({
+    roles,
+    availablePermissions,
+}: Props) {
     return (
         <>
             <Head title="Manage permissions" />
@@ -28,7 +31,11 @@ export default function ManageRolePermissions({ roles, availablePermissions }: P
 
                 <div className="flex flex-col gap-4">
                     {roles.map((role) => (
-                        <RoleCard key={role.id} role={role} availablePermissions={availablePermissions} />
+                        <RoleCard
+                            key={role.id}
+                            role={role}
+                            availablePermissions={availablePermissions}
+                        />
                     ))}
                 </div>
             </div>
@@ -36,8 +43,14 @@ export default function ManageRolePermissions({ roles, availablePermissions }: P
     );
 }
 
-function RoleCard({ role, availablePermissions }: { role: EditableRole; availablePermissions: AvailablePermission[] }) {
-    const form = useForm({ permissions: role.permissions ?? [] });
+function RoleCard({
+    role,
+    availablePermissions,
+}: {
+    role: EditableRole;
+    availablePermissions: AvailablePermission[];
+}) {
+    const form = useForm({ permissions: role.effective_permissions });
     const isAdmin = role.slug === 'admin';
 
     function togglePermission(value: string, checked: boolean) {
@@ -45,7 +58,9 @@ function RoleCard({ role, availablePermissions }: { role: EditableRole; availabl
             'permissions',
             checked
                 ? [...form.data.permissions, value]
-                : form.data.permissions.filter((permission) => permission !== value),
+                : form.data.permissions.filter(
+                      (permission) => permission !== value,
+                  ),
         );
     }
 
@@ -65,7 +80,9 @@ function RoleCard({ role, availablePermissions }: { role: EditableRole; availabl
                 <div className="flex items-start justify-between gap-4">
                     <div>
                         <h3 className="font-medium">{role.name}</h3>
-                        <p className="text-sm text-muted-foreground">{role.slug}</p>
+                        <p className="text-sm text-muted-foreground">
+                            {role.slug}
+                        </p>
                     </div>
                     {!role.can_edit && (
                         <Badge variant="secondary" className="gap-1">
@@ -77,16 +94,33 @@ function RoleCard({ role, availablePermissions }: { role: EditableRole; availabl
 
                 <div className="grid gap-3 sm:grid-cols-2">
                     {availablePermissions.map((permission) => (
-                        <div key={permission.value} className="flex items-center gap-2">
+                        <div
+                            key={permission.value}
+                            className="flex items-center gap-2"
+                        >
                             <Checkbox
                                 id={`${role.id}-${permission.value}`}
-                                checked={isAdmin || form.data.permissions.includes(permission.value)}
+                                checked={
+                                    isAdmin ||
+                                    form.data.permissions.includes(
+                                        permission.value,
+                                    )
+                                }
                                 disabled={!role.can_edit}
-                                onCheckedChange={(checked) => togglePermission(permission.value, checked === true)}
+                                onCheckedChange={(checked) =>
+                                    togglePermission(
+                                        permission.value,
+                                        checked === true,
+                                    )
+                                }
                             />
                             <Label
                                 htmlFor={`${role.id}-${permission.value}`}
-                                className={role.can_edit ? 'font-normal' : 'font-normal text-muted-foreground'}
+                                className={
+                                    role.can_edit
+                                        ? 'font-normal'
+                                        : 'font-normal text-muted-foreground'
+                                }
                             >
                                 {permission.label}
                             </Label>
@@ -96,7 +130,11 @@ function RoleCard({ role, availablePermissions }: { role: EditableRole; availabl
 
                 {role.can_edit && (
                     <div>
-                        <Button type="submit" size="sm" disabled={form.processing}>
+                        <Button
+                            type="submit"
+                            size="sm"
+                            disabled={form.processing}
+                        >
                             Save
                         </Button>
                     </div>

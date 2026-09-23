@@ -58,16 +58,19 @@ const managementNavItems: NavItem[] = [
         title: 'Manage Accounts',
         href: accountsIndex(),
         icon: Users,
+        permission: 'users.manage',
     },
     {
         title: 'Manage Permissions',
         href: rolePermissionsIndex(),
         icon: ShieldCheck,
+        permission: 'roles.manage',
     },
     {
         title: 'Manage Statuses',
         href: testCaseStatusesIndex(),
         icon: Tags,
+        permission: 'statuses.manage',
     },
     // {
     //     title: 'Manage Templates',
@@ -102,6 +105,10 @@ const footerNavItems: NavItem[] = [
 export function AppSidebar() {
     const { auth, currentProject } = usePage().props;
     const canManage = ['qa', 'admin'].includes(auth.user.role?.slug ?? '');
+    const permissions = auth.user.role?.effective_permissions ?? [];
+    const allowedManagementNavItems = managementNavItems.filter(
+        (item) => !item.permission || permissions.includes(item.permission),
+    );
 
     return (
         <Sidebar collapsible="icon" variant="inset">
@@ -134,8 +141,11 @@ export function AppSidebar() {
 
             <SidebarContent>
                 <NavMain items={mainNavItems} />
-                {canManage && (
-                    <NavMain items={managementNavItems} label="Management" />
+                {canManage && allowedManagementNavItems.length > 0 && (
+                    <NavMain
+                        items={allowedManagementNavItems}
+                        label="Management"
+                    />
                 )}
             </SidebarContent>
 

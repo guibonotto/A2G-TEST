@@ -2,7 +2,10 @@ export type Role = {
     id: number;
     name: string;
     slug: string;
+    /** Raw stored set; null means never configured. */
     permissions: string[] | null;
+    /** What authorization actually enforces for this role. */
+    effective_permissions: string[];
 };
 
 export type User = {
