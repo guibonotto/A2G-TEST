@@ -1,4 +1,6 @@
 import { Head, Link, usePage } from '@inertiajs/react';
+import { ChartColumn, ClipboardList, Play } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { dashboard, login } from '@/routes';
 
 export default function Welcome() {
@@ -103,19 +105,19 @@ export default function Welcome() {
                                 <FeatureCard
                                     title="Test cases"
                                     description="Create and organize test cases in a structured way, keeping your scenarios documented and accessible."
-                                    icon="✓"
+                                    icon={ClipboardList}
                                 />
 
                                 <FeatureCard
                                     title="Execution"
                                     description="Record test executions and track their results to spot problems quickly."
-                                    icon="▶"
+                                    icon={Play}
                                 />
 
                                 <FeatureCard
                                     title="Tracking"
                                     description="Follow testing progress and get a clear picture of the project quality."
-                                    icon="◈"
+                                    icon={ChartColumn}
                                 />
                             </div>
                         </div>
@@ -176,16 +178,16 @@ export default function Welcome() {
 function FeatureCard({
     title,
     description,
-    icon,
+    icon: Icon,
 }: {
     title: string;
     description: string;
-    icon: string;
+    icon: LucideIcon;
 }) {
     return (
         <div className="rounded-xl border border-border bg-card p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-md">
-            <div className="mb-5 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-lg font-bold text-primary">
-                {icon}
+            <div className="mb-5 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <Icon className="h-5 w-5" />
             </div>
 
             <h3 className="text-lg font-semibold">{title}</h3>
