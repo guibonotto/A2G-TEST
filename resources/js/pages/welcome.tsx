@@ -1,7 +1,8 @@
 import { Head, Link, usePage } from '@inertiajs/react';
 import { ChartColumn, ClipboardList, Play } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { dashboard, login } from '@/routes';
+// import { dashboard, login } from '@/routes';
+import { dashboard, login, register } from '@/routes';
 
 export default function Welcome() {
     const { auth } = usePage().props;
@@ -76,12 +77,21 @@ export default function Welcome() {
                                             Go to dashboard
                                         </Link>
                                     ) : (
-                                        <Link
-                                            href={login()}
-                                            className="w-full rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-sm transition hover:opacity-90 sm:w-auto"
-                                        >
-                                            Access the system
-                                        </Link>
+                                        <>
+                                            <Link
+                                                href={register()}
+                                                className="w-full rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-sm transition hover:opacity-90 sm:w-auto"
+                                            >
+                                                Create account
+                                            </Link>
+
+                                            <Link
+                                                href={login()}
+                                                className="w-full rounded-lg border border-border px-6 py-3 text-sm font-semibold transition hover:bg-muted sm:w-auto"
+                                            >
+                                                Log in
+                                            </Link>
+                                        </>
                                     )}
                                 </div>
                             </div>
@@ -131,7 +141,7 @@ export default function Welcome() {
                                 </h2>
 
                                 <p className="mx-auto mt-4 max-w-xl text-muted-foreground">
-                                    Sign in to A2G TEST and start managing
+                                    Create your account and start managing
                                     your test cases in a simpler, more
                                     organized way.
                                 </p>
@@ -145,12 +155,24 @@ export default function Welcome() {
                                             Go to dashboard
                                         </Link>
                                     ) : (
-                                        <Link
-                                            href={login()}
-                                            className="inline-flex rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
-                                        >
-                                            Log in to A2G TEST
-                                        </Link>
+                                        <>
+                                            <Link
+                                                href={register()}
+                                                className="inline-flex rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
+                                            >
+                                                Create account
+                                            </Link>
+
+                                            <p className="mt-4 text-sm text-muted-foreground">
+                                                Already have an account?{' '}
+                                                <Link
+                                                    href={login()}
+                                                    className="font-medium text-primary hover:underline"
+                                                >
+                                                    Log in
+                                                </Link>
+                                            </p>
+                                        </>
                                     )}
                                 </div>
                             </div>
