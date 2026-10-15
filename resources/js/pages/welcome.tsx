@@ -192,7 +192,7 @@ function FeatureCard({
 
             <h3 className="text-lg font-semibold">{title}</h3>
 
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">
+            <p className="mt-2 text-base leading-7 text-muted-foreground">
                 {description}
             </p>
         </div>
