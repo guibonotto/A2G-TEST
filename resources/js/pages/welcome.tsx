@@ -35,12 +35,21 @@ export default function Welcome() {
                                     Dashboard
                                 </Link>
                             ) : (
-                                <Link
-                                    href={login()}
-                                    className="rounded-lg border border-border px-4 py-2 text-sm font-medium transition hover:bg-muted"
-                                >
-                                    Log in
-                                </Link>
+                                <>
+                                    <Link
+                                        href={login()}
+                                        className="rounded-lg border border-border px-4 py-2 text-sm font-medium transition hover:bg-muted"
+                                    >
+                                        Log in
+                                    </Link>
+
+                                    <Link
+                                        href={register()}
+                                        className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:opacity-90"
+                                    >
+                                        Create account
+                                    </Link>
+                                </>
                             )}
                         </nav>
                     </div>
@@ -50,9 +59,9 @@ export default function Welcome() {
                     <section className="relative overflow-hidden">
                         <div className="mx-auto max-w-7xl px-6 py-20 lg:px-8 lg:py-28">
                             <div className="mx-auto max-w-3xl text-center">
-                                <div className="mb-6 inline-flex items-center rounded-full border border-border bg-muted/50 px-4 py-1.5 text-sm font-medium">
+                                <p className="mb-4 text-sm font-semibold tracking-wider text-primary uppercase">
                                     Test Management Platform
-                                </div>
+                                </p>
 
                                 <h1 className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
                                     Software testing that is
@@ -68,7 +77,7 @@ export default function Welcome() {
                                     and reliability of their systems.
                                 </p>
 
-                                <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
+                                <div className="mt-10 flex flex-col items-center justify-center gap-4">
                                     {auth.user ? (
                                         <Link
                                             href={dashboard()}
@@ -85,12 +94,15 @@ export default function Welcome() {
                                                 Create account
                                             </Link>
 
-                                            <Link
-                                                href={login()}
-                                                className="w-full rounded-lg border border-border px-6 py-3 text-sm font-semibold transition hover:bg-muted sm:w-auto"
-                                            >
-                                                Log in
-                                            </Link>
+                                            <p className="text-sm text-muted-foreground">
+                                                Already have an account?{' '}
+                                                <Link
+                                                    href={login()}
+                                                    className="font-medium text-primary hover:underline"
+                                                >
+                                                    Log in
+                                                </Link>
+                                            </p>
                                         </>
                                     )}
                                 </div>
