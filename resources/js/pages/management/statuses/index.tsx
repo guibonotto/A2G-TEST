@@ -1,5 +1,5 @@
 import { Form, Head, useForm } from '@inertiajs/react';
-import { Plus } from 'lucide-react';
+import { MoreHorizontal, Plus } from 'lucide-react';
 import type { FormEvent } from 'react';
 import { useState } from 'react';
 import TestCaseStatusController from '@/actions/App/Http/Controllers/TestCaseStatusController';
@@ -17,15 +17,15 @@ import {
     DialogTitle,
     DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
+import { cn } from '@/lib/utils';
 import { index, store, update } from '@/routes/test-case-statuses';
 import type { TestCaseStatus, TestCaseStatusColor } from '@/types';
 
@@ -35,18 +35,105 @@ type Props = {
     statuses: ManagedStatus[];
 };
 
-const colorOptions: { value: TestCaseStatusColor; label: string }[] = [
-    { value: 'success', label: 'Green' },
-    { value: 'destructive', label: 'Red' },
-    { value: 'warning', label: 'Amber' },
-    { value: 'info', label: 'Teal' },
-    { value: 'secondary', label: 'Gray' },
+const colorOptions: {
+    value: TestCaseStatusColor;
+    label: string;
+    swatch: string;
+}[] = [
+    { value: 'success', label: 'Green', swatch: 'bg-success' },
+    { value: 'destructive', label: 'Red', swatch: 'bg-destructive' },
+    { value: 'warning', label: 'Amber', swatch: 'bg-warning' },
+    { value: 'info', label: 'Teal', swatch: 'bg-info' },
+    { value: 'secondary', label: 'Gray', swatch: 'bg-muted-foreground' },
 ];
+
+/**
+ * Swatches instead of a dropdown of colour names: the user no longer has to
+ * imagine what "Teal" or "Amber" look like, and colours already taken by
+ * another status are called out so two statuses do not end up identical.
+ */
+function ColorPicker({
+    value,
+    onChange,
+    usedBy,
+    id,
+}: {
+    value: TestCaseStatusColor;
+    onChange: (value: TestCaseStatusColor) => void;
+    usedBy: Partial<Record<TestCaseStatusColor, string>>;
+    id: string;
+}) {
+    return (
+        <div id={id} className="flex flex-wrap gap-2" role="radiogroup">
+            {colorOptions.map((option) => {
+                const taken = usedBy[option.value];
+                const selected = value === option.value;
+
+                return (
+                    <button
+                        key={option.value}
+                        type="button"
+                        role="radio"
+                        aria-checked={selected}
+                        onClick={() => onChange(option.value)}
+                        title={
+                            taken
+                                ? `${option.label} — already used by ${taken}`
+                                : option.label
+                        }
+                        className={cn(
+                            'flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors',
+                            selected
+                                ? 'border-primary bg-primary/8'
+                                : 'border-input hover:border-primary/40',
+                        )}
+                    >
+                        <span
+                            className={cn(
+                                'size-3.5 rounded-full',
+                                option.swatch,
+                            )}
+                            aria-hidden="true"
+                        />
+                        <span>{option.label}</span>
+                        {taken && (
+                            <span className="text-xs text-muted-foreground">
+                                in use
+                            </span>
+                        )}
+                    </button>
+                );
+            })}
+        </div>
+    );
+}
 
 export default function ManageTestCaseStatuses({ statuses }: Props) {
     const [createOpen, setCreateOpen] = useState(false);
 
-    const createForm = useForm({ name: '', color: 'secondary' as TestCaseStatusColor });
+    const usedBy = statuses.reduce<
+        Partial<Record<TestCaseStatusColor, string>>
+    >((map, status) => {
+        map[status.color] ??= status.name;
+
+        return map;
+    }, {});
+
+    /** Default to a colour nobody is using, so a new status is not born looking like "Cancelled". */
+    const firstFreeColor =
+        colorOptions.find((option) => !usedBy[option.value])?.value ??
+        'secondary';
+
+    const createForm = useForm({
+        name: '',
+        color: firstFreeColor as TestCaseStatusColor,
+    });
+
+    const duplicateName = statuses.some(
+        (status) =>
+            status.name.trim().toLowerCase() ===
+            createForm.data.name.trim().toLowerCase(),
+    );
 
     function submitCreate(e: FormEvent) {
         e.preventDefault();
@@ -67,7 +154,7 @@ export default function ManageTestCaseStatuses({ statuses }: Props) {
                 <div className="flex items-center justify-between">
                     <Heading
                         title="Manage statuses"
-                        description="Add, edit, or remove the statuses available for test cases."
+                        description="Statuses are shared by every project in the system."
                     />
 
                     <Dialog open={createOpen} onOpenChange={setCreateOpen}>
@@ -78,49 +165,74 @@ export default function ManageTestCaseStatuses({ statuses }: Props) {
                         </DialogTrigger>
                         <DialogContent>
                             <DialogTitle>New status</DialogTitle>
-                            <DialogDescription>Set the name and color of the new status.</DialogDescription>
+                            <DialogDescription>
+                                Set the name and color of the new status.
+                            </DialogDescription>
 
-                            <form onSubmit={submitCreate} className="flex flex-col gap-4">
+                            <form
+                                onSubmit={submitCreate}
+                                className="flex flex-col gap-4"
+                            >
                                 <div className="grid gap-2">
                                     <Label htmlFor="create-name">Name</Label>
                                     <Input
                                         id="create-name"
                                         value={createForm.data.name}
-                                        onChange={(e) => createForm.setData('name', e.target.value)}
+                                        onChange={(e) =>
+                                            createForm.setData(
+                                                'name',
+                                                e.target.value,
+                                            )
+                                        }
+                                        placeholder="e.g. Blocked"
                                         autoFocus
+                                        aria-invalid={
+                                            createForm.errors.name ||
+                                            duplicateName
+                                                ? 'true'
+                                                : 'false'
+                                        }
                                     />
-                                    <InputError message={createForm.errors.name} />
+                                    {duplicateName ? (
+                                        <InputError message="A status with this name already exists." />
+                                    ) : (
+                                        <InputError
+                                            message={createForm.errors.name}
+                                        />
+                                    )}
                                 </div>
 
                                 <div className="grid gap-2">
                                     <Label htmlFor="create-color">Color</Label>
-                                    <Select
+                                    <ColorPicker
+                                        id="create-color"
                                         value={createForm.data.color}
-                                        onValueChange={(value) =>
-                                            createForm.setData('color', value as TestCaseStatusColor)
+                                        usedBy={usedBy}
+                                        onChange={(value) =>
+                                            createForm.setData('color', value)
                                         }
-                                    >
-                                        <SelectTrigger id="create-color" className="w-full">
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {colorOptions.map((option) => (
-                                                <SelectItem key={option.value} value={option.value}>
-                                                    {option.label}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                    <InputError message={createForm.errors.color} />
+                                    />
+                                    <InputError
+                                        message={createForm.errors.color}
+                                    />
                                 </div>
 
                                 <DialogFooter className="gap-2">
                                     <DialogClose asChild>
-                                        <Button type="button" variant="secondary">
+                                        <Button
+                                            type="button"
+                                            variant="secondary"
+                                        >
                                             Cancel
                                         </Button>
                                     </DialogClose>
-                                    <Button type="submit" disabled={createForm.processing}>
+                                    <Button
+                                        type="submit"
+                                        disabled={
+                                            createForm.processing ||
+                                            duplicateName
+                                        }
+                                    >
                                         Create status
                                     </Button>
                                 </DialogFooter>
@@ -131,20 +243,31 @@ export default function ManageTestCaseStatuses({ statuses }: Props) {
 
                 <Card className="overflow-hidden py-0">
                     {statuses.length === 0 ? (
-                        <p className="p-6 text-sm text-muted-foreground">No statuses registered yet.</p>
+                        <p className="p-6 text-sm text-muted-foreground">
+                            No statuses registered yet.
+                        </p>
                     ) : (
                         <table className="w-full text-sm">
                             <thead className="border-b bg-muted/50 text-left">
                                 <tr>
-                                    <th className="px-4 py-3 font-medium">Status</th>
-                                    <th className="px-4 py-3 font-medium">Color</th>
-                                    <th className="px-4 py-3 font-medium">Test cases</th>
-                                    <th className="px-4 py-3 font-medium">Actions</th>
+                                    <th className="px-4 py-3 font-medium">
+                                        Status
+                                    </th>
+                                    <th className="px-4 py-3 font-medium">
+                                        Test cases
+                                    </th>
+                                    <th className="px-4 py-3 text-right font-medium">
+                                        <span className="sr-only">Actions</span>
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {statuses.map((status) => (
-                                    <StatusRow key={status.id} status={status} />
+                                    <StatusRow
+                                        key={status.id}
+                                        status={status}
+                                        usedBy={usedBy}
+                                    />
                                 ))}
                             </tbody>
                         </table>
@@ -155,10 +278,18 @@ export default function ManageTestCaseStatuses({ statuses }: Props) {
     );
 }
 
-function StatusRow({ status }: { status: ManagedStatus }) {
+function StatusRow({
+    status,
+    usedBy,
+}: {
+    status: ManagedStatus;
+    usedBy: Partial<Record<TestCaseStatusColor, string>>;
+}) {
     const [editOpen, setEditOpen] = useState(false);
+    const [deleteOpen, setDeleteOpen] = useState(false);
 
     const editForm = useForm({ name: status.name, color: status.color });
+    const inUse = status.test_cases_count > 0;
 
     function submitEdit(e: FormEvent) {
         e.preventDefault();
@@ -173,100 +304,132 @@ function StatusRow({ status }: { status: ManagedStatus }) {
             <td className="px-4 py-3">
                 <Badge variant={status.color}>{status.name}</Badge>
             </td>
-            <td className="px-4 py-3 text-muted-foreground">
-                {colorOptions.find((option) => option.value === status.color)?.label ?? status.color}
-            </td>
             <td className="px-4 py-3">{status.test_cases_count}</td>
-            <td className="px-4 py-3">
-                <div className="flex items-center gap-2">
-                    <Dialog open={editOpen} onOpenChange={setEditOpen}>
-                        <DialogTrigger asChild>
-                            <Button variant="outline" size="sm">
-                                Edit
-                            </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                            <DialogTitle>Edit status</DialogTitle>
-                            <DialogDescription>Update the name and color of "{status.name}".</DialogDescription>
+            <td className="px-4 py-3 text-right">
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label={`Actions for ${status.name}`}
+                        >
+                            <MoreHorizontal className="size-4" />
+                        </Button>
+                    </DropdownMenuTrigger>
 
-                            <form onSubmit={submitEdit} className="flex flex-col gap-4">
-                                <div className="grid gap-2">
-                                    <Label htmlFor={`edit-name-${status.id}`}>Name</Label>
-                                    <Input
-                                        id={`edit-name-${status.id}`}
-                                        value={editForm.data.name}
-                                        onChange={(e) => editForm.setData('name', e.target.value)}
-                                        autoFocus
-                                    />
-                                    <InputError message={editForm.errors.name} />
-                                </div>
+                    <DropdownMenuContent align="end">
+                        <DropdownMenuItem onSelect={() => setEditOpen(true)}>
+                            Edit
+                        </DropdownMenuItem>
 
-                                <div className="grid gap-2">
-                                    <Label htmlFor={`edit-color-${status.id}`}>Color</Label>
-                                    <Select
-                                        value={editForm.data.color}
-                                        onValueChange={(value) =>
-                                            editForm.setData('color', value as TestCaseStatusColor)
-                                        }
-                                    >
-                                        <SelectTrigger id={`edit-color-${status.id}`} className="w-full">
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {colorOptions.map((option) => (
-                                                <SelectItem key={option.value} value={option.value}>
-                                                    {option.label}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                    <InputError message={editForm.errors.color} />
-                                </div>
+                        <DropdownMenuItem
+                            disabled={inUse}
+                            onSelect={() => setDeleteOpen(true)}
+                            className="text-destructive focus:text-destructive"
+                        >
+                            {inUse
+                                ? `In use by ${status.test_cases_count} case(s)`
+                                : 'Delete'}
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
 
+                <Dialog open={editOpen} onOpenChange={setEditOpen}>
+                    <DialogContent>
+                        <DialogTitle>Edit status</DialogTitle>
+                        <DialogDescription>
+                            Update the name and color of &ldquo;{status.name}
+                            &rdquo;.
+                        </DialogDescription>
+
+                        <form
+                            onSubmit={submitEdit}
+                            className="flex flex-col gap-4"
+                        >
+                            <div className="grid gap-2">
+                                <Label htmlFor={`edit-name-${status.id}`}>
+                                    Name
+                                </Label>
+                                <Input
+                                    id={`edit-name-${status.id}`}
+                                    value={editForm.data.name}
+                                    onChange={(e) =>
+                                        editForm.setData('name', e.target.value)
+                                    }
+                                    autoFocus
+                                    aria-invalid={
+                                        editForm.errors.name ? 'true' : 'false'
+                                    }
+                                />
+                                <InputError message={editForm.errors.name} />
+                            </div>
+
+                            <div className="grid gap-2">
+                                <Label htmlFor={`edit-color-${status.id}`}>
+                                    Color
+                                </Label>
+                                <ColorPicker
+                                    id={`edit-color-${status.id}`}
+                                    value={editForm.data.color}
+                                    usedBy={usedBy}
+                                    onChange={(value) =>
+                                        editForm.setData('color', value)
+                                    }
+                                />
+                                <InputError message={editForm.errors.color} />
+                            </div>
+
+                            <DialogFooter className="gap-2">
+                                <DialogClose asChild>
+                                    <Button type="button" variant="secondary">
+                                        Cancel
+                                    </Button>
+                                </DialogClose>
+                                <Button
+                                    type="submit"
+                                    disabled={editForm.processing}
+                                >
+                                    Save
+                                </Button>
+                            </DialogFooter>
+                        </form>
+                    </DialogContent>
+                </Dialog>
+
+                <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+                    <DialogContent>
+                        <DialogTitle>Delete status?</DialogTitle>
+                        <DialogDescription>
+                            This action cannot be undone. Test cases with the
+                            &ldquo;{status.name}&rdquo; status will be left
+                            without a status.
+                        </DialogDescription>
+
+                        <Form
+                            {...TestCaseStatusController.destroy.form(status)}
+                        >
+                            {({ processing }) => (
                                 <DialogFooter className="gap-2">
                                     <DialogClose asChild>
-                                        <Button type="button" variant="secondary">
+                                        <Button
+                                            type="button"
+                                            variant="secondary"
+                                        >
                                             Cancel
                                         </Button>
                                     </DialogClose>
-                                    <Button type="submit" disabled={editForm.processing}>
-                                        Save
+                                    <Button
+                                        type="submit"
+                                        variant="destructive"
+                                        disabled={processing}
+                                    >
+                                        Delete
                                     </Button>
                                 </DialogFooter>
-                            </form>
-                        </DialogContent>
-                    </Dialog>
-
-                    <Dialog>
-                        <DialogTrigger asChild>
-                            <Button variant="destructive" size="sm">
-                                Delete
-                            </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                            <DialogTitle>Delete status?</DialogTitle>
-                            <DialogDescription>
-                                This action cannot be undone. Test cases with the "{status.name}" status
-                                will be left without a status.
-                            </DialogDescription>
-
-                            <Form {...TestCaseStatusController.destroy.form(status)}>
-                                {({ processing }) => (
-                                    <DialogFooter className="gap-2">
-                                        <DialogClose asChild>
-                                            <Button type="button" variant="secondary">
-                                                Cancel
-                                            </Button>
-                                        </DialogClose>
-                                        <Button type="submit" variant="destructive" disabled={processing}>
-                                            Delete
-                                        </Button>
-                                    </DialogFooter>
-                                )}
-                            </Form>
-                        </DialogContent>
-                    </Dialog>
-                </div>
+                            )}
+                        </Form>
+                    </DialogContent>
+                </Dialog>
             </td>
         </tr>
     );

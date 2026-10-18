@@ -1,5 +1,5 @@
 import { Form, Head, useForm } from '@inertiajs/react';
-import { Plus } from 'lucide-react';
+import { LayoutTemplate, MoreHorizontal, Plus } from 'lucide-react';
 import type { FormEvent } from 'react';
 import { useState } from 'react';
 import TestTemplateController from '@/actions/App/Http/Controllers/TestTemplateController';
@@ -18,6 +18,12 @@ import {
     DialogTitle,
     DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -109,7 +115,7 @@ function TemplateFields({
 
             <div className="grid gap-2">
                 <Label htmlFor={`${idPrefix}-classification`}>
-                    Default classification
+                    Default type
                 </Label>
                 <Select
                     value={form.data.classification_id || NO_CLASSIFICATION}
@@ -239,9 +245,26 @@ export default function ManageTestTemplates({
 
                 <Card className="overflow-hidden py-0">
                     {templates.length === 0 ? (
-                        <p className="p-6 text-sm text-muted-foreground">
-                            No templates registered yet.
-                        </p>
+                        <div className="flex flex-col items-center gap-3 py-12 text-center">
+                            <LayoutTemplate
+                                className="size-8 text-muted-foreground"
+                                aria-hidden="true"
+                            />
+                            <p className="text-sm font-medium">
+                                No templates yet
+                            </p>
+                            <p className="max-w-sm text-sm text-muted-foreground">
+                                A template fills in the description and steps of
+                                a new test case, so recurring scenarios do not
+                                have to be retyped.
+                            </p>
+                            <Button
+                                size="sm"
+                                onClick={() => setCreateOpen(true)}
+                            >
+                                Create template
+                            </Button>
+                        </div>
                     ) : (
                         <table className="w-full text-sm">
                             <thead className="border-b bg-muted/50 text-left">
@@ -250,7 +273,7 @@ export default function ManageTestTemplates({
                                         Template
                                     </th>
                                     <th className="px-4 py-3 font-medium">
-                                        Classification
+                                        Type
                                     </th>
                                     <th className="px-4 py-3 font-medium">
                                         Steps
@@ -261,8 +284,8 @@ export default function ManageTestTemplates({
                                     <th className="px-4 py-3 font-medium">
                                         Created by
                                     </th>
-                                    <th className="px-4 py-3 font-medium">
-                                        Actions
+                                    <th className="px-4 py-3 text-right font-medium">
+                                        <span className="sr-only">Actions</span>
                                     </th>
                                 </tr>
                             </thead>
@@ -291,6 +314,7 @@ function TemplateRow({
     classifications: Classification[];
 }) {
     const [editOpen, setEditOpen] = useState(false);
+    const [deleteOpen, setDeleteOpen] = useState(false);
 
     const editForm = useForm<TemplateFormData>({
         title: template.title,
@@ -329,14 +353,34 @@ function TemplateRow({
             <td className="px-4 py-3 text-muted-foreground">
                 {template.creator?.name ?? 'Deleted user'}
             </td>
-            <td className="px-4 py-3">
-                <div className="flex items-center gap-2">
+            <td className="px-4 py-3 text-right">
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label={`Actions for ${template.title}`}
+                        >
+                            <MoreHorizontal className="size-4" />
+                        </Button>
+                    </DropdownMenuTrigger>
+
+                    <DropdownMenuContent align="end">
+                        <DropdownMenuItem onSelect={() => setEditOpen(true)}>
+                            Edit
+                        </DropdownMenuItem>
+
+                        <DropdownMenuItem
+                            onSelect={() => setDeleteOpen(true)}
+                            className="text-destructive focus:text-destructive"
+                        >
+                            Delete
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+
+                <div className="text-left">
                     <Dialog open={editOpen} onOpenChange={setEditOpen}>
-                        <DialogTrigger asChild>
-                            <Button variant="outline" size="sm">
-                                Edit
-                            </Button>
-                        </DialogTrigger>
                         <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
                             <DialogTitle>Edit template</DialogTitle>
                             <DialogDescription>
@@ -374,12 +418,7 @@ function TemplateRow({
                         </DialogContent>
                     </Dialog>
 
-                    <Dialog>
-                        <DialogTrigger asChild>
-                            <Button variant="destructive" size="sm">
-                                Delete
-                            </Button>
-                        </DialogTrigger>
+                    <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
                         <DialogContent>
                             <DialogTitle>Delete template?</DialogTitle>
                             <DialogDescription>

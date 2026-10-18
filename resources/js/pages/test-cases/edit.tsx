@@ -1,4 +1,4 @@
-import { Head, setLayoutProps, useForm } from '@inertiajs/react';
+import { Head, Link, setLayoutProps, useForm } from '@inertiajs/react';
 // import { Plus, Trash2 } from 'lucide-react'; // desativado: steps múltiplos fora de uso (testes unitários/integração usam só entrada e saída esperada)
 import type { FormEvent } from 'react';
 import Heading from '@/components/heading';
@@ -16,18 +16,12 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { index, show, update } from '@/routes/test-cases';
-import type {
-    Classification,
-    TestCaseDetail,
-    TestCaseStatus,
-    TestTemplate,
-} from '@/types';
+import type { Classification, TestCaseDetail, TestTemplate } from '@/types';
 
 type Props = {
     testCase: TestCaseDetail;
     classifications: Classification[];
     templates: TestTemplate[];
-    statuses: TestCaseStatus[];
 };
 
 type StepForm = {
@@ -41,14 +35,14 @@ export default function EditTestCase({
     testCase,
     classifications,
     // templates, // desativado: templates fora de uso
-    statuses,
 }: Props) {
     const { data, setData, put, processing, errors } = useForm({
         title: testCase.title,
         description: testCase.description ?? '',
-        classification_id: testCase.classification ? String(testCase.classification.id) : '',
+        classification_id: testCase.classification
+            ? String(testCase.classification.id)
+            : '',
         template_id: testCase.template ? String(testCase.template.id) : '',
-        status_id: testCase.status ? String(testCase.status.id) : '',
         steps: (testCase.steps.length > 0
             ? testCase.steps.map((step) => ({
                   description: step.description,
@@ -101,10 +95,10 @@ export default function EditTestCase({
         <>
             <Head title={`Edit ${testCase.title}`} />
 
-            <div className="flex flex-col gap-6 p-4">
+            <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 p-4 pb-24">
                 <Heading
                     title="Edit test case"
-                    description="Update the general information and execution steps of the test case."
+                    description="Update the information and the test data of this test case."
                 />
 
                 <form onSubmit={submit} className="flex flex-col gap-6">
@@ -126,24 +120,17 @@ export default function EditTestCase({
                             </div>
 
                             <div className="grid gap-2">
-                                <Label htmlFor="description">
-                                    Description
-                                </Label>
+                                <Label htmlFor="description">Description</Label>
 
                                 <Textarea
                                     id="description"
                                     value={data.description}
                                     onChange={(e) =>
-                                        setData(
-                                            'description',
-                                            e.target.value,
-                                        )
+                                        setData('description', e.target.value)
                                     }
                                 />
 
-                                <InputError
-                                    message={errors.description}
-                                />
+                                <InputError message={errors.description} />
                             </div>
 
                             <div className="grid gap-4 sm:grid-cols-3">
@@ -155,10 +142,7 @@ export default function EditTestCase({
                                     <Select
                                         value={data.classification_id}
                                         onValueChange={(value) =>
-                                            setData(
-                                                'classification_id',
-                                                value,
-                                            )
+                                            setData('classification_id', value)
                                         }
                                     >
                                         <SelectTrigger
@@ -230,27 +214,6 @@ export default function EditTestCase({
                                     />
                                 </div>
                                 */}
-
-                                <div className="grid gap-2">
-                                    <Label htmlFor="status_id">Status</Label>
-                                    <Select
-                                        value={data.status_id}
-                                        onValueChange={(value) => setData('status_id', value)}
-                                    >
-                                        <SelectTrigger id="status_id" className="w-full">
-                                            <SelectValue placeholder="Select a status" />
-                                        </SelectTrigger>
-
-                                        <SelectContent>
-                                            {statuses.map((status) => (
-                                                <SelectItem key={status.id} value={String(status.id)}>
-                                                    {status.name}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                    <InputError message={errors.status_id} />
-                                </div>
                             </div>
                         </CardContent>
                     </Card>
@@ -272,7 +235,11 @@ export default function EditTestCase({
                                     id="step-input"
                                     value={data.steps[0].description}
                                     onChange={(e) =>
-                                        updateStep(0, 'description', e.target.value)
+                                        updateStep(
+                                            0,
+                                            'description',
+                                            e.target.value,
+                                        )
                                     }
                                 />
 
@@ -282,18 +249,26 @@ export default function EditTestCase({
                             </div>
 
                             <div className="grid gap-2">
-                                <Label htmlFor="step-expected">Expected output</Label>
+                                <Label htmlFor="step-expected">
+                                    Expected output
+                                </Label>
 
                                 <Textarea
                                     id="step-expected"
                                     value={data.steps[0].expected_result}
                                     onChange={(e) =>
-                                        updateStep(0, 'expected_result', e.target.value)
+                                        updateStep(
+                                            0,
+                                            'expected_result',
+                                            e.target.value,
+                                        )
                                     }
                                 />
 
                                 <InputError
-                                    message={stepErrors['steps.0.expected_result']}
+                                    message={
+                                        stepErrors['steps.0.expected_result']
+                                    }
                                 />
                             </div>
 
@@ -402,10 +377,16 @@ export default function EditTestCase({
                         </CardContent>
                     </Card>
 
-                    <div className="flex items-center gap-4">
-                        <Button type="submit" disabled={processing}>
-                            Save changes
-                        </Button>
+                    <div className="fixed inset-x-0 bottom-0 z-10 border-t bg-background/95 backdrop-blur">
+                        <div className="mx-auto flex w-full max-w-3xl items-center justify-end gap-3 px-4 py-3">
+                            <Button type="button" variant="secondary" asChild>
+                                <Link href={show(testCase.id)}>Cancel</Link>
+                            </Button>
+
+                            <Button type="submit" disabled={processing}>
+                                Save changes
+                            </Button>
+                        </div>
                     </div>
                 </form>
             </div>

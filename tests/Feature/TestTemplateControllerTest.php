@@ -16,12 +16,12 @@ class TestTemplateControllerTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function createUserWithRole(string $slug): User
-    {
-        $role = Role::firstOrCreate(['slug' => $slug], ['name' => $slug]);
-
-        return User::factory()->create(['role_id' => $role->id]);
-    }
+    // private function createUserWithRole(string $slug): User
+    // {
+    //     $role = Role::firstOrCreate(['slug' => $slug], ['name' => $slug]);
+    //
+    //     return User::factory()->create(['role_id' => $role->id]);
+    // }
 
     /**
      * Attach the user to a project and mark it as active, so routes behind

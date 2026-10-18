@@ -1,7 +1,17 @@
 import { Head, router, usePage } from '@inertiajs/react';
+import { useState } from 'react';
 import Heading from '@/components/heading';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import {
+    Dialog,
+    DialogClose,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import {
     Select,
     SelectContent,
@@ -17,14 +27,42 @@ type Props = {
     roles: AssignableRole[];
 };
 
+type PendingChange = {
+    account: Account;
+    roleId: number | null;
+    roleName: string;
+};
+
 export default function ManageAccounts({ accounts, roles }: Props) {
     const { auth } = usePage().props;
+    const [pending, setPending] = useState<PendingChange | null>(null);
+    const [saving, setSaving] = useState(false);
 
-    function handleRoleChange(userId: number, value: string) {
+    function stageRoleChange(account: Account, value: string) {
+        const roleId = value === 'none' ? null : Number(value);
+        const roleName =
+            roles.find((role) => role.id === roleId)?.name ?? 'No role';
+
+        setPending({ account, roleId, roleName });
+    }
+
+    function confirmRoleChange() {
+        if (!pending) {
+            return;
+        }
+
+        setSaving(true);
+
         router.put(
-            update.url(userId),
-            { role_id: value === 'none' ? null : Number(value) },
-            { preserveScroll: true },
+            update.url(pending.account.id),
+            { role_id: pending.roleId },
+            {
+                preserveScroll: true,
+                onFinish: () => {
+                    setSaving(false);
+                    setPending(null);
+                },
+            },
         );
     }
 
@@ -40,14 +78,22 @@ export default function ManageAccounts({ accounts, roles }: Props) {
 
                 <Card className="overflow-hidden py-0">
                     {accounts.length === 0 ? (
-                        <p className="p-6 text-sm text-muted-foreground">No accounts registered yet.</p>
+                        <p className="p-6 text-sm text-muted-foreground">
+                            No accounts registered yet.
+                        </p>
                     ) : (
                         <table className="w-full text-sm">
                             <thead className="border-b bg-muted/50 text-left">
                                 <tr>
-                                    <th className="px-4 py-3 font-medium">Name</th>
-                                    <th className="px-4 py-3 font-medium">Email</th>
-                                    <th className="px-4 py-3 font-medium">Role</th>
+                                    <th className="px-4 py-3 font-medium">
+                                        Name
+                                    </th>
+                                    <th className="px-4 py-3 font-medium">
+                                        Email
+                                    </th>
+                                    <th className="px-4 py-3 font-medium">
+                                        Role
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -55,41 +101,78 @@ export default function ManageAccounts({ accounts, roles }: Props) {
                                     const isSelf = account.id === auth.user.id;
 
                                     return (
-                                        <tr key={account.id} className="border-b last:border-0 hover:bg-muted/50">
+                                        <tr
+                                            key={account.id}
+                                            className="border-b last:border-0 hover:bg-muted/50"
+                                        >
                                             <td className="px-4 py-3">
                                                 {account.name}
-                                                {isSelf && <span className="ml-2 text-xs text-muted-foreground">(you)</span>}
+                                                {isSelf && (
+                                                    <span className="ml-2 text-xs text-muted-foreground">
+                                                        (you)
+                                                    </span>
+                                                )}
                                             </td>
-                                            <td className="px-4 py-3 text-muted-foreground">{account.email}</td>
+                                            <td className="px-4 py-3 text-muted-foreground">
+                                                {account.email}
+                                            </td>
                                             <td className="px-4 py-3">
                                                 <div className="flex items-center gap-2">
                                                     {account.can_change_role ? (
                                                         <Select
-                                                            value={account.role ? String(account.role.id) : 'none'}
-                                                            onValueChange={(value) => handleRoleChange(account.id, value)}
+                                                            value={
+                                                                account.role
+                                                                    ? String(
+                                                                          account
+                                                                              .role
+                                                                              .id,
+                                                                      )
+                                                                    : 'none'
+                                                            }
+                                                            onValueChange={(
+                                                                value,
+                                                            ) =>
+                                                                stageRoleChange(
+                                                                    account,
+                                                                    value,
+                                                                )
+                                                            }
                                                         >
                                                             <SelectTrigger className="w-48">
                                                                 <SelectValue />
                                                             </SelectTrigger>
                                                             <SelectContent>
-                                                                <SelectItem value="none">No role</SelectItem>
-                                                                {roles.map((role) => (
-                                                                    <SelectItem
-                                                                        key={role.id}
-                                                                        value={String(role.id)}
-                                                                        disabled={!role.assignable}
-                                                                    >
-                                                                        {role.name}
-                                                                    </SelectItem>
-                                                                ))}
+                                                                <SelectItem value="none">
+                                                                    No role
+                                                                </SelectItem>
+                                                                {roles.map(
+                                                                    (role) => (
+                                                                        <SelectItem
+                                                                            key={
+                                                                                role.id
+                                                                            }
+                                                                            value={String(
+                                                                                role.id,
+                                                                            )}
+                                                                            disabled={
+                                                                                !role.assignable
+                                                                            }
+                                                                        >
+                                                                            {
+                                                                                role.name
+                                                                            }
+                                                                        </SelectItem>
+                                                                    ),
+                                                                )}
                                                             </SelectContent>
                                                         </Select>
                                                     ) : (
                                                         <span className="inline-flex h-9 w-48 items-center text-muted-foreground">
-                                                            {account.role?.name ?? 'No role'}
+                                                            {account.role
+                                                                ?.name ??
+                                                                'No role'}
                                                         </span>
                                                     )}
-                                                    {account.role && <Badge variant="secondary">{account.role.slug}</Badge>}
                                                 </div>
                                             </td>
                                         </tr>
@@ -100,6 +183,49 @@ export default function ManageAccounts({ accounts, roles }: Props) {
                     )}
                 </Card>
             </div>
+
+            <Dialog
+                open={pending !== null}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setPending(null);
+                    }
+                }}
+            >
+                <DialogContent>
+                    <DialogTitle>Change role?</DialogTitle>
+
+                    <DialogDescription>
+                        {pending && (
+                            <>
+                                {pending.account.name} goes from{' '}
+                                <Badge variant="secondary">
+                                    {pending.account.role?.name ?? 'No role'}
+                                </Badge>{' '}
+                                to <Badge>{pending.roleName}</Badge>. This
+                                changes what they can access across the whole
+                                system.
+                            </>
+                        )}
+                    </DialogDescription>
+
+                    <DialogFooter className="gap-2">
+                        <DialogClose asChild>
+                            <Button type="button" variant="secondary">
+                                Cancel
+                            </Button>
+                        </DialogClose>
+
+                        <Button
+                            type="button"
+                            onClick={confirmRoleChange}
+                            disabled={saving}
+                        >
+                            Change role
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </>
     );
 }

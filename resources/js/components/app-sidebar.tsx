@@ -1,18 +1,15 @@
 import { Link, usePage } from '@inertiajs/react';
 import {
-    BookOpen,
+    Briefcase,
     ClipboardList,
     FileText,
-    FolderGit2,
     LayoutGrid,
-    LayoutTemplate,
     Plug,
     ShieldCheck,
     Tags,
     Users,
 } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
-import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import {
@@ -44,10 +41,10 @@ const mainNavItems: NavItem[] = [
     {
         title: 'Projects',
         href: projectsIndex(),
-        icon: Users,
+        icon: Briefcase,
     },
     {
-        title: 'Test Cases',
+        title: 'Test cases',
         href: testCasesIndex(),
         icon: ClipboardList,
     },
@@ -55,19 +52,19 @@ const mainNavItems: NavItem[] = [
 
 const managementNavItems: NavItem[] = [
     {
-        title: 'Manage Accounts',
+        title: 'Manage accounts',
         href: accountsIndex(),
         icon: Users,
         permission: 'users.manage',
     },
     {
-        title: 'Manage Permissions',
+        title: 'Manage permissions',
         href: rolePermissionsIndex(),
         icon: ShieldCheck,
         permission: 'roles.manage',
     },
     {
-        title: 'Manage Statuses',
+        title: 'Manage statuses',
         href: testCaseStatusesIndex(),
         icon: Tags,
         permission: 'statuses.manage',
@@ -78,27 +75,14 @@ const managementNavItems: NavItem[] = [
     //     icon: LayoutTemplate,
     // },
     {
-        title: 'Manage Requirements',
+        title: 'Manage requirements',
         href: requirementsIndex(),
         icon: FileText,
     },
     {
-        title: 'Jira Integration',
+        title: 'Jira integration',
         href: jiraEdit(),
         icon: Plug,
-    },
-];
-
-const footerNavItems: NavItem[] = [
-    {
-        title: 'Repository',
-        href: 'https://github.com/laravel/react-starter-kit',
-        icon: FolderGit2,
-    },
-    {
-        title: 'Documentation',
-        href: 'https://laravel.com/docs/starter-kits#react',
-        icon: BookOpen,
     },
 ];
 
@@ -150,7 +134,6 @@ export function AppSidebar() {
             </SidebarContent>
 
             <SidebarFooter>
-                <NavFooter items={footerNavItems} className="mt-auto" />
                 <NavUser />
             </SidebarFooter>
         </Sidebar>

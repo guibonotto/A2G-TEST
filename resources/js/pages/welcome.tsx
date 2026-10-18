@@ -4,6 +4,11 @@ import type { LucideIcon } from 'lucide-react';
 // import { dashboard, login } from '@/routes';
 import { dashboard, login, register } from '@/routes';
 
+/**
+ * Support address shown in the footer. Replace with the team's real inbox.
+ */
+const SUPPORT_EMAIL = 'support@a2gtest.com';
+
 export default function Welcome() {
     const { auth } = usePage().props;
 
@@ -66,15 +71,16 @@ export default function Welcome() {
                                 <h1 className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
                                     Software testing that is
                                     <span className="text-primary">
-                                        {' '}organized and efficient
+                                        {' '}
+                                        organized and efficient
                                     </span>
                                 </h1>
 
                                 <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-muted-foreground">
                                     A2G TEST is a platform for creating,
                                     organizing, running, and tracking test
-                                    cases, helping teams improve the quality
-                                    and reliability of their systems.
+                                    cases, helping teams improve the quality and
+                                    reliability of their systems.
                                 </p>
 
                                 <div className="mt-10 flex flex-col items-center justify-center gap-4">
@@ -110,7 +116,10 @@ export default function Welcome() {
                         </div>
                     </section>
 
-                    <section className="border-y border-border bg-muted/30">
+                    <section
+                        id="features"
+                        className="scroll-mt-16 border-y border-border bg-muted/30"
+                    >
                         <div className="mx-auto max-w-7xl px-6 py-20 lg:px-8">
                             <div className="mx-auto max-w-2xl text-center">
                                 <h2 className="text-3xl font-bold tracking-tight">
@@ -118,8 +127,8 @@ export default function Welcome() {
                                 </h2>
 
                                 <p className="mt-4 text-muted-foreground">
-                                    Centralize your entire testing process in
-                                    a single place.
+                                    Centralize your entire testing process in a
+                                    single place.
                                 </p>
                             </div>
 
@@ -153,9 +162,8 @@ export default function Welcome() {
                                 </h2>
 
                                 <p className="mx-auto mt-4 max-w-xl text-muted-foreground">
-                                    Create your account and start managing
-                                    your test cases in a simpler, more
-                                    organized way.
+                                    Create your account and start managing your
+                                    test cases in a simpler, more organized way.
                                 </p>
 
                                 <div className="mt-8">
@@ -193,15 +201,70 @@ export default function Welcome() {
                 </main>
 
                 <footer className="border-t border-border">
-                    <div className="mx-auto flex max-w-7xl flex-col gap-2 px-6 py-8 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between lg:px-8">
-                        <p>
-                            © {new Date().getFullYear()} A2G TEST. All rights
-                            reserved.
-                        </p>
+                    <div className="mx-auto max-w-7xl px-6 py-12 lg:px-8">
+                        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+                            <div>
+                                <div className="flex items-center gap-3">
+                                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                                        <span className="text-sm font-bold">
+                                            A2G
+                                        </span>
+                                    </div>
 
-                        <p>
-                            Software test management system.
-                        </p>
+                                    <span className="text-base font-semibold">
+                                        A2G TEST
+                                    </span>
+                                </div>
+
+                                <p className="mt-4 text-sm text-muted-foreground">
+                                    Built by the A2G TEST team.
+                                </p>
+
+                                <a
+                                    href={`mailto:${SUPPORT_EMAIL}`}
+                                    className="mt-1 inline-block text-sm text-primary underline-offset-4 hover:underline"
+                                >
+                                    {SUPPORT_EMAIL}
+                                </a>
+                            </div>
+
+                            <FooterColumn
+                                title="Product"
+                                links={[
+                                    { label: 'Features', href: '#features' },
+                                    {
+                                        label: 'Create account',
+                                        href: register().url,
+                                    },
+                                ]}
+                            />
+
+                            <FooterColumn
+                                title="Support"
+                                links={[
+                                    {
+                                        label: 'Contact',
+                                        href: `mailto:${SUPPORT_EMAIL}`,
+                                    },
+                                    {
+                                        label: 'Help',
+                                        href: `mailto:${SUPPORT_EMAIL}?subject=Help`,
+                                    },
+                                ]}
+                            />
+
+                            <FooterColumn
+                                title="Account"
+                                links={[{ label: 'Log in', href: login().url }]}
+                            />
+                        </div>
+
+                        <div className="mt-10 border-t border-border pt-6">
+                            <p className="text-sm text-muted-foreground">
+                                © {new Date().getFullYear()} A2G TEST. All
+                                rights reserved.
+                            </p>
+                        </div>
                     </div>
                 </footer>
             </div>
@@ -219,7 +282,7 @@ function FeatureCard({
     icon: LucideIcon;
 }) {
     return (
-        <div className="rounded-xl border border-border bg-card p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-md">
+        <div className="rounded-xl border border-border bg-card p-6">
             <div className="mb-5 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
                 <Icon className="h-5 w-5" />
             </div>
@@ -229,6 +292,33 @@ function FeatureCard({
             <p className="mt-2 text-base leading-7 text-muted-foreground">
                 {description}
             </p>
+        </div>
+    );
+}
+
+function FooterColumn({
+    title,
+    links,
+}: {
+    title: string;
+    links: { label: string; href: string }[];
+}) {
+    return (
+        <div>
+            <h3 className="text-sm font-semibold">{title}</h3>
+
+            <ul className="mt-4 flex flex-col gap-2">
+                {links.map((link) => (
+                    <li key={link.label}>
+                        <a
+                            href={link.href}
+                            className="text-sm text-muted-foreground underline-offset-4 transition hover:text-foreground hover:underline"
+                        >
+                            {link.label}
+                        </a>
+                    </li>
+                ))}
+            </ul>
         </div>
     );
 }

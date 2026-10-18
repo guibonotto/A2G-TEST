@@ -700,6 +700,29 @@ class TestCaseControllerTest extends TestCase
         );
     }
 
+    public function test_edit_screen_sends_the_relations_the_form_preselects(): void
+    {
+        $user = User::factory()->create();
+        $project = $this->actingAsProjectMember($user);
+        $classification = Classification::create(['name' => 'Funcional']);
+        $status = TestCaseStatus::firstOrCreate(['name' => 'Pendente'], ['color' => 'warning']);
+
+        $testCase = TestCaseModel::create([
+            'title' => 'Login com credenciais válidas',
+            'classification_id' => $classification->id,
+            'status_id' => $status->id,
+            'created_by' => $user->id,
+            'project_id' => $project->id,
+        ]);
+
+        $response = $this->get(route('test-cases.edit', $testCase));
+
+        $response->assertInertia(fn (Assert $page) => $page
+            ->where('testCase.classification.id', $classification->id)
+            ->where('testCase.status.id', $status->id)
+        );
+    }
+
     public function test_a_test_case_can_be_updated_with_steps(): void
     {
         $user = User::factory()->create();

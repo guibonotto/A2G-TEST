@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use Database\Factories\ExecutionFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -20,6 +22,9 @@ use Throwable;
 ])]
 class Execution extends Model
 {
+    /** @use HasFactory<ExecutionFactory> */
+    use HasFactory;
+
     /**
      * The table associated with the model.
      */

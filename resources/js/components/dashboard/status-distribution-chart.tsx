@@ -1,22 +1,33 @@
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { ChartEmptyState } from '@/components/dashboard/chart-empty-state';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
 import { statusColorVar } from '@/lib/status-color';
 import type { StatusBreakdownItem } from '@/types/dashboard';
 
-export function StatusDistributionChart({ data }: { data: StatusBreakdownItem[] }) {
+export function StatusDistributionChart({
+    data,
+}: {
+    data: StatusBreakdownItem[];
+}) {
     const total = data.reduce((sum, item) => sum + item.total, 0);
 
     return (
         <Card>
             <CardHeader>
                 <CardTitle>Status Distribution</CardTitle>
-                <CardDescription>Test cases grouped by their current status</CardDescription>
+                <CardDescription>
+                    Test cases grouped by their current status
+                </CardDescription>
             </CardHeader>
             <CardContent>
                 {total === 0 ? (
-                    <p className="py-12 text-center text-sm text-muted-foreground">
-                        No test cases registered yet.
-                    </p>
+                    <ChartEmptyState />
                 ) : (
                     <div className="relative">
                         <ResponsiveContainer width="100%" height={280}>
@@ -33,11 +44,17 @@ export function StatusDistributionChart({ data }: { data: StatusBreakdownItem[] 
                                     strokeWidth={2}
                                 >
                                     {data.map((item) => (
-                                        <Cell key={item.id} fill={statusColorVar(item.color)} />
+                                        <Cell
+                                            key={item.id}
+                                            fill={statusColorVar(item.color)}
+                                        />
                                     ))}
                                 </Pie>
                                 <Tooltip
-                                    formatter={(value: number, name: string) => [`${value} case(s)`, name]}
+                                    formatter={(
+                                        value: number,
+                                        name: string,
+                                    ) => [`${value} case(s)`, name]}
                                     contentStyle={{
                                         background: 'var(--popover)',
                                         borderColor: 'var(--border)',
@@ -50,20 +67,36 @@ export function StatusDistributionChart({ data }: { data: StatusBreakdownItem[] 
                         </ResponsiveContainer>
 
                         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-                            <span className="text-2xl font-semibold tabular-nums">{total}</span>
-                            <span className="text-xs text-muted-foreground">cases</span>
+                            <span className="text-2xl font-semibold tabular-nums">
+                                {total}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                                cases
+                            </span>
                         </div>
                     </div>
                 )}
 
-                <ul className="mt-4 flex flex-wrap gap-x-4 gap-y-2">
-                    {data.map((item) => (
-                        <li key={item.id} className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                            <span className="size-2.5 rounded-full" style={{ backgroundColor: statusColorVar(item.color) }} />
-                            {item.name} ({item.total})
-                        </li>
-                    ))}
-                </ul>
+                {total > 0 && (
+                    <ul className="mt-4 flex flex-wrap gap-x-4 gap-y-2">
+                        {data.map((item) => (
+                            <li
+                                key={item.id}
+                                className="flex items-center gap-1.5 text-xs text-muted-foreground"
+                            >
+                                <span
+                                    className="size-2.5 rounded-full"
+                                    style={{
+                                        backgroundColor: statusColorVar(
+                                            item.color,
+                                        ),
+                                    }}
+                                />
+                                {item.name} ({item.total})
+                            </li>
+                        ))}
+                    </ul>
+                )}
             </CardContent>
         </Card>
     );

@@ -1,11 +1,20 @@
 import { Head, useForm } from '@inertiajs/react';
 import { Lock } from 'lucide-react';
 import type { FormEvent } from 'react';
+import { useState } from 'react';
 import Heading from '@/components/heading';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
+import {
+    Dialog,
+    DialogClose,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { index, update } from '@/routes/role-permissions';
 import type { AvailablePermission, EditableRole } from '@/types';
@@ -43,6 +52,9 @@ export default function ManageRolePermissions({
     );
 }
 
+/** Permissions that hand out control of the system itself. */
+const ADMIN_PERMISSIONS = ['users.manage', 'roles.manage', 'statuses.manage'];
+
 function RoleCard({
     role,
     availablePermissions,
@@ -52,6 +64,20 @@ function RoleCard({
 }) {
     const form = useForm({ permissions: role.effective_permissions });
     const isAdmin = role.slug === 'admin';
+
+    const [confirmOpen, setConfirmOpen] = useState(false);
+    const saved = role.permissions ?? [];
+
+    const isDirty =
+        form.data.permissions.length !== saved.length ||
+        form.data.permissions.some((permission) => !saved.includes(permission));
+
+    /** Administrative permissions this save would newly grant. */
+    const grantedAdmin = form.data.permissions.filter(
+        (permission) =>
+            ADMIN_PERMISSIONS.includes(permission) &&
+            !saved.includes(permission),
+    );
 
     function togglePermission(value: string, checked: boolean) {
         form.setData(
@@ -71,7 +97,20 @@ function RoleCard({
             return;
         }
 
-        form.put(update.url(role.id), { preserveScroll: true });
+        if (grantedAdmin.length > 0) {
+            setConfirmOpen(true);
+
+            return;
+        }
+
+        save();
+    }
+
+    function save() {
+        form.put(update.url(role.id), {
+            preserveScroll: true,
+            onSuccess: () => setConfirmOpen(false),
+        });
     }
 
     return (
@@ -87,8 +126,16 @@ function RoleCard({
                     {!role.can_edit && (
                         <Badge variant="secondary" className="gap-1">
                             <Lock className="size-3" />
-                            {isAdmin ? 'Always full access' : 'Read only'}
+                            {isAdmin
+                                ? 'Always full access'
+                                : 'Not editable by you'}
                         </Badge>
+                    )}
+
+                    {role.can_edit && isDirty && (
+                        <span className="text-sm text-warning">
+                            Unsaved changes
+                        </span>
                     )}
                 </div>
 
@@ -133,13 +180,49 @@ function RoleCard({
                         <Button
                             type="submit"
                             size="sm"
-                            disabled={form.processing}
+                            disabled={form.processing || !isDirty}
                         >
                             Save
                         </Button>
                     </div>
                 )}
             </form>
+
+            <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+                <DialogContent>
+                    <DialogTitle>Grant administrative access?</DialogTitle>
+
+                    <DialogDescription>
+                        {role.name} will be able to:{' '}
+                        {grantedAdmin
+                            .map(
+                                (permission) =>
+                                    availablePermissions.find(
+                                        (available) =>
+                                            available.value === permission,
+                                    )?.label ?? permission,
+                            )
+                            .join(', ')}
+                        . Everyone with this role is affected.
+                    </DialogDescription>
+
+                    <DialogFooter className="gap-2">
+                        <DialogClose asChild>
+                            <Button type="button" variant="secondary">
+                                Cancel
+                            </Button>
+                        </DialogClose>
+
+                        <Button
+                            type="button"
+                            onClick={save}
+                            disabled={form.processing}
+                        >
+                            Grant access
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </Card>
     );
 }

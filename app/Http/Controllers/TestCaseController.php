@@ -188,7 +188,12 @@ class TestCaseController extends Controller
     {
         abort_unless($request->user()->can('update', $testCase), 403);
 
-        $testCase->load('steps');
+        /**
+         * The edit form preselects these from the relations, so they have to
+         * be loaded; without them every select opened on its placeholder and
+         * saving failed on the required classification.
+         */
+        $testCase->load(['steps', 'classification', 'template', 'status']);
 
         return Inertia::render('test-cases/edit', [
             'testCase' => $testCase,

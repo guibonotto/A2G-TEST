@@ -6,7 +6,12 @@ import AppLayout from '@/layouts/app-layout';
 import AuthLayout from '@/layouts/auth-layout';
 import SettingsLayout from '@/layouts/settings/layout';
 
-const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
+/**
+ * VITE_APP_NAME is baked in at build time and is absent from the Docker
+ * build, so the fallback has to be the product name rather than the
+ * framework's.
+ */
+const appName = import.meta.env.VITE_APP_NAME || 'A2G TEST';
 
 createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),

@@ -1,27 +1,35 @@
 import { Form, Head, Link } from '@inertiajs/react';
+import { ArrowLeft } from 'lucide-react';
 import { useState } from 'react';
+import AppBrand from '@/components/app-brand';
 import InputError from '@/components/input-error';
 import PasswordInput from '@/components/password-input';
+import PasswordRequirements from '@/components/password-requirements';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { cn } from '@/lib/utils';
-import { store as loginStore } from '@/routes/login';
+import { home, login } from '@/routes';
 import { store } from '@/routes/register';
 
+/**
+ * Administrator is deliberately absent: a new account cannot grant itself
+ * system-wide access.
+ */
 const roles = [
     {
         id: 'role-qa',
         value: 'qa',
         name: 'QA / Tester',
-        desc: 'Create and edit tests',
+        desc: 'Create and edit test cases',
     },
     {
         id: 'role-dev',
         value: 'developer',
         name: 'Developer',
-        desc: 'View and execute',
+        desc: 'View and execute test cases',
     },
     {
         id: 'role-viewer',
@@ -31,44 +39,44 @@ const roles = [
     },
 ];
 
-const fieldClassName =
-    'flex h-10 w-full rounded-lg border border-input bg-secondary px-3.5 font-mono text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground/60 focus:border-primary focus:ring-3 focus:ring-primary/15';
-
-const labelClassName =
-    'font-mono text-xs tracking-wide text-muted-foreground uppercase';
-
 export default function Register() {
-    const [selectedRole, setSelectedRole] = useState('qa');
+    const [selectedRole, setSelectedRole] = useState('');
+    const [password, setPassword] = useState('');
 
     return (
         <>
-            <Head title="Sign up" />
+            <Head title="Create account" />
 
             <div className="bg-grid" />
 
-            <div className="fade-in mx-auto flex min-h-screen w-full max-w-md flex-col justify-center gap-8 px-6 py-12">
-                {/* Logo */}
-                <Link
-                    href="/"
-                    className="flex items-center justify-center gap-2 font-mono text-lg font-bold tracking-wide"
-                >
-                    <span className="size-1.5 animate-pulse rounded-full bg-info" />
-                    A2G
-                    <span className="text-primary">&nbsp;TEST</span>
-                    <span className="text-info">.</span>
-                </Link>
+            <div className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center gap-6 px-6 py-12 fade-in">
+                <div className="flex items-center justify-between gap-4">
+                    <Link
+                        href={home()}
+                        aria-label="A2G TEST - Home"
+                        className="rounded-lg focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                    >
+                        <AppBrand />
+                    </Link>
+
+                    <Link
+                        href={home()}
+                        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline"
+                    >
+                        <ArrowLeft className="size-4" aria-hidden="true" />
+                        Back to site
+                    </Link>
+                </div>
 
                 <Card>
                     <CardContent className="flex flex-col gap-6">
-                        {/* Header */}
                         <div>
                             <h1 className="text-2xl font-extrabold tracking-tight">
-                                Create your account
+                                Create account
                             </h1>
 
-                            <p className="mt-1.5 font-mono text-xs leading-relaxed text-muted-foreground">
-                                Join A2G TEST and manage your test cases
-                                efficiently.
+                            <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
+                                All fields are required.
                             </p>
                         </div>
 
@@ -78,28 +86,29 @@ export default function Register() {
                                 'password',
                                 'password_confirmation',
                             ]}
-                            className="flex flex-col gap-4"
+                            className="flex flex-col gap-5"
                         >
                             {({ processing, errors }) => (
                                 <>
-                                    {/* First and last name */}
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="grid gap-2">
-                                            <Label
-                                                htmlFor="first_name"
-                                                className={labelClassName}
-                                            >
+                                            <Label htmlFor="first_name">
                                                 First name
                                             </Label>
 
-                                            <input
+                                            <Input
                                                 id="first_name"
-                                                className={fieldClassName}
+                                                className="h-10 rounded-lg bg-secondary text-sm"
                                                 type="text"
                                                 name="first_name"
                                                 placeholder="John"
                                                 autoFocus
                                                 autoComplete="given-name"
+                                                aria-invalid={
+                                                    errors.first_name
+                                                        ? 'true'
+                                                        : 'false'
+                                                }
                                             />
 
                                             <InputError
@@ -108,20 +117,22 @@ export default function Register() {
                                         </div>
 
                                         <div className="grid gap-2">
-                                            <Label
-                                                htmlFor="last_name"
-                                                className={labelClassName}
-                                            >
+                                            <Label htmlFor="last_name">
                                                 Last name
                                             </Label>
 
-                                            <input
+                                            <Input
                                                 id="last_name"
-                                                className={fieldClassName}
+                                                className="h-10 rounded-lg bg-secondary text-sm"
                                                 type="text"
                                                 name="last_name"
                                                 placeholder="Smith"
                                                 autoComplete="family-name"
+                                                aria-invalid={
+                                                    errors.last_name
+                                                        ? 'true'
+                                                        : 'false'
+                                                }
                                             />
 
                                             <InputError
@@ -130,64 +141,70 @@ export default function Register() {
                                         </div>
                                     </div>
 
-                                    {/* Email */}
                                     <div className="grid gap-2">
-                                        <Label
-                                            htmlFor="email"
-                                            className={labelClassName}
-                                        >
-                                            Email
-                                        </Label>
+                                        <Label htmlFor="email">Email</Label>
 
-                                        <input
+                                        <Input
                                             id="email"
-                                            className={fieldClassName}
+                                            className="h-10 rounded-lg bg-secondary text-sm"
                                             type="email"
                                             name="email"
                                             placeholder="john@company.com"
                                             autoComplete="email"
+                                            aria-invalid={
+                                                errors.email ? 'true' : 'false'
+                                            }
                                         />
 
                                         <InputError message={errors.email} />
                                     </div>
 
-                                    {/* Password */}
                                     <div className="grid gap-2">
-                                        <Label
-                                            htmlFor="password"
-                                            className={labelClassName}
-                                        >
+                                        <Label htmlFor="password">
                                             Password
                                         </Label>
 
                                         <PasswordInput
                                             id="password"
-                                            className="h-10 rounded-lg bg-secondary font-mono text-sm focus-visible:ring-primary/15"
+                                            className="h-10 rounded-lg bg-secondary text-sm"
                                             name="password"
-                                            placeholder="••••••••••"
+                                            value={password}
+                                            onChange={(event) =>
+                                                setPassword(event.target.value)
+                                            }
                                             autoComplete="new-password"
+                                            aria-invalid={
+                                                errors.password
+                                                    ? 'true'
+                                                    : 'false'
+                                            }
+                                            aria-describedby="password-rules"
                                         />
 
-                                        <InputError
-                                            message={errors.password}
+                                        <PasswordRequirements
+                                            id="password-rules"
+                                            value={password}
+                                            className="mt-1"
                                         />
+
+                                        <InputError message={errors.password} />
                                     </div>
 
-                                    {/* Password confirmation */}
                                     <div className="grid gap-2">
-                                        <Label
-                                            htmlFor="password_confirmation"
-                                            className={labelClassName}
-                                        >
+                                        <Label htmlFor="password_confirmation">
                                             Confirm password
                                         </Label>
 
                                         <PasswordInput
                                             id="password_confirmation"
-                                            className="h-10 rounded-lg bg-secondary font-mono text-sm focus-visible:ring-primary/15"
+                                            className="h-10 rounded-lg bg-secondary text-sm"
                                             name="password_confirmation"
-                                            placeholder="••••••••••"
                                             autoComplete="new-password"
+                                            aria-invalid={
+                                                errors.password_confirmation
+                                                    ? 'true'
+                                                    : 'false'
+                                            }
                                         />
 
                                         <InputError
@@ -197,23 +214,18 @@ export default function Register() {
                                         />
                                     </div>
 
-                                    {/* Role */}
-                                    <div className="grid gap-2">
-                                        <div className="flex items-center justify-between">
-                                            <Label className={labelClassName}>
-                                                Access role
-                                            </Label>
+                                    <fieldset className="grid gap-2">
+                                        <legend className="mb-2 text-sm leading-none font-medium">
+                                            Access role
+                                        </legend>
 
-                                            <span className="font-mono text-[10px] text-muted-foreground">
-                                                Required
-                                            </span>
-                                        </div>
-
-                                        <div className="grid grid-cols-2 gap-2.5">
+                                        {/* One per line: three options in a
+                                            two-column grid left a hole that
+                                            read as a missing fourth choice. */}
+                                        <div className="flex flex-col gap-2">
                                             {roles.map((role) => {
                                                 const isSelected =
-                                                    selectedRole ===
-                                                    role.value;
+                                                    selectedRole === role.value;
 
                                                 return (
                                                     <div key={role.id}>
@@ -234,24 +246,40 @@ export default function Register() {
                                                         <label
                                                             htmlFor={role.id}
                                                             className={cn(
-                                                                'flex min-h-[76px] cursor-pointer flex-col justify-center gap-1 rounded-lg border px-4 py-3 transition-all',
+                                                                'flex w-full cursor-pointer items-start gap-3 rounded-lg border bg-background px-4 py-3 transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-ring',
                                                                 isSelected
-                                                                    ? 'border-primary bg-primary/8 ring-1 ring-primary/20'
-                                                                    : 'border-input bg-secondary hover:border-primary/40',
+                                                                    ? 'border-primary bg-primary/8'
+                                                                    : 'border-input hover:border-primary/40',
                                                             )}
                                                         >
                                                             <span
                                                                 className={cn(
-                                                                    'text-sm font-bold',
-                                                                    isSelected &&
-                                                                        'text-primary',
+                                                                    'mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full border transition-colors',
+                                                                    isSelected
+                                                                        ? 'border-primary'
+                                                                        : 'border-input',
                                                                 )}
+                                                                aria-hidden="true"
                                                             >
-                                                                {role.name}
+                                                                {isSelected && (
+                                                                    <span className="size-2 rounded-full bg-primary" />
+                                                                )}
                                                             </span>
 
-                                                            <span className="font-mono text-[11px] leading-relaxed text-muted-foreground">
-                                                                {role.desc}
+                                                            <span className="flex flex-col gap-0.5">
+                                                                <span
+                                                                    className={cn(
+                                                                        'text-sm font-semibold',
+                                                                        isSelected &&
+                                                                            'text-primary',
+                                                                    )}
+                                                                >
+                                                                    {role.name}
+                                                                </span>
+
+                                                                <span className="text-sm leading-relaxed text-muted-foreground">
+                                                                    {role.desc}
+                                                                </span>
                                                             </span>
                                                         </label>
                                                     </div>
@@ -260,9 +288,8 @@ export default function Register() {
                                         </div>
 
                                         <InputError message={errors.role} />
-                                    </div>
+                                    </fieldset>
 
-                                    {/* Create account */}
                                     <Button
                                         type="submit"
                                         className="mt-1 w-full"
@@ -271,42 +298,23 @@ export default function Register() {
                                         {processing && <Spinner />}
                                         {processing
                                             ? 'Creating account...'
-                                            : 'Create account →'}
-                                    </Button>
-
-                                    {/* Divider */}
-                                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                                        <span className="h-px flex-1 bg-border" />
-                                        <span className="font-mono">
-                                            or
-                                        </span>
-                                        <span className="h-px flex-1 bg-border" />
-                                    </div>
-
-                                    {/* Google */}
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        className="w-full"
-                                    >
-                                        Continue with Google
+                                            : 'Create account'}
                                     </Button>
                                 </>
                             )}
                         </Form>
+
+                        <p className="text-center text-sm text-muted-foreground">
+                            Already have an account?{' '}
+                            <Link
+                                href={login()}
+                                className="font-medium text-primary underline-offset-4 hover:underline"
+                            >
+                                Log in
+                            </Link>
+                        </p>
                     </CardContent>
                 </Card>
-
-                {/* Login */}
-                <p className="text-center font-mono text-xs text-muted-foreground">
-                    Already have an account?{' '}
-                    <Link
-                        href={loginStore.url()}
-                        className="text-primary transition-colors hover:underline"
-                    >
-                        Log in
-                    </Link>
-                </p>
             </div>
         </>
     );

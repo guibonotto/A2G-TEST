@@ -33,7 +33,6 @@ import type {
     TestTemplate,
 } from '@/types';
 
-
 type Props = {
     classifications: Classification[];
     templates: TestTemplate[];
@@ -70,7 +69,9 @@ export default function CreateTestCase({
     const [selectedRequirementId, setSelectedRequirementId] = useState('');
 
     const linkedRequirements = data.requirement_ids
-        .map((id) => availableRequirements.find((requirement) => requirement.id === id))
+        .map((id) =>
+            availableRequirements.find((requirement) => requirement.id === id),
+        )
         .filter((requirement) => requirement !== undefined);
     const linkableRequirements = availableRequirements.filter(
         (requirement) => !data.requirement_ids.includes(requirement.id),
@@ -96,7 +97,11 @@ export default function CreateTestCase({
 
     const stepErrors = errors as Record<string, string | undefined>;
 
-    function updateStep(stepIndex: number, field: keyof StepForm, value: string) {
+    function updateStep(
+        stepIndex: number,
+        field: keyof StepForm,
+        value: string,
+    ) {
         const steps = data.steps.map((step, i) =>
             i === stepIndex ? { ...step, [field]: value } : step,
         );
@@ -139,7 +144,9 @@ export default function CreateTestCase({
                                 <Input
                                     id="title"
                                     value={data.title}
-                                    onChange={(e) => setData('title', e.target.value)}
+                                    onChange={(e) =>
+                                        setData('title', e.target.value)
+                                    }
                                     autoFocus
                                 />
                                 <InputError message={errors.title} />
@@ -150,35 +157,48 @@ export default function CreateTestCase({
                                 <Textarea
                                     id="description"
                                     value={data.description}
-                                    onChange={(e) => setData('description', e.target.value)}
+                                    onChange={(e) =>
+                                        setData('description', e.target.value)
+                                    }
                                 />
                                 <InputError message={errors.description} />
                             </div>
 
                             <div className="grid gap-4 sm:grid-cols-3">
                                 <div className="grid gap-2">
-                                    <Label htmlFor="classification_id">Classification</Label>
+                                    <Label htmlFor="classification_id">
+                                        Classification
+                                    </Label>
                                     <Select
                                         value={data.classification_id}
                                         onValueChange={(value) =>
                                             setData('classification_id', value)
                                         }
                                     >
-                                        <SelectTrigger id="classification_id" className="w-full">
+                                        <SelectTrigger
+                                            id="classification_id"
+                                            className="w-full"
+                                        >
                                             <SelectValue placeholder="Select a classification" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {classifications.map((classification) => (
-                                                <SelectItem
-                                                    key={classification.id}
-                                                    value={String(classification.id)}
-                                                >
-                                                    {classification.name}
-                                                </SelectItem>
-                                            ))}
+                                            {classifications.map(
+                                                (classification) => (
+                                                    <SelectItem
+                                                        key={classification.id}
+                                                        value={String(
+                                                            classification.id,
+                                                        )}
+                                                    >
+                                                        {classification.name}
+                                                    </SelectItem>
+                                                ),
+                                            )}
                                         </SelectContent>
                                     </Select>
-                                    <InputError message={errors.classification_id} />
+                                    <InputError
+                                        message={errors.classification_id}
+                                    />
                                 </div>
 
                                 {/* Template de caso de teste desativado (funcionalidade fora de uso)
@@ -214,14 +234,22 @@ export default function CreateTestCase({
                                     <Label htmlFor="status_id">Status</Label>
                                     <Select
                                         value={data.status_id}
-                                        onValueChange={(value) => setData('status_id', value)}
+                                        onValueChange={(value) =>
+                                            setData('status_id', value)
+                                        }
                                     >
-                                        <SelectTrigger id="status_id" className="w-full">
+                                        <SelectTrigger
+                                            id="status_id"
+                                            className="w-full"
+                                        >
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
                                             {statuses.map((status) => (
-                                                <SelectItem key={status.id} value={String(status.id)}>
+                                                <SelectItem
+                                                    key={status.id}
+                                                    value={String(status.id)}
+                                                >
                                                     {status.name}
                                                 </SelectItem>
                                             ))}
@@ -250,7 +278,11 @@ export default function CreateTestCase({
                                     id="step-input"
                                     value={data.steps[0].description}
                                     onChange={(e) =>
-                                        updateStep(0, 'description', e.target.value)
+                                        updateStep(
+                                            0,
+                                            'description',
+                                            e.target.value,
+                                        )
                                     }
                                 />
 
@@ -260,18 +292,26 @@ export default function CreateTestCase({
                             </div>
 
                             <div className="grid gap-2">
-                                <Label htmlFor="step-expected">Expected output</Label>
+                                <Label htmlFor="step-expected">
+                                    Expected output
+                                </Label>
 
                                 <Textarea
                                     id="step-expected"
                                     value={data.steps[0].expected_result}
                                     onChange={(e) =>
-                                        updateStep(0, 'expected_result', e.target.value)
+                                        updateStep(
+                                            0,
+                                            'expected_result',
+                                            e.target.value,
+                                        )
                                     }
                                 />
 
                                 <InputError
-                                    message={stepErrors['steps.0.expected_result']}
+                                    message={
+                                        stepErrors['steps.0.expected_result']
+                                    }
                                 />
                             </div>
 
@@ -378,7 +418,8 @@ export default function CreateTestCase({
                         <Card>
                             <CardHeader className="flex flex-row items-center justify-between">
                                 <CardTitle>
-                                    Linked requirements ({linkedRequirements.length})
+                                    Linked requirements (
+                                    {linkedRequirements.length})
                                 </CardTitle>
 
                                 {linkableRequirements.length > 0 && (
@@ -387,46 +428,76 @@ export default function CreateTestCase({
                                         onOpenChange={setLinkRequirementOpen}
                                     >
                                         <DialogTrigger asChild>
-                                            <Button type="button" variant="outline" size="sm">
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                            >
                                                 Link requirement
                                             </Button>
                                         </DialogTrigger>
                                         <DialogContent>
-                                            <DialogTitle>Link requirement</DialogTitle>
+                                            <DialogTitle>
+                                                Link requirement
+                                            </DialogTitle>
                                             <DialogDescription>
-                                                Select a requirement to link to this test case.
+                                                Select a requirement to link to
+                                                this test case.
                                             </DialogDescription>
 
                                             <div className="flex flex-col gap-4">
                                                 <Select
-                                                    value={selectedRequirementId}
-                                                    onValueChange={setSelectedRequirementId}
+                                                    value={
+                                                        selectedRequirementId
+                                                    }
+                                                    onValueChange={
+                                                        setSelectedRequirementId
+                                                    }
                                                 >
                                                     <SelectTrigger className="w-full">
                                                         <SelectValue placeholder="Select a requirement" />
                                                     </SelectTrigger>
                                                     <SelectContent>
-                                                        {linkableRequirements.map((requirement) => (
-                                                            <SelectItem
-                                                                key={requirement.id}
-                                                                value={String(requirement.id)}
-                                                            >
-                                                                {requirement.code} — {requirement.title}
-                                                            </SelectItem>
-                                                        ))}
+                                                        {linkableRequirements.map(
+                                                            (requirement) => (
+                                                                <SelectItem
+                                                                    key={
+                                                                        requirement.id
+                                                                    }
+                                                                    value={String(
+                                                                        requirement.id,
+                                                                    )}
+                                                                >
+                                                                    {
+                                                                        requirement.code
+                                                                    }{' '}
+                                                                    —{' '}
+                                                                    {
+                                                                        requirement.title
+                                                                    }
+                                                                </SelectItem>
+                                                            ),
+                                                        )}
                                                     </SelectContent>
                                                 </Select>
 
                                                 <DialogFooter className="gap-2">
                                                     <DialogClose asChild>
-                                                        <Button type="button" variant="secondary">
+                                                        <Button
+                                                            type="button"
+                                                            variant="secondary"
+                                                        >
                                                             Cancel
                                                         </Button>
                                                     </DialogClose>
                                                     <Button
                                                         type="button"
-                                                        disabled={!selectedRequirementId}
-                                                        onClick={submitLinkRequirement}
+                                                        disabled={
+                                                            !selectedRequirementId
+                                                        }
+                                                        onClick={
+                                                            submitLinkRequirement
+                                                        }
                                                     >
                                                         Link
                                                     </Button>
@@ -461,7 +532,11 @@ export default function CreateTestCase({
                                                 type="button"
                                                 variant="ghost"
                                                 size="sm"
-                                                onClick={() => unlinkRequirement(requirement.id)}
+                                                onClick={() =>
+                                                    unlinkRequirement(
+                                                        requirement.id,
+                                                    )
+                                                }
                                             >
                                                 Unlink
                                             </Button>

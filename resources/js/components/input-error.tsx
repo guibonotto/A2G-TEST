@@ -1,6 +1,11 @@
+import { AlertTriangle } from 'lucide-react';
 import type { HTMLAttributes } from 'react';
 import { cn } from '@/lib/utils';
 
+/**
+ * Field-level error. The icon is there so the message does not rely on
+ * colour alone to be noticed.
+ */
 export default function InputError({
     message,
     className = '',
@@ -9,9 +14,17 @@ export default function InputError({
     return message ? (
         <p
             {...props}
-            className={cn('text-sm text-red-600 dark:text-red-400', className)}
+            role="alert"
+            className={cn(
+                'flex items-start gap-1.5 text-sm text-destructive',
+                className,
+            )}
         >
-            {message}
+            <AlertTriangle
+                className="mt-0.5 size-4 shrink-0"
+                aria-hidden="true"
+            />
+            <span>{message}</span>
         </p>
     ) : null;
 }

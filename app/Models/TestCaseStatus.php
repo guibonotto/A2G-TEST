@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use Database\Factories\TestCaseStatusFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -12,6 +14,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 ])]
 class TestCaseStatus extends Model
 {
+    /** @use HasFactory<TestCaseStatusFactory> */
+    use HasFactory;
+
     /**
      * The table associated with the model.
      */

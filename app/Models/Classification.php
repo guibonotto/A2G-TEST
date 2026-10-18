@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use Database\Factories\ClassificationFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -12,6 +14,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 ])]
 class Classification extends Model
 {
+    /** @use HasFactory<ClassificationFactory> */
+    use HasFactory;
+
     /**
      * The table associated with the model.
      */
