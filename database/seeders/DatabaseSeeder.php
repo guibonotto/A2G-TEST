@@ -66,7 +66,7 @@ class DatabaseSeeder extends Seeder
             ['name' => 'Failed', 'color' => 'destructive'],
             ['name' => 'Pending', 'color' => 'warning'],
             ['name' => 'Cancelled', 'color' => 'secondary'],
-            ['name' => 'Regression', 'color' => 'info'],
+            // ['name' => 'Regression', 'color' => 'info'],
         ];
         foreach ($statuses as $status) {
             TestCaseStatus::firstOrCreate(['name' => $status['name']], $status);

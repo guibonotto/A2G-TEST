@@ -27,7 +27,7 @@ return new class extends Migration
             'Reprovado' => 'Failed',
             'Pendente' => 'Pending',
             'Cancelado' => 'Cancelled',
-            'Regressão' => 'Regression',
+            // 'Regressão' => 'Regression',
         ],
     ];
 
