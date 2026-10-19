@@ -62,11 +62,9 @@ class DatabaseSeeder extends Seeder
         }
 
         $statuses = [
-            ['name' => 'Passed', 'color' => 'success'],
-            ['name' => 'Failed', 'color' => 'destructive'],
-            ['name' => 'Pending', 'color' => 'warning'],
-            ['name' => 'Cancelled', 'color' => 'secondary'],
-            // ['name' => 'Regression', 'color' => 'info'],
+            ['name' => 'Draft', 'color' => 'warning'],
+            ['name' => 'Ready', 'color' => 'success'],
+            ['name' => 'Obsolete', 'color' => 'secondary'],
         ];
         foreach ($statuses as $status) {
             TestCaseStatus::firstOrCreate(['name' => $status['name']], $status);

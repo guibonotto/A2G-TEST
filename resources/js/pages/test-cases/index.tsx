@@ -24,6 +24,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { statusColorVar } from '@/lib/status-color';
+import { executionStatusLabel } from '@/lib/execution-status';
 import { bulkStatus, create, index, show } from '@/routes/test-cases';
 import type {
     Classification,
@@ -36,6 +37,7 @@ type Props = {
     testCases: TestCaseListItem[];
     classifications: Classification[];
     statuses: TestCaseStatus[];
+    executionResults: string[];
     filters: TestCaseFilters;
 };
 
@@ -43,6 +45,7 @@ export default function TestCaseIndex({
     testCases,
     classifications,
     statuses,
+    executionResults,
     filters,
 }: Props) {
     const { currentProject } = usePage().props;
@@ -56,7 +59,8 @@ export default function TestCaseIndex({
     const hasActiveFilters =
         filters.search !== '' ||
         filters.classification_id !== null ||
-        filters.status_id !== null ||
+        filters.situation_id !== null ||
+        filters.execution_result !== null ||
         filters.assigned_to_me;
 
     /**
@@ -92,7 +96,8 @@ export default function TestCaseIndex({
             {
                 search,
                 classification_id: filters.classification_id,
-                status_id: filters.status_id,
+                situation_id: filters.situation_id,
+                execution_result: filters.execution_result,
                 assigned_to_me: filters.assigned_to_me,
                 ...overrides,
             },
@@ -217,24 +222,24 @@ export default function TestCaseIndex({
 
                         <Select
                             value={
-                                filters.status_id
-                                    ? String(filters.status_id)
+                                filters.situation_id
+                                    ? String(filters.situation_id)
                                     : 'all'
                             }
                             onValueChange={(value) =>
                                 reload({
-                                    status_id:
+                                    situation_id:
                                         value === 'all' ? null : Number(value),
                                 })
                             }
                         >
                             <SelectTrigger className="sm:w-56">
-                                <SelectValue placeholder="Status" />
+                                <SelectValue placeholder="Case situation" />
                             </SelectTrigger>
 
                             <SelectContent>
                                 <SelectItem value="all">
-                                    All statuses
+                                    All situations
                                 </SelectItem>
 
                                 {statuses.map((status) => (
@@ -257,6 +262,28 @@ export default function TestCaseIndex({
                                             {showCounts &&
                                                 ` (${countByStatus(status.id)})`}
                                         </span>
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+
+                        <Select
+                            value={filters.execution_result ?? 'all'}
+                            onValueChange={(value) =>
+                                reload({
+                                    execution_result:
+                                        value === 'all' ? null : value,
+                                })
+                            }
+                        >
+                            <SelectTrigger className="sm:w-56">
+                                <SelectValue placeholder="Last execution result" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All results</SelectItem>
+                                {executionResults.map((result) => (
+                                    <SelectItem key={result} value={result}>
+                                        {executionStatusLabel(result)}
                                     </SelectItem>
                                 ))}
                             </SelectContent>
@@ -374,7 +401,8 @@ export default function TestCaseIndex({
                                             reload({
                                                 search: '',
                                                 classification_id: null,
-                                                status_id: null,
+                                                situation_id: null,
+                                                execution_result: null,
                                                 assigned_to_me: false,
                                             });
                                         }}
@@ -428,7 +456,10 @@ export default function TestCaseIndex({
                                         Title
                                     </th>
                                     <th className="px-4 py-3 font-medium">
-                                        Status
+                                        Case situation
+                                    </th>
+                                    <th className="px-4 py-3 font-medium">
+                                        Last execution result
                                     </th>
                                     {showClassification && (
                                         <th className="px-4 py-3 font-medium">
@@ -490,6 +521,15 @@ export default function TestCaseIndex({
                                                 <span className="text-muted-foreground">
                                                     Not executed
                                                 </span>
+                                            )}
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            {testCase.latestExecution ? (
+                                                <Badge variant={testCase.latestExecution.status === 'APROVADO' ? 'success' : testCase.latestExecution.status === 'REPROVADO' ? 'destructive' : 'warning'}>
+                                                    {executionStatusLabel(testCase.latestExecution.status)}
+                                                </Badge>
+                                            ) : (
+                                                <span className="text-muted-foreground">Not executed</span>
                                             )}
                                         </td>
                                         {showClassification && (

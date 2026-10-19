@@ -8,6 +8,7 @@ const EXECUTION_STATUS_LABELS: Record<string, string> = {
     REPROVADO: 'Failed',
     BLOQUEADO: 'Blocked',
     PENDENTE: 'Pending',
+    NOT_EXECUTED: 'Not executed',
 };
 
 export function executionStatusLabel(status: string): string {

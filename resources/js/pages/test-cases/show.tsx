@@ -352,14 +352,22 @@ export default function ShowTestCase({
                             </span>
                         )}
 
-                        {/* Read-only. A result is the record of something
-                            that happened, so it only changes by recording an
-                            execution. */}
                         <span className="flex items-center gap-2 text-sm text-muted-foreground">
-                            Last result:
+                            Case situation:
                             {testCase.status ? (
                                 <Badge variant={testCase.status.color}>
                                     {testCase.status.name}
+                                </Badge>
+                            ) : (
+                                <span className="text-foreground">Draft</span>
+                            )}
+                        </span>
+
+                        <span className="flex items-center gap-2 text-sm text-muted-foreground">
+                            Last result:
+                            {testCase.latestExecution ? (
+                                <Badge variant={testCase.latestExecution.status === 'APROVADO' ? 'success' : testCase.latestExecution.status === 'REPROVADO' ? 'destructive' : 'warning'}>
+                                    {executionStatusLabel(testCase.latestExecution.status)}
                                 </Badge>
                             ) : (
                                 <span className="text-foreground">

@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[Fillable([
     'title',
@@ -80,6 +81,11 @@ class TestCase extends Model
     public function executions(): HasMany
     {
         return $this->hasMany(Execution::class)->latest('execution_date');
+    }
+
+    public function latestExecution(): HasOne
+    {
+        return $this->hasOne(Execution::class)->latestOfMany('execution_date');
     }
 
     public function requirements(): BelongsToMany

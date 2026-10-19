@@ -38,6 +38,7 @@ export type TestCaseListItem = {
     title: string;
     classification: Classification | null;
     status: TestCaseStatus | null;
+    latestExecution: Execution | null;
     creator: { id: number; name: string } | null;
     assignee: AssignableUser | null;
     steps_count: number;
@@ -58,6 +59,7 @@ export type TestCaseDetail = {
     classification: Classification | null;
     template: TestTemplate | null;
     status: TestCaseStatus | null;
+    latestExecution: Execution | null;
     creator: { id: number; name: string } | null;
     assignee: AssignableUser | null;
     steps: TestStep[];
@@ -84,7 +86,8 @@ export type LinkedRequirement = {
 export type TestCaseFilters = {
     search: string;
     classification_id: number | null;
-    status_id: number | null;
+    situation_id: number | null;
+    execution_result: string | null;
     assigned_to_me: boolean;
 };
 

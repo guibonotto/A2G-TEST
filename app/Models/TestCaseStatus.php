@@ -30,7 +30,7 @@ class TestCaseStatus extends Model
     /**
      * The status a test case receives when none is chosen on creation.
      */
-    public const DEFAULT_NAME = 'Pending';
+    public const DEFAULT_NAME = 'Draft';
 
     /**
      * Resolve the default status, creating it when the installation lacks it,

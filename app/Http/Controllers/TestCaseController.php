@@ -39,12 +39,13 @@ class TestCaseController extends Controller
 
         $search = $request->string('search')->trim()->toString();
         $classificationId = $request->integer('classification_id') ?: null;
-        $statusId = $request->integer('status_id') ?: null;
+        $situationId = $request->integer('situation_id') ?: null;
+        $executionResult = $request->string('execution_result')->trim()->toString() ?: null;
         $assignedToMe = $request->boolean('assigned_to_me');
 
         $testCases = TestCase::query()
             ->where('project_id', $project->id)
-            ->with(['classification:id,name', 'status:id,name,color', 'creator:id,name', 'assignee:id,name'])
+            ->with(['classification:id,name', 'status:id,name,color', 'latestExecution:id,test_case_id,status,execution_date', 'creator:id,name', 'assignee:id,name'])
             ->withCount('steps')
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($query) use ($search) {
@@ -55,7 +56,16 @@ class TestCaseController extends Controller
                 });
             })
             ->when($classificationId, fn ($query) => $query->where('classification_id', $classificationId))
-            ->when($statusId, fn ($query) => $query->where('status_id', $statusId))
+            ->when($situationId, fn ($query) => $query->where('status_id', $situationId))
+            ->when($executionResult, function ($query) use ($executionResult) {
+                if ($executionResult === 'NOT_EXECUTED') {
+                    $query->whereDoesntHave('executions');
+
+                    return;
+                }
+
+                $query->whereHas('latestExecution', fn ($query) => $query->where('status', $executionResult));
+            })
             ->when($assignedToMe, fn ($query) => $query->where('assigned_to', $request->user()->id))
             ->latest()
             ->get(['id', 'title', 'classification_id', 'status_id', 'assigned_to', 'created_by', 'created_at']);
@@ -63,11 +73,13 @@ class TestCaseController extends Controller
         return Inertia::render('test-cases/index', [
             'testCases' => $testCases,
             'classifications' => Classification::query()->orderBy('name')->get(['id', 'name']),
-            'statuses' => TestCaseStatus::query()->orderBy('name')->get(['id', 'name', 'color']),
+            'statuses' => TestCaseStatus::query()->whereIn('name', ['Draft', 'Ready', 'Obsolete'])->orderBy('name')->get(['id', 'name', 'color']),
+            'executionResults' => ['NOT_EXECUTED', 'APROVADO', 'REPROVADO', 'BLOQUEADO'],
             'filters' => [
                 'search' => $search,
                 'classification_id' => $classificationId,
-                'status_id' => $statusId,
+                'situation_id' => $situationId,
+                'execution_result' => $executionResult,
                 'assigned_to_me' => $assignedToMe,
             ],
         ]);
@@ -81,7 +93,7 @@ class TestCaseController extends Controller
         return Inertia::render('test-cases/create', [
             'classifications' => Classification::query()->orderBy('name')->get(['id', 'name']),
             'templates' => TestTemplate::query()->orderBy('title')->get(['id', 'title']),
-            'statuses' => TestCaseStatus::query()->orderBy('name')->get(['id', 'name', 'color']),
+            'statuses' => TestCaseStatus::query()->whereIn('name', ['Draft', 'Ready', 'Obsolete'])->orderBy('name')->get(['id', 'name', 'color']),
             'defaultStatusId' => TestCaseStatus::default()->id,
             'availableRequirements' => $request->user()->canManageAccess()
                 ? Requirement::query()->orderBy('code')->get(['id', 'code', 'title'])
@@ -137,6 +149,7 @@ class TestCaseController extends Controller
             'classification:id,name',
             'template:id,title',
             'status:id,name,color',
+            'latestExecution:id,test_case_id,status,execution_date',
             'creator:id,name',
             'assignee:id,name',
             'steps',
@@ -153,7 +166,7 @@ class TestCaseController extends Controller
                     ->orderBy('name')
                     ->get(['id', 'name'])
                 : [],
-            'statuses' => TestCaseStatus::query()->orderBy('name')->get(['id', 'name', 'color']),
+            'statuses' => TestCaseStatus::query()->whereIn('name', ['Draft', 'Ready', 'Obsolete'])->orderBy('name')->get(['id', 'name', 'color']),
             'executionStatuses' => ['APROVADO', 'REPROVADO', 'BLOQUEADO', 'PENDENTE'],
             'availableRequirements' => Requirement::query()->orderBy('code')->get(['id', 'code', 'title']),
         ]);
@@ -199,7 +212,7 @@ class TestCaseController extends Controller
             'testCase' => $testCase,
             'classifications' => Classification::query()->orderBy('name')->get(['id', 'name']),
             'templates' => TestTemplate::query()->orderBy('title')->get(['id', 'title']),
-            'statuses' => TestCaseStatus::query()->orderBy('name')->get(['id', 'name', 'color']),
+            'statuses' => TestCaseStatus::query()->whereIn('name', ['Draft', 'Ready', 'Obsolete'])->orderBy('name')->get(['id', 'name', 'color']),
         ]);
     }
 
