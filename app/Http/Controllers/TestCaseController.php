@@ -45,7 +45,18 @@ class TestCaseController extends Controller
 
         $testCases = TestCase::query()
             ->where('project_id', $project->id)
-            ->with(['classification:id,name', 'status:id,name,color', 'latestExecution:id,test_case_id,status,execution_date', 'creator:id,name', 'assignee:id,name'])
+            ->with([
+                'classification:id,name',
+                'status:id,name,color',
+                'latestExecution' => fn ($query) => $query->select([
+                    'executions.id',
+                    'executions.test_case_id',
+                    'executions.status',
+                    'executions.execution_date',
+                ]),
+                'creator:id,name',
+                'assignee:id,name',
+            ])
             ->withCount('steps')
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($query) use ($search) {
@@ -90,11 +101,13 @@ class TestCaseController extends Controller
      */
     public function create(Request $request): Response
     {
+        $defaultStatus = TestCaseStatus::default();
+
         return Inertia::render('test-cases/create', [
             'classifications' => Classification::query()->orderBy('name')->get(['id', 'name']),
             'templates' => TestTemplate::query()->orderBy('title')->get(['id', 'title']),
-            'statuses' => TestCaseStatus::query()->whereIn('name', ['Draft', 'Ready', 'Obsolete'])->orderBy('name')->get(['id', 'name', 'color']),
-            'defaultStatusId' => TestCaseStatus::default()->id,
+            'statuses' => TestCaseStatus::query()->orderBy('name')->get(['id', 'name', 'color']),
+            'defaultStatusId' => $defaultStatus->id,
             'availableRequirements' => $request->user()->canManageAccess()
                 ? Requirement::query()->orderBy('code')->get(['id', 'code', 'title'])
                 : [],
@@ -149,7 +162,12 @@ class TestCaseController extends Controller
             'classification:id,name',
             'template:id,title',
             'status:id,name,color',
-            'latestExecution:id,test_case_id,status,execution_date',
+            'latestExecution' => fn ($query) => $query->select([
+                'executions.id',
+                'executions.test_case_id',
+                'executions.status',
+                'executions.execution_date',
+            ]),
             'creator:id,name',
             'assignee:id,name',
             'steps',

@@ -654,7 +654,7 @@ export default function ShowTestCase({
                                     )}
                                 </div>
 
-                                <div className="grid gap-2 md:row-span-2">
+                                <div className="grid gap-2">
                                     <Label htmlFor="execution_comment">
                                         Comment
                                     </Label>

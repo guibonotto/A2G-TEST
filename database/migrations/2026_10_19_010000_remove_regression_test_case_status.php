@@ -1,0 +1,19 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Support\Facades\DB;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        DB::table('test_case_statuses')
+            ->whereIn('name', ['Regression', 'Regressão'])
+            ->delete();
+    }
+
+    public function down(): void
+    {
+        // The removed status is intentionally not restored.
+    }
+};
