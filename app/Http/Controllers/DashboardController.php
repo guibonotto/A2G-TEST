@@ -54,11 +54,13 @@ class DashboardController extends Controller
         $breakdown = TestCaseStatus::query()
             ->withCount(['testCases' => fn ($query) => $query->where('project_id', $project->id)])
             ->orderByDesc('test_cases_count')
-            ->get(['id', 'name', 'color'])
+            ->get(['id', 'name', 'description', 'color', 'category'])
             ->map(fn ($status) => [
                 'id' => $status->id,
                 'name' => $status->name,
+                'description' => $status->description,
                 'color' => $status->color,
+                'category' => $status->category,
                 'total' => $status->test_cases_count,
             ])
             ->filter(fn (array $row): bool => $row['total'] > 0)
@@ -68,7 +70,9 @@ class DashboardController extends Controller
             $breakdown->push([
                 'id' => 0,
                 'name' => 'Sem status',
+                'description' => null,
                 'color' => 'secondary',
+                'category' => 'in_progress',
                 'total' => $withoutStatus,
             ]);
         }

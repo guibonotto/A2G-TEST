@@ -3,7 +3,9 @@ import type { TestCaseStatusColor } from '@/types/test-cases';
 export type StatusBreakdownItem = {
     id: number;
     name: string;
+    description: string | null;
     color: TestCaseStatusColor;
+    category: string;
     total: number;
 };
 

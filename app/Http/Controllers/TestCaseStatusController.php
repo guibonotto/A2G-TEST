@@ -20,7 +20,7 @@ class TestCaseStatusController extends Controller
             'statuses' => TestCaseStatus::query()
                 ->withCount('testCases')
                 ->orderBy('name')
-                ->get(['id', 'name', 'color']),
+                ->get(['id', 'name', 'description', 'color', 'category']),
         ]);
     }
 

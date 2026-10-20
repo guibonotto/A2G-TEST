@@ -20,13 +20,30 @@ export type TestTemplateData = {
     steps: TestTemplateStep[];
 };
 
-export type TestCaseStatusColor = 'success' | 'destructive' | 'warning' | 'secondary' | 'info';
+export type TestCaseStatusColor =
+    | 'success'
+    | 'destructive'
+    | 'warning'
+    | 'secondary'
+    | 'info'
+    | 'blue'
+    | 'purple'
+    | 'orange'
+    | 'pink';
 
 export type TestCaseStatus = {
     id: number;
     name: string;
+    description: string | null;
     color: TestCaseStatusColor;
+    category: TestCaseStatusCategory;
 };
+
+export type TestCaseStatusCategory =
+    | 'in_progress'
+    | 'approved'
+    | 'failed'
+    | 'cancelled';
 
 export type AssignableUser = {
     id: number;

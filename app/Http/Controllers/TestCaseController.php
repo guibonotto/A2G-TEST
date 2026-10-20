@@ -87,7 +87,7 @@ class TestCaseController extends Controller
             'statuses' => TestCaseStatus::query()
                 ->whereIn('name', ['Draft', 'Obsolete', 'Ready'])
                 ->orderByRaw("CASE name WHEN 'Draft' THEN 1 WHEN 'Obsolete' THEN 2 WHEN 'Ready' THEN 3 ELSE 4 END")
-                ->get(['id', 'name', 'color']),
+                ->get(['id', 'name', 'description', 'color', 'category']),
             'executionResults' => ['PENDENTE', 'APROVADO', 'REPROVADO', 'BLOQUEADO', 'NOT_EXECUTED'],
             'filters' => [
                 'search' => $search,
@@ -112,7 +112,7 @@ class TestCaseController extends Controller
             'statuses' => TestCaseStatus::query()
                 ->whereIn('name', ['Draft', 'Obsolete', 'Ready'])
                 ->orderByRaw("CASE name WHEN 'Draft' THEN 1 WHEN 'Obsolete' THEN 2 WHEN 'Ready' THEN 3 ELSE 4 END")
-                ->get(['id', 'name', 'color']),
+                ->get(['id', 'name', 'description', 'color', 'category']),
             'defaultStatusId' => $defaultStatus->id,
             'availableRequirements' => $request->user()->canManageAccess()
                 ? Requirement::query()->orderBy('code')->get(['id', 'code', 'title'])
@@ -193,7 +193,7 @@ class TestCaseController extends Controller
             'statuses' => TestCaseStatus::query()
                 ->whereIn('name', ['Draft', 'Obsolete', 'Ready'])
                 ->orderByRaw("CASE name WHEN 'Draft' THEN 1 WHEN 'Obsolete' THEN 2 WHEN 'Ready' THEN 3 ELSE 4 END")
-                ->get(['id', 'name', 'color']),
+                ->get(['id', 'name', 'description', 'color', 'category']),
             'executionStatuses' => ['PENDENTE', 'APROVADO', 'REPROVADO', 'BLOQUEADO'],
             'availableRequirements' => Requirement::query()->orderBy('code')->get(['id', 'code', 'title']),
         ]);
@@ -242,7 +242,7 @@ class TestCaseController extends Controller
             'statuses' => TestCaseStatus::query()
                 ->whereIn('name', ['Draft', 'Obsolete', 'Ready'])
                 ->orderByRaw("CASE name WHEN 'Draft' THEN 1 WHEN 'Obsolete' THEN 2 WHEN 'Ready' THEN 3 ELSE 4 END")
-                ->get(['id', 'name', 'color']),
+                ->get(['id', 'name', 'description', 'color', 'category']),
         ]);
     }
 

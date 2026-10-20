@@ -66,7 +66,7 @@ class TestCaseStatusControllerTest extends TestCase
 
         $response->assertInertia(fn (Assert $page) => $page
             ->component('management/statuses/index')
-            ->has('statuses', 5)
+            ->has('statuses', 4)
             ->where('statuses.2.name', 'Passed')
             ->where('statuses.2.test_cases_count', 1)
         );
@@ -78,11 +78,11 @@ class TestCaseStatusControllerTest extends TestCase
 
         $response = $this->actingAs($qa)->post(route('test-case-statuses.store'), [
             'name' => 'Bloqueado',
-            'color' => 'warning',
+            'color' => 'blue',
         ]);
 
         $response->assertRedirect();
-        $this->assertDatabaseHas('test_case_statuses', ['name' => 'Bloqueado', 'color' => 'warning']);
+        $this->assertDatabaseHas('test_case_statuses', ['name' => 'Bloqueado', 'color' => 'blue']);
     }
 
     public function test_status_creation_fails_with_duplicate_name(): void
@@ -92,7 +92,7 @@ class TestCaseStatusControllerTest extends TestCase
 
         $response = $this->actingAs($qa)->post(route('test-case-statuses.store'), [
             'name' => 'Aprovado',
-            'color' => 'warning',
+            'color' => 'blue',
         ]);
 
         $response->assertSessionHasErrors('name');
@@ -117,14 +117,14 @@ class TestCaseStatusControllerTest extends TestCase
 
         $response = $this->actingAs($qa)->put(route('test-case-statuses.update', $status), [
             'name' => 'Aprovado com ressalvas',
-            'color' => 'warning',
+            'color' => 'blue',
         ]);
 
         $response->assertRedirect();
         $this->assertDatabaseHas('test_case_statuses', [
             'id' => $status->id,
             'name' => 'Aprovado com ressalvas',
-            'color' => 'warning',
+            'color' => 'blue',
         ]);
     }
 

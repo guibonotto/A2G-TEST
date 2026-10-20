@@ -28,7 +28,11 @@ import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { testCaseStatusLabel } from '@/lib/test-case-status';
 import { index, store, update } from '@/routes/test-case-statuses';
-import type { TestCaseStatus, TestCaseStatusColor } from '@/types';
+import type {
+    TestCaseStatus,
+    TestCaseStatusCategory,
+    TestCaseStatusColor,
+} from '@/types';
 
 type ManagedStatus = TestCaseStatus & { test_cases_count: number };
 
@@ -46,7 +50,24 @@ const colorOptions: {
     { value: 'warning', label: 'Amber', swatch: 'bg-warning' },
     { value: 'info', label: 'Teal', swatch: 'bg-info' },
     { value: 'secondary', label: 'Gray', swatch: 'bg-muted-foreground' },
+    { value: 'blue', label: 'Blue', swatch: 'bg-blue-500' },
+    { value: 'purple', label: 'Purple', swatch: 'bg-violet-500' },
+    { value: 'orange', label: 'Orange', swatch: 'bg-orange-500' },
+    { value: 'pink', label: 'Pink', swatch: 'bg-pink-500' },
 ];
+
+const categoryOptions: { value: TestCaseStatusCategory; label: string }[] = [
+    { value: 'in_progress', label: 'In progress' },
+    { value: 'approved', label: 'Approved' },
+    { value: 'failed', label: 'Failed' },
+    { value: 'cancelled', label: 'Cancelled' },
+];
+
+function normalizeStatusName(value: string): string {
+    const name = value.trim().toLowerCase();
+
+    return name ? name.charAt(0).toUpperCase() + name.slice(1) : '';
+}
 
 /**
  * Swatches instead of a dropdown of colour names: the user no longer has to
@@ -122,12 +143,13 @@ export default function ManageTestCaseStatuses({ statuses }: Props) {
 
     /** Default to a colour nobody is using, so a new status is not born looking like "Cancelled". */
     const firstFreeColor =
-        colorOptions.find((option) => !usedBy[option.value])?.value ??
-        'secondary';
+        colorOptions.find((option) => !usedBy[option.value])?.value;
 
     const createForm = useForm({
         name: '',
-        color: firstFreeColor as TestCaseStatusColor,
+        description: '',
+        color: (firstFreeColor ?? 'secondary') as TestCaseStatusColor,
+        category: 'in_progress' as TestCaseStatusCategory,
     });
 
     const duplicateName = statuses.some(
@@ -185,6 +207,14 @@ export default function ManageTestCaseStatuses({ statuses }: Props) {
                                                 e.target.value,
                                             )
                                         }
+                                        onBlur={() =>
+                                            createForm.setData(
+                                                'name',
+                                                normalizeStatusName(
+                                                    createForm.data.name,
+                                                ),
+                                            )
+                                        }
                                         placeholder="e.g. Blocked"
                                         autoFocus
                                         aria-invalid={
@@ -204,6 +234,47 @@ export default function ManageTestCaseStatuses({ statuses }: Props) {
                                 </div>
 
                                 <div className="grid gap-2">
+                                    <Label htmlFor="create-description">
+                                        Description (when to use)
+                                    </Label>
+                                    <Input
+                                        id="create-description"
+                                        value={createForm.data.description}
+                                        onChange={(e) =>
+                                            createForm.setData(
+                                                'description',
+                                                e.target.value,
+                                            )
+                                        }
+                                        placeholder="e.g. Waiting for an external dependency"
+                                    />
+                                </div>
+
+                                <div className="grid gap-2">
+                                    <Label htmlFor="create-category">
+                                        This status indicates
+                                    </Label>
+                                    <select
+                                        id="create-category"
+                                        value={createForm.data.category}
+                                        onChange={(e) =>
+                                            createForm.setData(
+                                                'category',
+                                                e.target.value as TestCaseStatusCategory,
+                                            )
+                                        }
+                                        className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+                                    >
+                                        {categoryOptions.map((option) => (
+                                            <option key={option.value} value={option.value}>
+                                                {option.label}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <InputError message={createForm.errors.category} />
+                                </div>
+
+                                <div className="grid gap-2">
                                     <Label htmlFor="create-color">Color</Label>
                                     <ColorPicker
                                         id="create-color"
@@ -213,6 +284,11 @@ export default function ManageTestCaseStatuses({ statuses }: Props) {
                                             createForm.setData('color', value)
                                         }
                                     />
+                                    {!firstFreeColor && (
+                                        <p className="text-sm text-destructive">
+                                            All available colors are in use. Edit an existing status to free one before creating another.
+                                        </p>
+                                    )}
                                     <InputError
                                         message={createForm.errors.color}
                                     />
@@ -231,7 +307,8 @@ export default function ManageTestCaseStatuses({ statuses }: Props) {
                                         type="submit"
                                         disabled={
                                             createForm.processing ||
-                                            duplicateName
+                                            duplicateName ||
+                                            !firstFreeColor
                                         }
                                     >
                                         Create status
@@ -289,7 +366,12 @@ function StatusRow({
     const [editOpen, setEditOpen] = useState(false);
     const [deleteOpen, setDeleteOpen] = useState(false);
 
-    const editForm = useForm({ name: status.name, color: status.color });
+    const editForm = useForm({
+        name: status.name,
+        description: status.description ?? '',
+        color: status.color,
+        category: status.category,
+    });
     const inUse = status.test_cases_count > 0;
 
     function submitEdit(e: FormEvent) {
@@ -359,12 +441,56 @@ function StatusRow({
                                     onChange={(e) =>
                                         editForm.setData('name', e.target.value)
                                     }
+                                    onBlur={() =>
+                                        editForm.setData(
+                                            'name',
+                                            normalizeStatusName(editForm.data.name),
+                                        )
+                                    }
                                     autoFocus
                                     aria-invalid={
                                         editForm.errors.name ? 'true' : 'false'
                                     }
                                 />
                                 <InputError message={editForm.errors.name} />
+                            </div>
+
+                            <div className="grid gap-2">
+                                <Label htmlFor={`edit-description-${status.id}`}>
+                                    Description (when to use)
+                                </Label>
+                                <Input
+                                    id={`edit-description-${status.id}`}
+                                    value={editForm.data.description}
+                                    onChange={(e) =>
+                                        editForm.setData('description', e.target.value)
+                                    }
+                                />
+                                <InputError message={editForm.errors.description} />
+                            </div>
+
+                            <div className="grid gap-2">
+                                <Label htmlFor={`edit-category-${status.id}`}>
+                                    This status indicates
+                                </Label>
+                                <select
+                                    id={`edit-category-${status.id}`}
+                                    value={editForm.data.category}
+                                    onChange={(e) =>
+                                        editForm.setData(
+                                            'category',
+                                            e.target.value as TestCaseStatusCategory,
+                                        )
+                                    }
+                                    className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+                                >
+                                    {categoryOptions.map((option) => (
+                                        <option key={option.value} value={option.value}>
+                                            {option.label}
+                                        </option>
+                                    ))}
+                                </select>
+                                <InputError message={editForm.errors.category} />
                             </div>
 
                             <div className="grid gap-2">

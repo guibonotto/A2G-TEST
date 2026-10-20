@@ -24,7 +24,25 @@ class StoreTestCaseStatusRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255', 'unique:test_case_statuses,name'],
-            'color' => ['required', 'string', 'in:success,destructive,warning,secondary,info'],
+            'description' => ['nullable', 'string', 'max:1000'],
+            'color' => ['required', 'string', 'in:success,destructive,warning,secondary,info,blue,purple,orange,pink', 'unique:test_case_statuses,color'],
+            'category' => ['required', 'string', 'in:in_progress,approved,failed,cancelled'],
         ];
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $name = trim((string) $this->input('name'));
+
+        $this->merge([
+            'name' => self::capitalizeName($name),
+            'description' => trim((string) $this->input('description')) ?: null,
+            'category' => $this->input('category', 'in_progress'),
+        ]);
+    }
+
+    private static function capitalizeName(string $name): string
+    {
+        return mb_strtoupper(mb_substr(mb_strtolower($name), 0, 1)) . mb_substr(mb_strtolower($name), 1);
     }
 }

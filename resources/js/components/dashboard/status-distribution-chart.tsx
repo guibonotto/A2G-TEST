@@ -10,6 +10,13 @@ import {
 import { statusColorVar } from '@/lib/status-color';
 import type { StatusBreakdownItem } from '@/types/dashboard';
 
+const categoryLabels: Record<string, string> = {
+    in_progress: 'In progress',
+    approved: 'Approved',
+    failed: 'Failed',
+    cancelled: 'Cancelled',
+};
+
 export function StatusDistributionChart({
     data,
 }: {
@@ -92,7 +99,7 @@ export function StatusDistributionChart({
                                         ),
                                     }}
                                 />
-                                {item.name} ({item.total})
+                                {item.name} ({categoryLabels[item.category] ?? item.category}, {item.total})
                             </li>
                         ))}
                     </ul>

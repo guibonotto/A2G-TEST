@@ -30,7 +30,30 @@ class UpdateTestCaseStatusRequest extends FormRequest
                 'max:255',
                 Rule::unique('test_case_statuses', 'name')->ignore($this->route('testCaseStatus')),
             ],
-            'color' => ['required', 'string', 'in:success,destructive,warning,secondary,info'],
+            'description' => ['nullable', 'string', 'max:1000'],
+            'color' => [
+                'required',
+                'string',
+                'in:success,destructive,warning,secondary,info,blue,purple,orange,pink',
+                Rule::unique('test_case_statuses', 'color')->ignore($this->route('testCaseStatus')),
+            ],
+            'category' => ['required', 'string', 'in:in_progress,approved,failed,cancelled'],
         ];
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $name = trim((string) $this->input('name'));
+
+        $this->merge([
+            'name' => self::capitalizeName($name),
+            'description' => trim((string) $this->input('description')) ?: null,
+            'category' => $this->input('category', 'in_progress'),
+        ]);
+    }
+
+    private static function capitalizeName(string $name): string
+    {
+        return mb_strtoupper(mb_substr(mb_strtolower($name), 0, 1)) . mb_substr(mb_strtolower($name), 1);
     }
 }

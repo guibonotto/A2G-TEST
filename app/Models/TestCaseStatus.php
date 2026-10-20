@@ -10,7 +10,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'name',
+    'description',
     'color',
+    'category',
 ])]
 class TestCaseStatus extends Model
 {
