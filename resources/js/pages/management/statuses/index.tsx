@@ -26,6 +26,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
+import { testCaseStatusLabel } from '@/lib/test-case-status';
 import { index, store, update } from '@/routes/test-case-statuses';
 import type { TestCaseStatus, TestCaseStatusColor } from '@/types';
 
@@ -302,7 +303,9 @@ function StatusRow({
     return (
         <tr className="border-b last:border-0 hover:bg-muted/50">
             <td className="px-4 py-3">
-                <Badge variant={status.color}>{status.name}</Badge>
+                <Badge variant={status.color}>
+                    {testCaseStatusLabel(status.name)}
+                </Badge>
             </td>
             <td className="px-4 py-3">{status.test_cases_count}</td>
             <td className="px-4 py-3 text-right">

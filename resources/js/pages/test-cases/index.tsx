@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/select';
 import { statusColorVar } from '@/lib/status-color';
 import { executionStatusLabel } from '@/lib/execution-status';
+import { testCaseStatusLabel } from '@/lib/test-case-status';
 import { bulkStatus, create, index, show } from '@/routes/test-cases';
 import type {
     Classification,
@@ -258,7 +259,7 @@ export default function TestCaseIndex({
                                                 }}
                                                 aria-hidden="true"
                                             />
-                                            {status.name}
+                                            {testCaseStatusLabel(status.name)}
                                             {showCounts &&
                                                 ` (${countByStatus(status.id)})`}
                                         </span>
@@ -326,7 +327,7 @@ export default function TestCaseIndex({
                                         key={status.id}
                                         value={String(status.id)}
                                     >
-                                        {status.name}
+                                        {testCaseStatusLabel(status.name)}
                                     </SelectItem>
                                 ))}
                             </SelectContent>
@@ -515,7 +516,7 @@ export default function TestCaseIndex({
                                                         testCase.status.color
                                                     }
                                                 >
-                                                    {testCase.status.name}
+                                                    {testCaseStatusLabel(testCase.status.name)}
                                                 </Badge>
                                             ) : (
                                                 <span className="text-muted-foreground">

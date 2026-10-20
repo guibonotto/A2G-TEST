@@ -41,6 +41,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { executionStatusLabel } from '@/lib/execution-status';
+import { testCaseStatusLabel } from '@/lib/test-case-status';
 import { show as evidenceShow } from '@/routes/evidences';
 import { assign, edit, index, show } from '@/routes/test-cases';
 import type {
@@ -356,7 +357,7 @@ export default function ShowTestCase({
                             Case situation:
                             {testCase.status ? (
                                 <Badge variant={testCase.status.color}>
-                                    {testCase.status.name}
+                                    {testCaseStatusLabel(testCase.status.name)}
                                 </Badge>
                             ) : (
                                 <span className="text-foreground">Draft</span>
@@ -610,15 +611,13 @@ export default function ShowTestCase({
                                         className="h-10 rounded-md border border-input bg-background px-3 text-sm"
                                         required
                                     >
+                                        <option value="PENDENTE">Pending</option>
                                         <option value="APROVADO">Passed</option>
                                         <option value="REPROVADO">
                                             Failed
                                         </option>
                                         <option value="BLOQUEADO">
                                             Blocked
-                                        </option>
-                                        <option value="PENDENTE">
-                                            Pending
                                         </option>
                                     </select>
                                     {executionErrors.status && (

@@ -25,6 +25,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { testCaseStatusLabel } from '@/lib/test-case-status';
 import { index, store } from '@/routes/test-cases';
 import type {
     Classification,
@@ -250,7 +251,7 @@ export default function CreateTestCase({
                                                     key={status.id}
                                                     value={String(status.id)}
                                                 >
-                                                    {status.name}
+                                                    {testCaseStatusLabel(status.name)}
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>
