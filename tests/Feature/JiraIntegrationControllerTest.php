@@ -300,4 +300,43 @@ class JiraIntegrationControllerTest extends TestCase
             ->get(route('jira.issue-types', ['projectKey' => 'PROJ']))
             ->assertForbidden();
     }
+
+     public function test_callback_returns_to_settings_when_the_user_cancels_on_atlassian(): void
+    {
+        $qa = $this->createUserWithRole('qa');
+        Http::fake();
+
+        $response = $this->actingAs($qa)
+            ->withSession(['jira_oauth_state' => 'expected-state'])
+            ->get(route('jira.callback', [
+                'state' => 'expected-state',
+                'error' => 'access_denied',
+                'error_description' => 'User did not authorize the request',
+            ]));
+
+        $response->assertRedirect(route('jira.edit'));
+        Http::assertNothingSent();
+        $this->assertDatabaseCount('jira_integrations', 0);
+    }
+
+    public function test_callback_returns_to_settings_when_no_jira_site_is_accessible(): void
+    {
+        $qa = $this->createUserWithRole('qa');
+
+        Http::fake([
+            'auth.atlassian.com/oauth/token' => Http::response([
+                'access_token' => 'access-token',
+                'refresh_token' => 'refresh-token',
+                'expires_in' => 3600,
+            ]),
+            'api.atlassian.com/oauth/token/accessible-resources' => Http::response([]),
+        ]);
+
+        $response = $this->actingAs($qa)
+            ->withSession(['jira_oauth_state' => 'expected-state'])
+            ->get(route('jira.callback', ['state' => 'expected-state', 'code' => 'abc']));
+
+        $response->assertRedirect(route('jira.edit'));
+        $this->assertDatabaseCount('jira_integrations', 0);
+    }
 }

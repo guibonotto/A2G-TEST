@@ -62,7 +62,9 @@ class JiraIntegrationController extends Controller
     }
 
     /**
-     * Handle the OAuth callback from Atlassian and persist the connection.
+     * Handle the callback from Atlassian after the user authorizes the connection.
+     * @param Request $request
+     * @return RedirectResponse
      */
     public function callback(Request $request): RedirectResponse
     {
@@ -74,12 +76,23 @@ class JiraIntegrationController extends Controller
             'Invalid authorization state.'
         );
 
+        if ($request->filled('error')) {
+            return $this->backToSettings(
+                $request->query('error') === 'access_denied' ? 'info' : 'error',
+                $request->query('error') === 'access_denied'
+                    ? __('Jira connection cancelled.')
+                    : __('Could not connect to Jira. Please try again.')
+            );
+        }
+
         $request->validate(['code' => ['required', 'string']]);
 
         $tokens = $this->jira->exchangeCodeForToken($request->query('code'));
         $resources = $this->jira->accessibleResources($tokens['access_token']);
 
-        abort_if($resources === [], 422, 'No accessible Jira site was found for this account.');
+        if ($resources === []) {
+            return $this->backToSettings('error', __('No accessible Jira site was found for this account.'));
+        }
 
         $site = $resources[0];
 
@@ -95,10 +108,19 @@ class JiraIntegrationController extends Controller
             'connected_at' => now(),
         ]);
 
-        Inertia::flash('toast', [
-            'type' => 'success',
-            'message' => __('Jira connected successfully.'),
-        ]);
+        return $this->backToSettings('success', __('Connected to :site.', [
+            'site' => parse_url($site['url'], PHP_URL_HOST) ?? $site['url'],
+        ]));
+    }
+    /**
+     * Redirect back to the Jira settings page with a flash message.
+     * @param string $type
+     * @param string $message
+     * @return RedirectResponse
+     */
+    private function backToSettings(string $type, string $message): RedirectResponse
+    {
+        Inertia::flash('toast', ['type' => $type, 'message' => $message]);
 
         return redirect()->route('jira.edit');
     }
