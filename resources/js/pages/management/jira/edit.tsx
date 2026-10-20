@@ -6,6 +6,7 @@ import JiraIntegrationController from '@/actions/App/Http/Controllers/JiraIntegr
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -29,19 +30,38 @@ import {
 import {
     edit as jiraEdit,
     issueTypes as jiraIssueTypes,
+    preview as jiraPreview,
     redirect as jiraOauthRedirect,
 } from '@/routes/jira';
-import type { JiraIntegration, JiraIssueType, JiraProject } from '@/types';
+import type {
+    JiraImportPreview,
+    JiraImportPreviewIssue,
+    JiraIntegration,
+    JiraIssueType,
+    JiraProject,
+} from '@/types';
 
 type Props = {
     integration: JiraIntegration | null;
     projects: JiraProject[];
     error: string | null;
+    last_synced_at: string | null;
 };
 
 type ImportFormData = {
     project_key: string;
     issue_types: string[];
+    issue_keys: string[];
+};
+
+/** How each issue in the preview relates to what already exists here. */
+const PREVIEW_STATE: Record<
+    JiraImportPreviewIssue['state'],
+    { label: string; variant: 'success' | 'secondary' | 'warning' }
+> = {
+    new: { label: 'New', variant: 'success' },
+    existing: { label: 'Will update', variant: 'secondary' },
+    deleted: { label: 'Deleted here', variant: 'warning' },
 };
 
 /**
@@ -72,25 +92,43 @@ export default function JiraIntegrationEdit({
     integration,
     projects,
     error,
+    last_synced_at,
 }: Props) {
     const { currentProject } = usePage().props;
     const [issueTypeList, setIssueTypeList] = useState<JiraIssueType[]>([]);
     const [loadingIssueTypes, setLoadingIssueTypes] = useState(false);
     const [issueTypesError, setIssueTypesError] = useState<string | null>(null);
+    const [preview, setPreview] = useState<JiraImportPreview | null>(null);
+    const [loadingPreview, setLoadingPreview] = useState(false);
+    const [previewError, setPreviewError] = useState<string | null>(null);
 
     const importForm = useForm<ImportFormData>({
         project_key: '',
         issue_types: [],
+        issue_keys: [],
     });
+
+    const previewCounts = (preview?.issues ?? []).reduce(
+        (counts, issue) => ({
+            ...counts,
+            [issue.state]: counts[issue.state] + 1,
+        }),
+        { new: 0, existing: 0, deleted: 0 },
+    );
 
     const selectedProject = projects.find(
         (project) => project.key === importForm.data.project_key,
     );
 
     async function handleProjectChange(projectKey: string) {
+        setPreview(null);
         setIssueTypesError(null);
         setIssueTypeList([]);
-        importForm.setData({ project_key: projectKey, issue_types: [] });
+        importForm.setData({
+            project_key: projectKey,
+            issue_types: [],
+            issue_keys: [],
+        });
 
         setLoadingIssueTypes(true);
 
@@ -119,12 +157,62 @@ export default function JiraIntegrationEdit({
         }
     }
 
+    /** Changing the types makes the preview stale, so it is discarded. */
     function toggleIssueType(name: string, checked: boolean) {
+        setPreview(null);
+        importForm.setData((data) => ({
+            ...data,
+            issue_types: checked
+                ? [...data.issue_types, name]
+                : data.issue_types.filter((type) => type !== name),
+            issue_keys: [],
+        }));
+    }
+
+    /**
+     * Ask the server what the import would do. New and already imported
+     * issues start ticked; the ones deleted here start unticked.
+     */
+    async function loadPreview() {
+        setPreviewError(null);
+        setLoadingPreview(true);
+
+        const params = new URLSearchParams();
+        importForm.data.issue_types.forEach((type) =>
+            params.append('issue_types[]', type),
+        );
+
+        try {
+            const response = await fetch(
+                `${jiraPreview.url({ projectKey: importForm.data.project_key })}?${params}`,
+                { headers: { Accept: 'application/json' } },
+            );
+
+            if (!response.ok) {
+                throw new Error('request failed');
+            }
+
+            const data: JiraImportPreview = await response.json();
+            setPreview(data);
+            importForm.setData(
+                'issue_keys',
+                data.issues
+                    .filter((issue) => issue.state !== 'deleted')
+                    .map((issue) => issue.key),
+            );
+        } catch {
+            setPreviewError('Could not load the issues from Jira.');
+        } finally {
+            setLoadingPreview(false);
+        }
+    }
+
+    function toggleIssueKey(key: string, checked: boolean) {
         importForm.setData(
-            'issue_types',
+            'issue_keys',
             checked
-                ? [...importForm.data.issue_types, name]
-                : importForm.data.issue_types.filter((type) => type !== name),
+                ? [...importForm.data.issue_keys, key]
+                : importForm.data.issue_keys.filter((k) => k !== key),
         );
     }
 
@@ -218,8 +306,13 @@ export default function JiraIntegrationEdit({
                                 {integration.connected_at &&
                                     ` on ${new Date(integration.connected_at).toLocaleDateString('en-US')}`}
                             </p>
+                            <p className="text-sm text-muted-foreground">
+                                {last_synced_at
+                                    ? `Last import: ${new Date(last_synced_at).toLocaleString('en-US')}`
+                                    : 'Nothing imported yet.'}
+                            </p>
 
-                             {integration.can_disconnect ? (
+                            {integration.can_disconnect ? (
                                 <Dialog>
                                     <DialogTrigger asChild>
                                         <Button
@@ -420,18 +513,138 @@ export default function JiraIntegrationEdit({
                                     </div>
                                 )}
 
-                                <Button
-                                    type="submit"
-                                    className="w-fit"
-                                    disabled={
-                                        importForm.processing ||
-                                        importForm.data.issue_types.length === 0
-                                    }
-                                >
-                                    {importForm.data.issue_types.length > 0
-                                        ? `Import ${importForm.data.issue_types.length} issue type(s)`
-                                        : 'Import requirements'}
-                                </Button>
+                                {previewError && (
+                                    <Alert variant="destructive">
+                                        <AlertDescription>
+                                            {previewError}
+                                        </AlertDescription>
+                                    </Alert>
+                                )}
+
+                                {preview && (
+                                    <div className="flex flex-col gap-3 rounded-lg border p-4">
+                                        <p className="text-sm font-medium">
+                                            {preview.issues.length} issue(s)
+                                            found: {previewCounts.new} new,{' '}
+                                            {previewCounts.existing} already
+                                            imported
+                                            {previewCounts.deleted > 0 &&
+                                                `, ${previewCounts.deleted} deleted here`}
+                                        </p>
+
+                                        <ul className="list-disc pl-5 text-sm text-muted-foreground">
+                                            <li>
+                                                Issues are matched by key, so
+                                                nothing is duplicated.
+                                            </li>
+                                            <li>
+                                                Already imported requirements
+                                                get the current title,
+                                                description, priority and status
+                                                from Jira. Changes made here to
+                                                those fields are overwritten.
+                                            </li>
+                                            <li>
+                                                Requirements deleted here stay
+                                                out unless you tick them again.
+                                            </li>
+                                        </ul>
+
+                                        {preview.truncated && (
+                                            <Alert>
+                                                <AlertDescription>
+                                                    Only the first 500 issues
+                                                    are listed. Narrow the issue
+                                                    types to see the rest.
+                                                </AlertDescription>
+                                            </Alert>
+                                        )}
+
+                                        <div className="flex max-h-80 flex-col gap-1 overflow-y-auto">
+                                            {preview.issues.map((issue) => (
+                                                <div
+                                                    key={issue.key}
+                                                    className="flex items-center gap-3 rounded-md px-2 py-2 hover:bg-muted/50"
+                                                >
+                                                    <Checkbox
+                                                        id={`issue-${issue.key}`}
+                                                        checked={importForm.data.issue_keys.includes(
+                                                            issue.key,
+                                                        )}
+                                                        onCheckedChange={(
+                                                            checked,
+                                                        ) =>
+                                                            toggleIssueKey(
+                                                                issue.key,
+                                                                checked ===
+                                                                    true,
+                                                            )
+                                                        }
+                                                    />
+                                                    <Label
+                                                        htmlFor={`issue-${issue.key}`}
+                                                        className="flex-1 font-normal"
+                                                    >
+                                                        <span className="font-mono text-xs text-muted-foreground">
+                                                            {issue.key}
+                                                        </span>{' '}
+                                                        {issue.title}
+                                                    </Label>
+                                                    <Badge
+                                                        variant={
+                                                            PREVIEW_STATE[
+                                                                issue.state
+                                                            ].variant
+                                                        }
+                                                    >
+                                                        {
+                                                            PREVIEW_STATE[
+                                                                issue.state
+                                                            ].label
+                                                        }
+                                                    </Badge>
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        <InputError
+                                            message={
+                                                importForm.errors.issue_keys
+                                            }
+                                        />
+                                    </div>
+                                )}
+
+                                {preview === null ? (
+                                    <Button
+                                        type="button"
+                                        className="w-fit"
+                                        onClick={loadPreview}
+                                        disabled={
+                                            loadingPreview ||
+                                            importForm.data.issue_types
+                                                .length === 0
+                                        }
+                                    >
+                                        {loadingPreview
+                                            ? 'Looking up issues...'
+                                            : 'Preview import'}
+                                    </Button>
+                                ) : (
+                                    <Button
+                                        type="submit"
+                                        className="w-fit"
+                                        disabled={
+                                            importForm.processing ||
+                                            importForm.data.issue_keys
+                                                .length === 0
+                                        }
+                                    >
+                                        Import{' '}
+                                        {importForm.data.issue_keys.length}{' '}
+                                        issue(s)
+                                    </Button>
+                                )}
                             </form>
                         </Card>
                     </>

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\Requirements\StoreRequirementRequest;
 use App\Http\Requests\Requirements\UpdateRequirementRequest;
+use App\Models\JiraExcludedIssue;
 use App\Models\Requirement;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
@@ -64,6 +65,10 @@ class RequirementController extends Controller
     public function destroy(Requirement $requirement): RedirectResponse
     {
         $code = $requirement->code;
+
+        if ($requirement->jira_synced_at !== null) {
+            JiraExcludedIssue::query()->firstOrCreate(['issue_key' => $code]);
+        }
 
         $requirement->delete();
 

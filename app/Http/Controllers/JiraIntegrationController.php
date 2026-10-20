@@ -3,13 +3,16 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\Jira\ImportJiraRequirementsRequest;
+use App\Models\JiraExcludedIssue;
 use App\Models\JiraIntegration;
 use App\Models\Requirement;
 use App\Services\Jira\JiraClient;
 use App\Services\Jira\JiraIssueMapper;
+use Carbon\CarbonInterface;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -39,6 +42,8 @@ class JiraIntegrationController extends Controller
             }
         }
 
+        $lastSyncedAt = Requirement::query()->max('jira_synced_at');
+
         return Inertia::render('management/jira/edit', [
             'integration' => $integration === null ? null : [
                 'site_url' => $integration->site_url,
@@ -48,6 +53,7 @@ class JiraIntegrationController extends Controller
             ],
             'projects' => $projects,
             'error' => $error,
+            'last_synced_at' => $lastSyncedAt === null ? null : Carbon::parse($lastSyncedAt)->toIso8601String(),
         ]);
     }
 
@@ -164,8 +170,45 @@ class JiraIntegrationController extends Controller
     }
 
     /**
-     * Import issues from a Jira project as requirements, restricted to the
-     * issue types the user selected.
+     * Preview what an import would do, without writing anything: which
+     * issues are new, which already exist here and would be updated, and
+     * which were deleted here.
+     */
+    public function preview(Request $request, string $projectKey): JsonResponse
+    {
+        $validated = $request->validate([
+            'issue_types' => ['required', 'array', 'min:1'],
+            'issue_types.*' => ['required', 'string', 'max:100'],
+        ]);
+
+        $integration = JiraIntegration::query()->first();
+
+        abort_if($integration === null, 404, 'No Jira integration found.');
+
+        $issues = $this->fetchIssues($integration, $projectKey, $validated['issue_types']);
+        $keys = array_column($issues, 'key');
+
+        $existing = Requirement::query()->whereIn('code', $keys)->pluck('code')->flip();
+        $excluded = JiraExcludedIssue::query()->whereIn('issue_key', $keys)->pluck('issue_key')->flip();
+
+        return response()->json([
+            'issues' => array_map(fn (array $issue): array => [
+                'key' => $issue['key'],
+                'title' => $issue['fields']['summary'] ?? $issue['key'],
+                'issue_type' => $issue['fields']['issuetype']['name'] ?? null,
+                'state' => match (true) {
+                    $existing->has($issue['key']) => 'existing',
+                    $excluded->has($issue['key']) => 'deleted',
+                    default => 'new',
+                },
+            ], $issues),
+            'truncated' => count($issues) >= self::MAX_ISSUES_PER_IMPORT,
+        ]);
+    }
+
+    /**
+     * Import the issues the user ticked in the preview. Issues are matched by
+     * key, so existing requirements are updated instead of duplicated.
      */
     public function import(ImportJiraRequirementsRequest $request): RedirectResponse
     {
@@ -173,49 +216,76 @@ class JiraIntegrationController extends Controller
 
         abort_if($integration === null, 404, 'No Jira integration found.');
 
-        $projectKey = $request->validated('project_key');
-        $issueTypes = $request->validated('issue_types');
-        $imported = 0;
-        $pageToken = null;
+        $selectedKeys = array_flip($request->validated('issue_keys'));
 
-        $typesClause = collect($issueTypes)
-            ->map(fn (string $type): string => '"'.str_replace(['\\', '"'], ['\\\\', '\\"'], $type).'"')
-            ->implode(',');
+        $issues = array_values(array_filter(
+            $this->fetchIssues($integration, $request->validated('project_key'), $request->validated('issue_types')),
+            fn (array $issue): bool => isset($selectedKeys[$issue['key']])
+        ));
 
-        $jql = "project = \"{$projectKey}\" AND issuetype in ({$typesClause}) ORDER BY key ASC";
+        $created = 0;
+        $updated = 0;
+        $syncedAt = now();
 
-        do {
-            $result = $this->jira->searchIssues(
-                $integration,
-                $jql,
-                $pageToken,
-                min(100, self::MAX_ISSUES_PER_IMPORT - $imported)
-            );
+        foreach ($issues as $issue) {
+            $this->upsertRequirement($issue, $request->user()->id, $syncedAt) ? $created++ : $updated++;
+        }
 
-            foreach ($result['issues'] as $issue) {
-                $this->upsertRequirement($issue, $request->user()->id);
-                $imported++;
-            }
-
-            $pageToken = $result['nextPageToken'];
-        } while (
-            count($result['issues']) > 0
-            && $pageToken !== null
-            && $imported < self::MAX_ISSUES_PER_IMPORT
-        );
+        JiraExcludedIssue::query()->whereIn('issue_key', array_column($issues, 'key'))->delete();
 
         Inertia::flash('toast', [
             'type' => 'success',
-            'message' => __(':count requirement(s) imported from Jira.', ['count' => $imported]),
+            'message' => __(':created imported, :updated updated.', ['created' => $created, 'updated' => $updated]),
         ]);
 
         return redirect()->route('jira.edit');
     }
 
     /**
-     * @param  array<string, mixed>  $issue
+     * Fetch every issue of the given types in a Jira project, up to the import limit.
+     *
+     * @param  list<string>  $issueTypes
+     * @return list<array<string, mixed>>
      */
-    private function upsertRequirement(array $issue, int $importedByUserId): void
+    private function fetchIssues(JiraIntegration $integration, string $projectKey, array $issueTypes): array
+    {
+        $typesClause = collect($issueTypes)->map(fn (string $type): string => self::jqlString($type))->implode(',');
+        $jql = 'project = '.self::jqlString($projectKey)." AND issuetype in ({$typesClause}) ORDER BY key ASC";
+
+        $issues = [];
+        $pageToken = null;
+
+        do {
+            $result = $this->jira->searchIssues(
+                $integration,
+                $jql,
+                $pageToken,
+                min(100, self::MAX_ISSUES_PER_IMPORT - count($issues))
+            );
+
+            array_push($issues, ...$result['issues']);
+            $pageToken = $result['nextPageToken'];
+        } while (
+            count($result['issues']) > 0
+            && $pageToken !== null
+            && count($issues) < self::MAX_ISSUES_PER_IMPORT
+        );
+
+        return $issues;
+    }
+
+    private static function jqlString(string $value): string
+    {
+        return '"'.str_replace(['\\', '"'], ['\\\\', '\\"'], $value).'"';
+    }
+
+    /**
+     * Create or update the requirement for a Jira issue.
+     *
+     * @param  array<string, mixed>  $issue
+     * @return bool Whether the requirement was created (true) or updated (false).
+     */
+    private function upsertRequirement(array $issue, int $importedByUserId, CarbonInterface $syncedAt): bool
     {
         $attributes = JiraIssueMapper::toRequirementAttributes($issue);
         $code = $attributes['code'];
@@ -223,11 +293,16 @@ class JiraIntegrationController extends Controller
 
         $requirement = Requirement::query()->firstOrNew(['code' => $code]);
         $requirement->fill($attributes);
+        $requirement->jira_synced_at = $syncedAt;
 
-        if (! $requirement->exists) {
+        $wasCreated = ! $requirement->exists;
+
+        if ($wasCreated) {
             $requirement->created_by = $importedByUserId;
         }
 
         $requirement->save();
+
+        return $wasCreated;
     }
 }

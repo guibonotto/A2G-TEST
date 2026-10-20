@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\JiraExcludedIssue;
 use App\Models\JiraIntegration;
 use App\Models\Requirement;
 use App\Models\User;
@@ -212,6 +213,7 @@ class JiraIntegrationControllerTest extends TestCase
         $response = $this->actingAs($qa)->post(route('jira.import'), [
             'project_key' => 'PROJ',
             'issue_types' => ['Task', 'Story'],
+            'issue_keys' => ['PROJ-1'],
         ]);
 
         $response->assertRedirect(route('jira.edit'));
@@ -257,6 +259,7 @@ class JiraIntegrationControllerTest extends TestCase
         $this->actingAs($qa)->post(route('jira.import'), [
             'project_key' => 'PROJ',
             'issue_types' => ['Task'],
+            'issue_keys' => ['PROJ-1'],
         ]);
 
         $this->assertDatabaseHas('requirements', [
@@ -293,12 +296,122 @@ class JiraIntegrationControllerTest extends TestCase
         $this->actingAs($qa)->post(route('jira.import'), [
             'project_key' => 'PROJ',
             'issue_types' => ['Epic', 'Story'],
+            'issue_keys' => ['PROJ-1'],
         ]);
 
         Http::assertSent(function ($request) {
             return str_contains($request->url(), 'search/jql')
                 && str_contains(urldecode($request->url()), 'issuetype in ("Epic","Story")');
         });
+    }
+
+    public function test_preview_classifies_issues_as_new_existing_or_deleted_here(): void
+    {
+        $qa = $this->createUserWithRole('qa');
+        $this->createIntegrationFor($qa);
+        Requirement::create(['code' => 'PROJ-1', 'type' => 'funcional', 'title' => 'Já importado']);
+        JiraExcludedIssue::create(['issue_key' => 'PROJ-3']);
+
+        Http::fake(['api.atlassian.com/*' => Http::response(['issues' => [
+            ['key' => 'PROJ-1', 'fields' => ['summary' => 'Um', 'issuetype' => ['name' => 'Story']]],
+            ['key' => 'PROJ-2', 'fields' => ['summary' => 'Dois', 'issuetype' => ['name' => 'Story']]],
+            ['key' => 'PROJ-3', 'fields' => ['summary' => 'Três', 'issuetype' => ['name' => 'Story']]],
+        ]])]);
+
+        $this->actingAs($qa)
+            ->getJson(route('jira.preview', ['projectKey' => 'PROJ', 'issue_types' => ['Story']]))
+            ->assertOk()
+            ->assertJsonPath('issues.0.state', 'existing')
+            ->assertJsonPath('issues.1.state', 'new')
+            ->assertJsonPath('issues.1.title', 'Dois')
+            ->assertJsonPath('issues.2.state', 'deleted')
+            ->assertJsonPath('truncated', false);
+
+        $this->assertDatabaseMissing('requirements', ['code' => 'PROJ-2']);
+    }
+
+    public function test_preview_requires_issue_types(): void
+    {
+        $qa = $this->createUserWithRole('qa');
+        $this->createIntegrationFor($qa);
+
+        $this->actingAs($qa)
+            ->get(route('jira.preview', ['projectKey' => 'PROJ']))
+            ->assertSessionHasErrors('issue_types');
+    }
+
+    public function test_non_qa_users_cannot_preview_an_import(): void
+    {
+        $developer = $this->createUserWithRole('developer');
+
+        $this->actingAs($developer)
+            ->getJson(route('jira.preview', ['projectKey' => 'PROJ', 'issue_types' => ['Story']]))
+            ->assertForbidden();
+    }
+
+    public function test_import_only_brings_the_selected_issues_and_records_the_sync_date(): void
+    {
+        $qa = $this->createUserWithRole('qa');
+        $this->createIntegrationFor($qa);
+
+        Http::fake(['api.atlassian.com/*' => Http::response(['issues' => [
+            ['key' => 'PROJ-1', 'fields' => ['summary' => 'Um']],
+            ['key' => 'PROJ-2', 'fields' => ['summary' => 'Dois']],
+        ]])]);
+
+        $this->actingAs($qa)->post(route('jira.import'), [
+            'project_key' => 'PROJ',
+            'issue_types' => ['Story'],
+            'issue_keys' => ['PROJ-2'],
+        ])->assertRedirect(route('jira.edit'));
+
+        $this->assertDatabaseMissing('requirements', ['code' => 'PROJ-1']);
+        $this->assertNotNull(Requirement::query()->where('code', 'PROJ-2')->value('jira_synced_at'));
+    }
+
+    public function test_import_requires_at_least_one_selected_issue(): void
+    {
+        $qa = $this->createUserWithRole('qa');
+        $this->createIntegrationFor($qa);
+
+        $this->actingAs($qa)->post(route('jira.import'), [
+            'project_key' => 'PROJ',
+            'issue_types' => ['Story'],
+            'issue_keys' => [],
+        ])->assertSessionHasErrors('issue_keys');
+    }
+
+    public function test_ticking_an_issue_deleted_here_brings_it_back(): void
+    {
+        $qa = $this->createUserWithRole('qa');
+        $this->createIntegrationFor($qa);
+        JiraExcludedIssue::create(['issue_key' => 'PROJ-3']);
+
+        Http::fake(['api.atlassian.com/*' => Http::response(['issues' => [
+            ['key' => 'PROJ-3', 'fields' => ['summary' => 'Três']],
+        ]])]);
+
+        $this->actingAs($qa)->post(route('jira.import'), [
+            'project_key' => 'PROJ',
+            'issue_types' => ['Story'],
+            'issue_keys' => ['PROJ-3'],
+        ]);
+
+        $this->assertDatabaseHas('requirements', ['code' => 'PROJ-3']);
+        $this->assertDatabaseMissing('jira_excluded_issues', ['issue_key' => 'PROJ-3']);
+    }
+
+    public function test_integration_page_shows_the_last_import_date(): void
+    {
+        $qa = $this->createUserWithRole('qa');
+        $this->createIntegrationFor($qa);
+        Requirement::create(['code' => 'PROJ-1', 'type' => 'funcional', 'title' => 'Um'])
+            ->forceFill(['jira_synced_at' => now()])->save();
+
+        Http::fake(['api.atlassian.com/*' => Http::response(['values' => []])]);
+
+        $this->actingAs($qa)->get(route('jira.edit'))
+            ->assertInertia(fn (Assert $page) => $page->whereNot('last_synced_at', null));
     }
 
     public function test_qa_can_fetch_issue_types_for_a_project(): void

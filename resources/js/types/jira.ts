@@ -14,3 +14,15 @@ export type JiraIssueType = {
     name: string;
     selected_by_default: boolean;
 };
+
+export type JiraImportPreviewIssue = {
+    key: string;
+    title: string;
+    issue_type: string | null;
+    state: 'new' | 'existing' | 'deleted';
+};
+
+export type JiraImportPreview = {
+    issues: JiraImportPreviewIssue[];
+    truncated: boolean;
+};

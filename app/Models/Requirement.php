@@ -38,6 +38,7 @@ class Requirement extends Model
         return [
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
+            'jira_synced_at' => 'datetime',
         ];
     }
 

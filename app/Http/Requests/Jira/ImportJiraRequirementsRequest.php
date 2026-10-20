@@ -23,6 +23,8 @@ class ImportJiraRequirementsRequest extends FormRequest
             'project_key' => ['required', 'string', 'max:50'],
             'issue_types' => ['required', 'array', 'min:1'],
             'issue_types.*' => ['required', 'string', 'max:100'],
+            'issue_keys' => ['required', 'array', 'min:1', 'max:500'],
+            'issue_keys.*' => ['required', 'string', 'max:50'],
         ];
     }
 }

@@ -13,4 +13,5 @@ Route::middleware(['auth', 'verified', 'role:qa,admin'])->group(function () {
     Route::delete('management/jira', [JiraIntegrationController::class, 'destroy'])->name('jira.destroy');
     Route::post('management/jira/import', [JiraIntegrationController::class, 'import'])->name('jira.import');
     Route::get('management/jira/projects/{projectKey}/issue-types', [JiraIntegrationController::class, 'issueTypes'])->name('jira.issue-types');
+    Route::get('management/jira/projects/{projectKey}/preview', [JiraIntegrationController::class, 'preview'])->name('jira.preview');
 });

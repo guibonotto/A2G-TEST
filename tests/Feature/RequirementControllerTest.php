@@ -129,4 +129,25 @@ class RequirementControllerTest extends TestCase
         $response->assertRedirect();
         $this->assertDatabaseMissing('requirements', ['id' => $requirement->id]);
     }
+
+    public function test_deleting_a_requirement_imported_from_jira_remembers_the_issue(): void
+    {
+        $qa = $this->createUserWithRole('qa');
+        $requirement = Requirement::create(['code' => 'AAAAAAA-1', 'type' => 'funcional', 'title' => 'Do Jira']);
+        $requirement->forceFill(['jira_synced_at' => now()])->save();
+
+        $this->actingAs($qa)->delete(route('requirements.destroy', $requirement));
+
+        $this->assertDatabaseHas('jira_excluded_issues', ['issue_key' => 'AAAAAAA-1']);
+    }
+
+    public function test_deleting_a_manual_requirement_does_not_touch_the_jira_exclusions(): void
+    {
+        $qa = $this->createUserWithRole('qa');
+        $requirement = Requirement::create(['code' => 'RF001', 'type' => 'funcional', 'title' => 'Manual']);
+
+        $this->actingAs($qa)->delete(route('requirements.destroy', $requirement));
+
+        $this->assertDatabaseCount('jira_excluded_issues', 0);
+    }
 }
