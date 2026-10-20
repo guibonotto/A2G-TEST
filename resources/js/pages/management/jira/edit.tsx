@@ -230,7 +230,11 @@ export default function JiraIntegrationEdit({
             <div className="flex flex-col gap-6 p-4">
                 <Heading
                     title="Jira integration"
-                    description="Import stories from Jira as requirements."
+                    description={
+                        currentProject
+                            ? `Each project has its own Jira connection. These settings apply to ${currentProject.name} only.`
+                            : 'Import stories from Jira as requirements.'
+                    }
                 />
 
                 {error && (
@@ -249,7 +253,7 @@ export default function JiraIntegrationEdit({
 
                             <p className="mt-1 text-sm text-muted-foreground">
                                 Connecting lets you pull Jira issues into this
-                                system as requirements, so test cases can be
+                                project as requirements, so test cases can be
                                 linked to them.
                             </p>
                         </div>
@@ -325,18 +329,22 @@ export default function JiraIntegrationEdit({
                                     </DialogTrigger>
                                     <DialogContent>
                                         <DialogTitle>
-                                            Disconnect Jira for everyone?
+                                            Disconnect Jira from this project?
                                         </DialogTitle>
                                         <DialogDescription>
                                             This disconnects{' '}
                                             {integration.site_url} for{' '}
                                             <strong>
-                                                every user and every project
-                                            </strong>{' '}
-                                            in A2G Test, not just for you.
+                                                every member of{' '}
+                                                {currentProject?.name ??
+                                                    'this project'}
+                                            </strong>
+                                            , not just for you. Other projects
+                                            keep their own connection.
                                             Requirements already imported are
-                                            kept, but nobody can import from
-                                            Jira until someone connects again.
+                                            kept, but nobody in this project can
+                                            import from Jira until someone
+                                            connects again.
                                         </DialogDescription>
 
                                         <Form
@@ -357,7 +365,7 @@ export default function JiraIntegrationEdit({
                                                         variant="destructive"
                                                         disabled={processing}
                                                     >
-                                                        Disconnect for everyone
+                                                        Disconnect project
                                                     </Button>
                                                 </DialogFooter>
                                             )}

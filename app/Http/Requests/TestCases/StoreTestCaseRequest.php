@@ -2,10 +2,11 @@
 
 namespace App\Http\Requests\TestCases;
 
+use App\Models\Project;
+use App\Models\Role;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
-use App\Models\Role;
 
 class StoreTestCaseRequest extends FormRequest
 {
@@ -45,7 +46,10 @@ class StoreTestCaseRequest extends FormRequest
             'steps.*.description' => ['required', 'string'],
             'steps.*.expected_result' => ['required', 'string'],
             'requirement_ids' => [Rule::prohibitedIf(fn () => ! $this->user()->canManageAccess()), 'array'],
-            'requirement_ids.*' => ['integer', 'exists:requirements,id'],
+            'requirement_ids.*' => [
+                'integer',
+                Rule::exists('requirements', 'id')->where('project_id', Project::current()?->id),
+            ],
         ];
     }
 }

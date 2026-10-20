@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Str;
 
 #[Fillable(['uuid', 'name', 'password', 'owner_id'])]
@@ -54,6 +55,16 @@ class Project extends Model
     public function members(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'project_user')->withTimestamps();
+    }
+
+    public function requirements(): HasMany
+    {
+        return $this->hasMany(Requirement::class);
+    }
+
+    public function jiraIntegration(): HasOne
+    {
+        return $this->hasOne(JiraIntegration::class);
     }
 
     public function testCases(): HasMany

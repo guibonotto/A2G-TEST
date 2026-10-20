@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Model;
  * A Jira issue whose requirement was deleted here, so a later import
  * does not silently bring it back.
  */
-#[Fillable(['issue_key'])]
+#[Fillable(['project_id', 'issue_key'])]
 class JiraExcludedIssue extends Model
 {
     /**

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\Jira\ImportJiraRequirementsRequest;
 use App\Models\JiraExcludedIssue;
 use App\Models\JiraIntegration;
+use App\Models\Project;
 use App\Models\Requirement;
 use App\Services\Jira\JiraClient;
 use App\Services\Jira\JiraIssueMapper;
@@ -25,11 +26,12 @@ class JiraIntegrationController extends Controller
     public function __construct(private readonly JiraClient $jira) {}
 
     /**
-     * Display the Jira integration settings page.
+     * Display the Jira integration settings page of the current project.
      */
     public function edit(Request $request): Response
     {
-        $integration = JiraIntegration::query()->with('connector:id,name')->first();
+        $project = Project::current();
+        $integration = $project->jiraIntegration()->with('connector:id,name')->first();
 
         $projects = [];
         $error = null;
@@ -42,7 +44,7 @@ class JiraIntegrationController extends Controller
             }
         }
 
-        $lastSyncedAt = Requirement::query()->max('jira_synced_at');
+        $lastSyncedAt = $project->requirements()->max('jira_synced_at');
 
         return Inertia::render('management/jira/edit', [
             'integration' => $integration === null ? null : [
@@ -100,10 +102,12 @@ class JiraIntegrationController extends Controller
         }
 
         $site = $resources[0];
+        $project = Project::current();
 
-        JiraIntegration::query()->delete();
+        $project->jiraIntegration()->delete();
 
         JiraIntegration::create([
+            'project_id' => $project->id,
             'site_url' => $site['url'],
             'cloud_id' => $site['id'],
             'access_token' => $tokens['access_token'],
@@ -133,8 +137,7 @@ class JiraIntegrationController extends Controller
      */
     public function destroy(): RedirectResponse
     {
-        $integration = JiraIntegration::query()->first();
-        abort_if($integration === null, 404, 'No Jira integration found.');
+        $integration = $this->currentIntegration();
         abort_unless(
             $integration->canBeDisconnectedBy(request()->user()),
             403,
@@ -152,9 +155,7 @@ class JiraIntegrationController extends Controller
      */
     public function issueTypes(string $projectKey): JsonResponse
     {
-        $integration = JiraIntegration::query()->first();
-
-        abort_if($integration === null, 404, 'No Jira integration found.');
+        $integration = $this->currentIntegration();
 
         $names = $this->jira->issueTypeNamesForProject($integration, $projectKey);
 
@@ -181,15 +182,21 @@ class JiraIntegrationController extends Controller
             'issue_types.*' => ['required', 'string', 'max:100'],
         ]);
 
-        $integration = JiraIntegration::query()->first();
-
-        abort_if($integration === null, 404, 'No Jira integration found.');
+        $integration = $this->currentIntegration();
 
         $issues = $this->fetchIssues($integration, $projectKey, $validated['issue_types']);
         $keys = array_column($issues, 'key');
 
-        $existing = Requirement::query()->whereIn('code', $keys)->pluck('code')->flip();
-        $excluded = JiraExcludedIssue::query()->whereIn('issue_key', $keys)->pluck('issue_key')->flip();
+        $existing = Requirement::query()
+            ->where('project_id', $integration->project_id)
+            ->whereIn('code', $keys)
+            ->pluck('code')
+            ->flip();
+        $excluded = JiraExcludedIssue::query()
+            ->where('project_id', $integration->project_id)
+            ->whereIn('issue_key', $keys)
+            ->pluck('issue_key')
+            ->flip();
 
         return response()->json([
             'issues' => array_map(fn (array $issue): array => [
@@ -212,9 +219,7 @@ class JiraIntegrationController extends Controller
      */
     public function import(ImportJiraRequirementsRequest $request): RedirectResponse
     {
-        $integration = JiraIntegration::query()->first();
-
-        abort_if($integration === null, 404, 'No Jira integration found.');
+        $integration = $this->currentIntegration();
 
         $selectedKeys = array_flip($request->validated('issue_keys'));
 
@@ -228,10 +233,13 @@ class JiraIntegrationController extends Controller
         $syncedAt = now();
 
         foreach ($issues as $issue) {
-            $this->upsertRequirement($issue, $request->user()->id, $syncedAt) ? $created++ : $updated++;
+            $this->upsertRequirement($issue, $integration->project_id, $request->user()->id, $syncedAt) ? $created++ : $updated++;
         }
 
-        JiraExcludedIssue::query()->whereIn('issue_key', array_column($issues, 'key'))->delete();
+        JiraExcludedIssue::query()
+            ->where('project_id', $integration->project_id)
+            ->whereIn('issue_key', array_column($issues, 'key'))
+            ->delete();
 
         Inertia::flash('toast', [
             'type' => 'success',
@@ -274,6 +282,18 @@ class JiraIntegrationController extends Controller
         return $issues;
     }
 
+    /**
+     * The Jira connection of the project the user is working on.
+     */
+    private function currentIntegration(): JiraIntegration
+    {
+        $integration = Project::current()?->jiraIntegration;
+
+        abort_if($integration === null, 404, 'No Jira integration found.');
+
+        return $integration;
+    }
+
     private static function jqlString(string $value): string
     {
         return '"'.str_replace(['\\', '"'], ['\\\\', '\\"'], $value).'"';
@@ -285,13 +305,13 @@ class JiraIntegrationController extends Controller
      * @param  array<string, mixed>  $issue
      * @return bool Whether the requirement was created (true) or updated (false).
      */
-    private function upsertRequirement(array $issue, int $importedByUserId, CarbonInterface $syncedAt): bool
+    private function upsertRequirement(array $issue, int $projectId, int $importedByUserId, CarbonInterface $syncedAt): bool
     {
         $attributes = JiraIssueMapper::toRequirementAttributes($issue);
         $code = $attributes['code'];
         unset($attributes['code']);
 
-        $requirement = Requirement::query()->firstOrNew(['code' => $code]);
+        $requirement = Requirement::query()->firstOrNew(['project_id' => $projectId, 'code' => $code]);
         $requirement->fill($attributes);
         $requirement->jira_synced_at = $syncedAt;
 

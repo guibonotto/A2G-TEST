@@ -114,10 +114,13 @@ class DashboardController extends Controller
 
     /**
      * build the dashboard classification breakdown.
+     *
+     * Classification is optional, so cases without one get their own
+     * "Unclassified" entry instead of disappearing from the chart.
      */
     private function buildClassificationBreakdown(Project $project): array
     {
-        return Classification::query()
+        $breakdown = Classification::query()
             ->withCount(['testCases' => fn ($query) => $query->where('project_id', $project->id)])
             ->orderByDesc('test_cases_count')
             ->get(['id', 'name'])
@@ -125,8 +128,22 @@ class DashboardController extends Controller
                 'id' => $classification->id,
                 'name' => $classification->name,
                 'total' => $classification->test_cases_count,
-            ])
-            ->all();
+            ]);
+
+        $unclassified = TestCase::query()
+            ->where('project_id', $project->id)
+            ->whereNull('classification_id')
+            ->count();
+
+        if ($unclassified > 0) {
+            $breakdown->push([
+                'id' => 0,
+                'name' => 'Unclassified',
+                'total' => $unclassified,
+            ]);
+        }
+
+        return $breakdown->all();
     }
 
     /**

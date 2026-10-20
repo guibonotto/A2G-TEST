@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Requirements;
 
+use App\Models\Project;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -23,7 +24,9 @@ class UpdateRequirementRequest extends FormRequest
                 'required',
                 'string',
                 'max:20',
-                Rule::unique('requirements', 'code')->ignore($this->route('requirement')),
+                Rule::unique('requirements', 'code')
+                    ->where('project_id', Project::current()?->id)
+                    ->ignore($this->route('requirement')),
             ],
             'type' => ['required', 'string', 'in:funcional,nao_funcional'],
             'title' => ['required', 'string', 'max:255'],

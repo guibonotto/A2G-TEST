@@ -43,6 +43,56 @@ class DashboardTest extends TestCase
         $response->assertOk();
     }
 
+    public function test_classification_breakdown_counts_unclassified_test_cases(): void
+    {
+        $user = User::factory()->create();
+        $project = Project::factory()->create();
+        $project->members()->attach($user);
+        $this->withSession(['current_project_id' => $project->id]);
+        $this->actingAs($user);
+
+        $classification = Classification::firstOrCreate(['name' => 'Unitário']);
+        TestCaseModel::create([
+            'title' => 'Classificado',
+            'classification_id' => $classification->id,
+            'created_by' => $user->id,
+            'project_id' => $project->id,
+        ]);
+        TestCaseModel::create([
+            'title' => 'Sem classificação',
+            'created_by' => $user->id,
+            'project_id' => $project->id,
+        ]);
+
+        $this->get(route('dashboard'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('classificationBreakdown.0.name', 'Unitário')
+                ->where('classificationBreakdown.0.total', 1)
+                ->where('classificationBreakdown.1.name', 'Unclassified')
+                ->where('classificationBreakdown.1.total', 1)
+            );
+    }
+
+    public function test_classification_breakdown_has_no_unclassified_entry_when_every_case_is_classified(): void
+    {
+        $user = User::factory()->create();
+        $project = Project::factory()->create();
+        $project->members()->attach($user);
+        $this->withSession(['current_project_id' => $project->id]);
+        $this->actingAs($user);
+
+        $classification = Classification::firstOrCreate(['name' => 'Unitário']);
+        TestCaseModel::create([
+            'title' => 'Classificado',
+            'classification_id' => $classification->id,
+            'created_by' => $user->id,
+            'project_id' => $project->id,
+        ]);
+
+        $this->get(route('dashboard'))
+            ->assertInertia(fn (Assert $page) => $page->has('classificationBreakdown', 1));
+    }
+
     public function test_dashboard_exposes_aggregated_metrics(): void
     {
         $user = User::factory()->create();

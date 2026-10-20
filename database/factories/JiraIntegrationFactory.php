@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\JiraIntegration;
+use App\Models\Project;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -19,6 +20,7 @@ class JiraIntegrationFactory extends Factory
     public function definition(): array
     {
         return [
+            'project_id' => Project::factory(),
             'site_url' => 'https://'.fake()->unique()->domainWord().'.atlassian.net',
             'cloud_id' => fake()->uuid(),
             'access_token' => 'access-'.fake()->sha1(),

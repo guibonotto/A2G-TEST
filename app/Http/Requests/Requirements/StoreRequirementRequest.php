@@ -2,8 +2,10 @@
 
 namespace App\Http\Requests\Requirements;
 
+use App\Models\Project;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreRequirementRequest extends FormRequest
 {
@@ -18,7 +20,12 @@ class StoreRequirementRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'code' => ['required', 'string', 'max:20', 'unique:requirements,code'],
+            'code' => [
+                'required',
+                'string',
+                'max:20',
+                Rule::unique('requirements', 'code')->where('project_id', Project::current()?->id),
+            ],
             'type' => ['required', 'string', 'in:funcional,nao_funcional'],
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:5000'],

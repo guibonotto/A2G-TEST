@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\Project;
 use App\Models\Requirement;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -19,6 +20,7 @@ class RequirementFactory extends Factory
     public function definition(): array
     {
         return [
+            'project_id' => Project::factory(),
             'code' => fake()->unique()->numerify('RF###'),
             'type' => 'funcional',
             'title' => fake()->sentence(3),

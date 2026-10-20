@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\Requirements\StoreRequirementRequest;
 use App\Http\Requests\Requirements\UpdateRequirementRequest;
 use App\Models\JiraExcludedIssue;
+use App\Models\Project;
 use App\Models\Requirement;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
@@ -13,12 +14,12 @@ use Inertia\Response;
 class RequirementController extends Controller
 {
     /**
-     * Display a listing of the requirements.
+     * Display a listing of the current project's requirements.
      */
     public function index(): Response
     {
         return Inertia::render('management/requirements/index', [
-            'requirements' => Requirement::query()
+            'requirements' => Project::current()->requirements()
                 ->withCount('testCases')
                 ->with('creator:id,name')
                 ->orderBy('code')
@@ -33,6 +34,7 @@ class RequirementController extends Controller
     {
         $requirement = Requirement::create([
             ...$request->validated(),
+            'project_id' => Project::current()->id,
             'created_by' => $request->user()->id,
         ]);
 
@@ -49,6 +51,8 @@ class RequirementController extends Controller
      */
     public function update(UpdateRequirementRequest $request, Requirement $requirement): RedirectResponse
     {
+        $this->ensureBelongsToCurrentProject($requirement);
+
         $requirement->update($request->validated());
 
         Inertia::flash('toast', [
@@ -64,10 +68,15 @@ class RequirementController extends Controller
      */
     public function destroy(Requirement $requirement): RedirectResponse
     {
+        $this->ensureBelongsToCurrentProject($requirement);
+
         $code = $requirement->code;
 
         if ($requirement->jira_synced_at !== null) {
-            JiraExcludedIssue::query()->firstOrCreate(['issue_key' => $code]);
+            JiraExcludedIssue::query()->firstOrCreate([
+                'project_id' => $requirement->project_id,
+                'issue_key' => $code,
+            ]);
         }
 
         $requirement->delete();
@@ -78,5 +87,13 @@ class RequirementController extends Controller
         ]);
 
         return back();
+    }
+
+    /**
+     * Requirements of other projects are treated as if they did not exist.
+     */
+    private function ensureBelongsToCurrentProject(Requirement $requirement): void
+    {
+        abort_unless($requirement->project_id === Project::current()?->id, 404);
     }
 }

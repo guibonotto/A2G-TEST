@@ -410,9 +410,9 @@ class TestCaseControllerTest extends TestCase
         $qa = $this->createUserWithRole('qa');
         $developer = $this->createUserWithRole('developer');
         Classification::create(['name' => 'Funcional']);
-        Requirement::create(['code' => 'RF001', 'type' => 'funcional', 'title' => 'Cadastro']);
 
-        $this->actingAsProjectMember($qa);
+        $project = $this->actingAsProjectMember($qa);
+        Requirement::create(['project_id' => $project->id, 'code' => 'RF001', 'type' => 'funcional', 'title' => 'Cadastro']);
         $this->get(route('test-cases.create'))
             ->assertInertia(fn (Assert $page) => $page
                 ->component('test-cases/create')
@@ -430,16 +430,17 @@ class TestCaseControllerTest extends TestCase
     public function test_qa_can_link_requirements_while_creating_a_test_case(): void
     {
         $qa = $this->createUserWithRole('qa');
-        $this->actingAsProjectMember($qa);
+        $project = $this->actingAsProjectMember($qa);
         $classification = Classification::create(['name' => 'Funcional']);
-        $first = Requirement::create(['code' => 'RF001', 'type' => 'funcional', 'title' => 'Cadastro']);
-        $second = Requirement::create(['code' => 'RF002', 'type' => 'funcional', 'title' => 'Login']);
+        $first = Requirement::create(['project_id' => $project->id, 'code' => 'RF001', 'type' => 'funcional', 'title' => 'Cadastro']);
+        $second = Requirement::create(['project_id' => $project->id, 'code' => 'RF002', 'type' => 'funcional', 'title' => 'Login']);
 
         $this->post(route('test-cases.store'), [
             'title' => 'Login com credenciais válidas',
+            'tested_method' => 'AuthController@login',
             'classification_id' => $classification->id,
             'steps' => [
-                ['description' => 'Acessar a tela de login'],
+                ['description' => 'Acessar a tela de login', 'expected_result' => 'Tela exibida'],
             ],
             'requirement_ids' => [$first->id, $second->id],
         ]);
@@ -450,6 +451,72 @@ class TestCaseControllerTest extends TestCase
             [$first->id, $second->id],
             $testCase->requirements()->pluck('requirements.id')->all()
         );
+    }
+
+    public function test_create_screen_only_offers_requirements_of_the_current_project(): void
+    {
+        $qa = $this->createUserWithRole('qa');
+        $project = $this->actingAsProjectMember($qa);
+        $otherProject = Project::factory()->create();
+        Requirement::create(['project_id' => $project->id, 'code' => 'RF001', 'type' => 'funcional', 'title' => 'Deste projeto']);
+        Requirement::create(['project_id' => $otherProject->id, 'code' => 'RF001', 'type' => 'funcional', 'title' => 'De outro projeto']);
+
+        $this->get(route('test-cases.create'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('availableRequirements', 1)
+                ->where('availableRequirements.0.title', 'Deste projeto')
+            );
+    }
+
+    public function test_a_requirement_of_another_project_cannot_be_linked_while_creating_a_test_case(): void
+    {
+        $qa = $this->createUserWithRole('qa');
+        $this->actingAsProjectMember($qa);
+        $classification = Classification::create(['name' => 'Funcional']);
+        $foreignRequirement = Requirement::create([
+            'project_id' => Project::factory()->create()->id,
+            'code' => 'RF001',
+            'type' => 'funcional',
+            'title' => 'De outro projeto',
+        ]);
+
+        $response = $this->post(route('test-cases.store'), [
+            'title' => 'Login com credenciais válidas',
+            'tested_method' => 'AuthController@login',
+            'classification_id' => $classification->id,
+            'steps' => [
+                ['description' => 'Acessar a tela de login', 'expected_result' => 'Tela exibida'],
+            ],
+            'requirement_ids' => [$foreignRequirement->id],
+        ]);
+
+        $response->assertSessionHasErrors('requirement_ids.0');
+        $this->assertDatabaseCount('test_case_requirements', 0);
+    }
+
+    public function test_only_requirements_of_the_test_case_project_can_be_linked_to_it(): void
+    {
+        $qa = $this->createUserWithRole('qa');
+        $project = $this->actingAsProjectMember($qa);
+        $testCase = TestCaseModel::create([
+            'title' => 'Login com credenciais válidas',
+            'created_by' => $qa->id,
+            'project_id' => $project->id,
+        ]);
+        $ownRequirement = Requirement::create(['project_id' => $project->id, 'code' => 'RF001', 'type' => 'funcional', 'title' => 'Deste projeto']);
+        $foreignRequirement = Requirement::create([
+            'project_id' => Project::factory()->create()->id,
+            'code' => 'RF002',
+            'type' => 'funcional',
+            'title' => 'De outro projeto',
+        ]);
+
+        $this->post(route('test-cases.requirements.link', $testCase), ['requirement_id' => $foreignRequirement->id])
+            ->assertSessionHasErrors('requirement_id');
+        $this->post(route('test-cases.requirements.link', $testCase), ['requirement_id' => $ownRequirement->id])
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame([$ownRequirement->id], $testCase->requirements()->pluck('requirements.id')->all());
     }
 
     public function test_a_test_case_can_be_created_without_requirements(): void
@@ -493,9 +560,9 @@ class TestCaseControllerTest extends TestCase
     public function test_non_qa_users_cannot_link_requirements_while_creating_a_test_case(): void
     {
         $developer = $this->createUserWithRole('developer');
-        $this->actingAsProjectMember($developer);
+        $project = $this->actingAsProjectMember($developer);
         $classification = Classification::create(['name' => 'Funcional']);
-        $requirement = Requirement::create(['code' => 'RF001', 'type' => 'funcional', 'title' => 'Cadastro']);
+        $requirement = Requirement::create(['project_id' => $project->id, 'code' => 'RF001', 'type' => 'funcional', 'title' => 'Cadastro']);
 
         $response = $this->post(route('test-cases.store'), [
             'title' => 'Login com credenciais válidas',

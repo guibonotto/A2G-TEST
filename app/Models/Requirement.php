@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 #[Fillable([
+    'project_id',
     'code',
     'type',
     'title',
@@ -40,6 +41,11 @@ class Requirement extends Model
             'updated_at' => 'datetime',
             'jira_synced_at' => 'datetime',
         ];
+    }
+
+    public function project(): BelongsTo
+    {
+        return $this->belongsTo(Project::class);
     }
 
     public function creator(): BelongsTo

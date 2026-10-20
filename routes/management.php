@@ -24,10 +24,12 @@ Route::middleware(['auth', 'verified', 'role:qa,admin'])->group(function () {
         Route::put('management/permissions/{role}', [RolePermissionController::class, 'update'])->name('role-permissions.update');
     });
 
-    Route::get('management/requirements', [RequirementController::class, 'index'])->name('requirements.index');
-    Route::post('management/requirements', [RequirementController::class, 'store'])->name('requirements.store');
-    Route::put('management/requirements/{requirement}', [RequirementController::class, 'update'])->name('requirements.update');
-    Route::delete('management/requirements/{requirement}', [RequirementController::class, 'destroy'])->name('requirements.destroy');
+    Route::middleware('project')->group(function () {
+        Route::get('management/requirements', [RequirementController::class, 'index'])->name('requirements.index');
+        Route::post('management/requirements', [RequirementController::class, 'store'])->name('requirements.store');
+        Route::put('management/requirements/{requirement}', [RequirementController::class, 'update'])->name('requirements.update');
+        Route::delete('management/requirements/{requirement}', [RequirementController::class, 'destroy'])->name('requirements.destroy');
+    });
 
     Route::get('management/templates', [TestTemplateController::class, 'index'])->name('test-templates.index');
     Route::post('management/templates', [TestTemplateController::class, 'store'])->name('test-templates.store');

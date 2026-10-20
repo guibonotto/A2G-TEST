@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[Fillable([
+    'project_id',
     'site_url',
     'cloud_id',
     'access_token',
@@ -40,6 +41,11 @@ class JiraIntegration extends Model
             'expires_at' => 'datetime',
             'connected_at' => 'datetime',
         ];
+    }
+
+    public function project(): BelongsTo
+    {
+        return $this->belongsTo(Project::class);
     }
 
     public function connector(): BelongsTo

@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\JiraExcludedIssue;
 use App\Models\JiraIntegration;
+use App\Models\Project;
 use App\Models\Requirement;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -15,9 +16,28 @@ class JiraIntegrationControllerTest extends TestCase
 {
     use RefreshDatabase;
 
+    private Project $project;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->project = Project::factory()->create();
+        $this->withSession(['current_project_id' => $this->project->id]);
+    }
+
+    private function createProjectMember(string $role): User
+    {
+        $user = $this->createUserWithRole($role);
+        $this->project->members()->attach($user);
+
+        return $user;
+    }
+
     private function createIntegrationFor(User $user): JiraIntegration
     {
         return JiraIntegration::create([
+            'project_id' => $this->project->id,
             'site_url' => 'https://example.atlassian.net',
             'cloud_id' => 'cloud-123',
             'access_token' => 'token',
@@ -37,7 +57,7 @@ class JiraIntegrationControllerTest extends TestCase
 
     public function test_non_qa_users_cannot_access_jira_management(): void
     {
-        $developer = $this->createUserWithRole('developer');
+        $developer = $this->createProjectMember('developer');
 
         $this->actingAs($developer)->get(route('jira.edit'))->assertForbidden();
         $this->actingAs($developer)->delete(route('jira.destroy'))->assertForbidden();
@@ -46,7 +66,7 @@ class JiraIntegrationControllerTest extends TestCase
 
     public function test_redirect_sends_the_user_to_atlassian_with_a_state(): void
     {
-        $qa = $this->createUserWithRole('qa');
+        $qa = $this->createProjectMember('qa');
 
         $response = $this->actingAs($qa)->get(route('jira.redirect'));
 
@@ -56,7 +76,7 @@ class JiraIntegrationControllerTest extends TestCase
 
     public function test_callback_rejects_a_mismatched_state(): void
     {
-        $qa = $this->createUserWithRole('qa');
+        $qa = $this->createProjectMember('qa');
 
         $response = $this->actingAs($qa)
             ->withSession(['jira_oauth_state' => 'expected-state'])
@@ -67,7 +87,7 @@ class JiraIntegrationControllerTest extends TestCase
 
     public function test_callback_stores_the_connection_on_success(): void
     {
-        $qa = $this->createUserWithRole('qa');
+        $qa = $this->createProjectMember('qa');
 
         Http::fake([
             'auth.atlassian.com/oauth/token' => Http::response([
@@ -86,16 +106,92 @@ class JiraIntegrationControllerTest extends TestCase
 
         $response->assertRedirect(route('jira.edit'));
         $this->assertDatabaseHas('jira_integrations', [
+            'project_id' => $this->project->id,
             'site_url' => 'https://example.atlassian.net',
             'cloud_id' => 'cloud-123',
             'connected_by' => $qa->id,
         ]);
     }
 
+    public function test_connecting_keeps_the_connection_of_other_projects(): void
+    {
+        $qa = $this->createProjectMember('qa');
+        $otherIntegration = JiraIntegration::factory()->create();
+
+        Http::fake([
+            'auth.atlassian.com/oauth/token' => Http::response([
+                'access_token' => 'access-token',
+                'refresh_token' => 'refresh-token',
+                'expires_in' => 3600,
+            ]),
+            'api.atlassian.com/oauth/token/accessible-resources' => Http::response([
+                ['id' => 'cloud-123', 'url' => 'https://example.atlassian.net', 'name' => 'Example'],
+            ]),
+        ]);
+
+        $this->actingAs($qa)
+            ->withSession(['jira_oauth_state' => 'expected-state'])
+            ->get(route('jira.callback', ['state' => 'expected-state', 'code' => 'abc']));
+
+        $this->assertDatabaseHas('jira_integrations', ['id' => $otherIntegration->id]);
+        $this->assertDatabaseCount('jira_integrations', 2);
+    }
+
+    public function test_the_page_ignores_the_jira_connection_of_other_projects(): void
+    {
+        $qa = $this->createProjectMember('qa');
+        JiraIntegration::factory()->create();
+
+        $this->actingAs($qa)->get(route('jira.edit'))
+            ->assertInertia(fn (Assert $page) => $page->where('integration', null));
+    }
+
+    public function test_disconnecting_only_removes_the_current_project_connection(): void
+    {
+        $qa = $this->createProjectMember('qa');
+        $this->createIntegrationFor($qa);
+        $otherIntegration = JiraIntegration::factory()->create();
+
+        $this->actingAs($qa)->delete(route('jira.destroy'))->assertRedirect(route('jira.edit'));
+
+        $this->assertDatabaseMissing('jira_integrations', ['project_id' => $this->project->id]);
+        $this->assertDatabaseHas('jira_integrations', ['id' => $otherIntegration->id]);
+    }
+
+    public function test_import_treats_requirements_of_other_projects_as_new(): void
+    {
+        $qa = $this->createProjectMember('qa');
+        $this->createIntegrationFor($qa);
+        $otherProject = Project::factory()->create();
+        Requirement::create(['project_id' => $otherProject->id, 'code' => 'PROJ-1', 'type' => 'funcional', 'title' => 'De outro projeto']);
+        JiraExcludedIssue::create(['project_id' => $otherProject->id, 'issue_key' => 'PROJ-2']);
+
+        Http::fake(['api.atlassian.com/*' => Http::response(['issues' => [
+            ['key' => 'PROJ-1', 'fields' => ['summary' => 'Um']],
+            ['key' => 'PROJ-2', 'fields' => ['summary' => 'Dois']],
+        ]])]);
+
+        $this->actingAs($qa)
+            ->getJson(route('jira.preview', ['projectKey' => 'PROJ', 'issue_types' => ['Story']]))
+            ->assertJsonPath('issues.0.state', 'new')
+            ->assertJsonPath('issues.1.state', 'new');
+
+        $this->actingAs($qa)->post(route('jira.import'), [
+            'project_key' => 'PROJ',
+            'issue_types' => ['Story'],
+            'issue_keys' => ['PROJ-1', 'PROJ-2'],
+        ]);
+
+        $this->assertDatabaseHas('requirements', ['project_id' => $this->project->id, 'code' => 'PROJ-1', 'title' => 'Um']);
+        $this->assertDatabaseHas('requirements', ['project_id' => $otherProject->id, 'code' => 'PROJ-1', 'title' => 'De outro projeto']);
+        $this->assertDatabaseHas('jira_excluded_issues', ['project_id' => $otherProject->id, 'issue_key' => 'PROJ-2']);
+    }
+
     public function test_qa_can_view_the_integration_page_when_connected(): void
     {
-        $qa = $this->createUserWithRole('qa');
+        $qa = $this->createProjectMember('qa');
         JiraIntegration::create([
+            'project_id' => $this->project->id,
             'site_url' => 'https://example.atlassian.net',
             'cloud_id' => 'cloud-123',
             'access_token' => 'token',
@@ -122,8 +218,9 @@ class JiraIntegrationControllerTest extends TestCase
 
     public function test_qa_can_disconnect_jira(): void
     {
-        $qa = $this->createUserWithRole('qa');
+        $qa = $this->createProjectMember('qa');
         JiraIntegration::create([
+            'project_id' => $this->project->id,
             'site_url' => 'https://example.atlassian.net',
             'cloud_id' => 'cloud-123',
             'access_token' => 'token',
@@ -141,8 +238,8 @@ class JiraIntegrationControllerTest extends TestCase
 
     public function test_qa_cannot_disconnect_an_integration_connected_by_someone_else(): void
     {
-        $connector = $this->createUserWithRole('qa');
-        $otherQa = $this->createUserWithRole('qa');
+        $connector = $this->createProjectMember('qa');
+        $otherQa = $this->createProjectMember('qa');
         $this->createIntegrationFor($connector);
 
         $this->actingAs($otherQa)->delete(route('jira.destroy'))->assertForbidden();
@@ -152,8 +249,8 @@ class JiraIntegrationControllerTest extends TestCase
 
     public function test_admin_can_disconnect_an_integration_connected_by_someone_else(): void
     {
-        $connector = $this->createUserWithRole('qa');
-        $admin = $this->createUserWithRole('admin');
+        $connector = $this->createProjectMember('qa');
+        $admin = $this->createProjectMember('admin');
         $this->createIntegrationFor($connector);
 
         $this->actingAs($admin)->delete(route('jira.destroy'))
@@ -164,8 +261,8 @@ class JiraIntegrationControllerTest extends TestCase
 
     public function test_integration_page_tells_whether_the_user_can_disconnect(): void
     {
-        $connector = $this->createUserWithRole('qa');
-        $otherQa = $this->createUserWithRole('qa');
+        $connector = $this->createProjectMember('qa');
+        $otherQa = $this->createProjectMember('qa');
         $this->createIntegrationFor($connector);
 
         Http::fake(['api.atlassian.com/*' => Http::response(['values' => []])]);
@@ -179,8 +276,9 @@ class JiraIntegrationControllerTest extends TestCase
 
     public function test_import_creates_requirements_from_jira_issues(): void
     {
-        $qa = $this->createUserWithRole('qa');
+        $qa = $this->createProjectMember('qa');
         JiraIntegration::create([
+            'project_id' => $this->project->id,
             'site_url' => 'https://example.atlassian.net',
             'cloud_id' => 'cloud-123',
             'access_token' => 'token',
@@ -229,9 +327,10 @@ class JiraIntegrationControllerTest extends TestCase
 
     public function test_import_updates_an_existing_requirement_without_changing_its_creator(): void
     {
-        $qa = $this->createUserWithRole('qa');
-        $originalCreator = $this->createUserWithRole('developer');
+        $qa = $this->createProjectMember('qa');
+        $originalCreator = $this->createProjectMember('developer');
         Requirement::create([
+            'project_id' => $this->project->id,
             'code' => 'PROJ-1',
             'type' => 'funcional',
             'title' => 'Título antigo',
@@ -239,6 +338,7 @@ class JiraIntegrationControllerTest extends TestCase
         ]);
 
         JiraIntegration::create([
+            'project_id' => $this->project->id,
             'site_url' => 'https://example.atlassian.net',
             'cloud_id' => 'cloud-123',
             'access_token' => 'token',
@@ -272,7 +372,7 @@ class JiraIntegrationControllerTest extends TestCase
 
     public function test_import_requires_at_least_one_issue_type(): void
     {
-        $qa = $this->createUserWithRole('qa');
+        $qa = $this->createProjectMember('qa');
         $this->createIntegrationFor($qa);
 
         $response = $this->actingAs($qa)->post(route('jira.import'), [
@@ -286,7 +386,7 @@ class JiraIntegrationControllerTest extends TestCase
 
     public function test_import_only_asks_jira_for_the_selected_issue_types(): void
     {
-        $qa = $this->createUserWithRole('qa');
+        $qa = $this->createProjectMember('qa');
         $this->createIntegrationFor($qa);
 
         Http::fake([
@@ -307,10 +407,10 @@ class JiraIntegrationControllerTest extends TestCase
 
     public function test_preview_classifies_issues_as_new_existing_or_deleted_here(): void
     {
-        $qa = $this->createUserWithRole('qa');
+        $qa = $this->createProjectMember('qa');
         $this->createIntegrationFor($qa);
-        Requirement::create(['code' => 'PROJ-1', 'type' => 'funcional', 'title' => 'Já importado']);
-        JiraExcludedIssue::create(['issue_key' => 'PROJ-3']);
+        Requirement::create(['project_id' => $this->project->id, 'code' => 'PROJ-1', 'type' => 'funcional', 'title' => 'Já importado']);
+        JiraExcludedIssue::create(['project_id' => $this->project->id, 'issue_key' => 'PROJ-3']);
 
         Http::fake(['api.atlassian.com/*' => Http::response(['issues' => [
             ['key' => 'PROJ-1', 'fields' => ['summary' => 'Um', 'issuetype' => ['name' => 'Story']]],
@@ -332,7 +432,7 @@ class JiraIntegrationControllerTest extends TestCase
 
     public function test_preview_requires_issue_types(): void
     {
-        $qa = $this->createUserWithRole('qa');
+        $qa = $this->createProjectMember('qa');
         $this->createIntegrationFor($qa);
 
         $this->actingAs($qa)
@@ -342,7 +442,7 @@ class JiraIntegrationControllerTest extends TestCase
 
     public function test_non_qa_users_cannot_preview_an_import(): void
     {
-        $developer = $this->createUserWithRole('developer');
+        $developer = $this->createProjectMember('developer');
 
         $this->actingAs($developer)
             ->getJson(route('jira.preview', ['projectKey' => 'PROJ', 'issue_types' => ['Story']]))
@@ -351,7 +451,7 @@ class JiraIntegrationControllerTest extends TestCase
 
     public function test_import_only_brings_the_selected_issues_and_records_the_sync_date(): void
     {
-        $qa = $this->createUserWithRole('qa');
+        $qa = $this->createProjectMember('qa');
         $this->createIntegrationFor($qa);
 
         Http::fake(['api.atlassian.com/*' => Http::response(['issues' => [
@@ -371,7 +471,7 @@ class JiraIntegrationControllerTest extends TestCase
 
     public function test_import_requires_at_least_one_selected_issue(): void
     {
-        $qa = $this->createUserWithRole('qa');
+        $qa = $this->createProjectMember('qa');
         $this->createIntegrationFor($qa);
 
         $this->actingAs($qa)->post(route('jira.import'), [
@@ -383,9 +483,9 @@ class JiraIntegrationControllerTest extends TestCase
 
     public function test_ticking_an_issue_deleted_here_brings_it_back(): void
     {
-        $qa = $this->createUserWithRole('qa');
+        $qa = $this->createProjectMember('qa');
         $this->createIntegrationFor($qa);
-        JiraExcludedIssue::create(['issue_key' => 'PROJ-3']);
+        JiraExcludedIssue::create(['project_id' => $this->project->id, 'issue_key' => 'PROJ-3']);
 
         Http::fake(['api.atlassian.com/*' => Http::response(['issues' => [
             ['key' => 'PROJ-3', 'fields' => ['summary' => 'Três']],
@@ -403,9 +503,9 @@ class JiraIntegrationControllerTest extends TestCase
 
     public function test_integration_page_shows_the_last_import_date(): void
     {
-        $qa = $this->createUserWithRole('qa');
+        $qa = $this->createProjectMember('qa');
         $this->createIntegrationFor($qa);
-        Requirement::create(['code' => 'PROJ-1', 'type' => 'funcional', 'title' => 'Um'])
+        Requirement::create(['project_id' => $this->project->id, 'code' => 'PROJ-1', 'type' => 'funcional', 'title' => 'Um'])
             ->forceFill(['jira_synced_at' => now()])->save();
 
         Http::fake(['api.atlassian.com/*' => Http::response(['values' => []])]);
@@ -416,7 +516,7 @@ class JiraIntegrationControllerTest extends TestCase
 
     public function test_qa_can_fetch_issue_types_for_a_project(): void
     {
-        $qa = $this->createUserWithRole('qa');
+        $qa = $this->createProjectMember('qa');
         $this->createIntegrationFor($qa);
 
         Http::fake([
@@ -444,7 +544,7 @@ class JiraIntegrationControllerTest extends TestCase
 
     public function test_non_qa_users_cannot_fetch_issue_types(): void
     {
-        $developer = $this->createUserWithRole('developer');
+        $developer = $this->createProjectMember('developer');
 
         $this->actingAs($developer)
             ->get(route('jira.issue-types', ['projectKey' => 'PROJ']))
@@ -453,7 +553,7 @@ class JiraIntegrationControllerTest extends TestCase
 
     public function test_callback_returns_to_settings_when_the_user_cancels_on_atlassian(): void
     {
-        $qa = $this->createUserWithRole('qa');
+        $qa = $this->createProjectMember('qa');
         Http::fake();
 
         $response = $this->actingAs($qa)
@@ -471,7 +571,7 @@ class JiraIntegrationControllerTest extends TestCase
 
     public function test_callback_returns_to_settings_when_no_jira_site_is_accessible(): void
     {
-        $qa = $this->createUserWithRole('qa');
+        $qa = $this->createProjectMember('qa');
 
         Http::fake([
             'auth.atlassian.com/oauth/token' => Http::response([

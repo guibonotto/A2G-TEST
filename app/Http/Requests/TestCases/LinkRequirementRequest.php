@@ -4,6 +4,7 @@ namespace App\Http\Requests\TestCases;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class LinkRequirementRequest extends FormRequest
 {
@@ -18,7 +19,11 @@ class LinkRequirementRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'requirement_id' => ['required', 'integer', 'exists:requirements,id'],
+            'requirement_id' => [
+                'required',
+                'integer',
+                Rule::exists('requirements', 'id')->where('project_id', $this->route('testCase')->project_id),
+            ],
         ];
     }
 }
