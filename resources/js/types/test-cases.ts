@@ -6,6 +6,7 @@ export type Classification = {
 export type TestTemplate = {
     id: number;
     title: string;
+    tested_method: string | null;
 };
 
 export type TestTemplateStep = {
@@ -53,9 +54,10 @@ export type AssignableUser = {
 export type TestCaseListItem = {
     id: number;
     title: string;
+    tested_method: string | null;
     classification: Classification | null;
     status: TestCaseStatus | null;
-    latestExecution: Execution | null;
+    latest_execution: Execution | null;
     creator: { id: number; name: string } | null;
     assignee: AssignableUser | null;
     steps_count: number;
@@ -72,11 +74,12 @@ export type TestStep = {
 export type TestCaseDetail = {
     id: number;
     title: string;
+    tested_method: string | null;
     description: string | null;
     classification: Classification | null;
     template: TestTemplate | null;
     status: TestCaseStatus | null;
-    latestExecution: Execution | null;
+    latest_execution: Execution | null;
     creator: { id: number; name: string } | null;
     assignee: AssignableUser | null;
     steps: TestStep[];

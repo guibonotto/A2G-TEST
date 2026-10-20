@@ -16,12 +16,20 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { index, show, update } from '@/routes/test-cases';
-import type { Classification, TestCaseDetail, TestTemplate } from '@/types';
+import type {
+    AssignableUser,
+    Classification,
+    TestCaseDetail,
+    TestCaseStatus,
+    TestTemplate,
+} from '@/types';
 
 type Props = {
     testCase: TestCaseDetail;
     classifications: Classification[];
     templates: TestTemplate[];
+    assignableUsers: AssignableUser[];
+    statuses: TestCaseStatus[];
 };
 
 type StepForm = {
@@ -29,20 +37,36 @@ type StepForm = {
     expected_result: string;
 };
 
+type EditFormData = {
+    title: string;
+    tested_method: string;
+    description: string;
+    classification_id: string;
+    template_id: string;
+    status_id: string;
+    assigned_to: string;
+    steps: StepForm[];
+};
+
 const emptyStep: StepForm = { description: '', expected_result: '' };
 
 export default function EditTestCase({
     testCase,
     classifications,
+    assignableUsers,
+    statuses,
     // templates, // desativado: templates fora de uso
 }: Props) {
-    const { data, setData, put, processing, errors } = useForm({
+    const { data, setData, put, processing, errors } = useForm<EditFormData>({
         title: testCase.title,
+        tested_method: testCase.tested_method ?? '',
         description: testCase.description ?? '',
         classification_id: testCase.classification
             ? String(testCase.classification.id)
             : '',
         template_id: testCase.template ? String(testCase.template.id) : '',
+        status_id: testCase.status ? String(testCase.status.id) : '',
+        assigned_to: testCase.assignee ? String(testCase.assignee.id) : '',
         steps: (testCase.steps.length > 0
             ? testCase.steps.map((step) => ({
                   description: step.description,
@@ -105,6 +129,23 @@ export default function EditTestCase({
                     <Card>
                         <CardContent className="flex flex-col gap-4">
                             <div className="grid gap-2">
+                                <Label htmlFor="tested_method">
+                                    Method/function tested
+                                </Label>
+
+                                <Input
+                                    id="tested_method"
+                                    value={data.tested_method}
+                                    onChange={(e) =>
+                                        setData('tested_method', e.target.value)
+                                    }
+                                    placeholder="e.g. UserService.validatePassword()"
+                                />
+
+                                <InputError message={errors.tested_method} />
+                            </div>
+
+                            <div className="grid gap-2">
                                 <Label htmlFor="title">Title</Label>
 
                                 <Input
@@ -133,88 +174,75 @@ export default function EditTestCase({
                                 <InputError message={errors.description} />
                             </div>
 
-                            <div className="grid gap-4 sm:grid-cols-3">
-                                <div className="grid gap-2">
-                                    <Label htmlFor="classification_id">
-                                        Classification
-                                    </Label>
+                            <div className="grid gap-2">
+                                <Label htmlFor="status_id">Status</Label>
 
-                                    <Select
-                                        value={data.classification_id}
-                                        onValueChange={(value) =>
-                                            setData('classification_id', value)
-                                        }
+                                <Select
+                                    value={data.status_id}
+                                    onValueChange={(value) =>
+                                        setData('status_id', value)
+                                    }
+                                >
+                                    <SelectTrigger
+                                        id="status_id"
+                                        className="w-full"
                                     >
-                                        <SelectTrigger
-                                            id="classification_id"
-                                            className="w-full"
-                                        >
-                                            <SelectValue placeholder="Select a classification" />
-                                        </SelectTrigger>
+                                        <SelectValue placeholder="Select a status" />
+                                    </SelectTrigger>
 
-                                        <SelectContent>
-                                            {classifications.map(
-                                                (classification) => (
-                                                    <SelectItem
-                                                        key={classification.id}
-                                                        value={String(
-                                                            classification.id,
-                                                        )}
-                                                    >
-                                                        {classification.name}
-                                                    </SelectItem>
-                                                ),
-                                            )}
-                                        </SelectContent>
-                                    </Select>
+                                    <SelectContent>
+                                        {statuses.map((status) => (
+                                            <SelectItem
+                                                key={status.id}
+                                                value={String(status.id)}
+                                            >
+                                                {status.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
 
-                                    <InputError
-                                        message={errors.classification_id}
-                                    />
-                                </div>
+                                <InputError message={errors.status_id} />
+                            </div>
 
-                                {/* Template de caso de teste desativado (funcionalidade fora de uso)
+                            {assignableUsers.length > 0 && (
                                 <div className="grid gap-2">
-                                    <Label htmlFor="template_id">
-                                        Template (optional)
+                                    <Label htmlFor="assigned_to">
+                                        Assigned to (optional)
                                     </Label>
-
                                     <Select
-                                        value={data.template_id}
+                                        value={data.assigned_to || 'unassigned'}
                                         onValueChange={(value) =>
                                             setData(
-                                                'template_id',
-                                                value,
+                                                'assigned_to',
+                                                value === 'unassigned' ? '' : value,
                                             )
                                         }
                                     >
                                         <SelectTrigger
-                                            id="template_id"
+                                            id="assigned_to"
                                             className="w-full"
                                         >
-                                            <SelectValue placeholder="No template" />
+                                            <SelectValue placeholder="Unassigned" />
                                         </SelectTrigger>
-
                                         <SelectContent>
-                                            {templates.map((template) => (
+                                            <SelectItem value="unassigned">
+                                                Unassigned
+                                            </SelectItem>
+                                            {assignableUsers.map((user) => (
                                                 <SelectItem
-                                                    key={template.id}
-                                                    value={String(
-                                                        template.id,
-                                                    )}
+                                                    key={user.id}
+                                                    value={String(user.id)}
                                                 >
-                                                    {template.title}
+                                                    {user.name}
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
-
-                                    <InputError
-                                        message={errors.template_id}
-                                    />
+                                    <InputError message={errors.assigned_to} />
                                 </div>
-                                */}
-                            </div>
+                            )}
+
                         </CardContent>
                     </Card>
 

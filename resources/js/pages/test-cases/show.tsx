@@ -201,7 +201,11 @@ export default function ShowTestCase({
 
                         <Heading
                             title={testCase.title}
-                            description={testCase.description ?? undefined}
+                            description={
+                                testCase.tested_method
+                                    ? `${testCase.tested_method}${testCase.description ? ` - ${testCase.description}` : ''}`
+                                    : (testCase.description ?? undefined)
+                            }
                         />
                     </div>
 
@@ -366,9 +370,9 @@ export default function ShowTestCase({
 
                         <span className="flex items-center gap-2 text-sm text-muted-foreground">
                             Last result:
-                            {testCase.latestExecution ? (
-                                <Badge variant={testCase.latestExecution.status === 'APROVADO' ? 'success' : testCase.latestExecution.status === 'REPROVADO' ? 'destructive' : 'warning'}>
-                                    {executionStatusLabel(testCase.latestExecution.status)}
+                            {testCase.latest_execution ? (
+                                <Badge variant={testCase.latest_execution.status === 'APROVADO' ? 'success' : testCase.latest_execution.status === 'REPROVADO' ? 'destructive' : 'warning'}>
+                                    {executionStatusLabel(testCase.latest_execution.status)}
                                 </Badge>
                             ) : (
                                 <span className="text-foreground">

@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[Fillable([
     'title',
+    'tested_method',
     'description',
     'classification_id',
     'created_by',

@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Classification;
 use App\Models\Project;
 use App\Models\TestCase;
-use App\Models\TestCaseStatus;
 use Illuminate\Support\Carbon;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -40,7 +39,11 @@ class DashboardController extends Controller
             'total' => TestCase::query()->where('project_id', $project->id)->count(),
             'unassigned' => TestCase::query()->where('project_id', $project->id)->whereNull('assigned_to')->count(),
             'createdLast7Days' => TestCase::query()->where('project_id', $project->id)->where('created_at', '>=', Carbon::now()->subDays(7))->count(),
-            'statusesInUse' => TestCaseStatus::query()->whereHas('testCases', fn ($query) => $query->where('project_id', $project->id))->count(),
+            'statusesInUse' => TestCase::query()
+                ->where('project_id', $project->id)
+                ->whereNotNull('status_id')
+                ->distinct('status_id')
+                ->count('status_id'),
         ];
     }
 
@@ -51,29 +54,58 @@ class DashboardController extends Controller
      */
     private function buildStatusBreakdown(Project $project): array
     {
-        $breakdown = TestCaseStatus::query()
-            ->withCount(['testCases' => fn ($query) => $query->where('project_id', $project->id)])
-            ->orderByDesc('test_cases_count')
-            ->get(['id', 'name', 'description', 'color', 'category'])
-            ->map(fn ($status) => [
-                'id' => $status->id,
-                'name' => $status->name,
-                'description' => $status->description,
-                'color' => $status->color,
-                'category' => $status->category,
-                'total' => $status->test_cases_count,
-            ])
-            ->filter(fn (array $row): bool => $row['total'] > 0)
-            ->values();
-        $withoutStatus = TestCase::query()->where('project_id', $project->id)->whereNull('status_id')->count();
-        if ($withoutStatus > 0) {
+        $executionStatuses = [
+            'PENDENTE' => [
+                'name' => 'Pending',
+                'color' => 'warning',
+                'category' => 'in_progress',
+            ],
+            'APROVADO' => [
+                'name' => 'Passed',
+                'color' => 'success',
+                'category' => 'approved',
+            ],
+            'REPROVADO' => [
+                'name' => 'Failed',
+                'color' => 'destructive',
+                'category' => 'failed',
+            ],
+            'BLOQUEADO' => [
+                'name' => 'Blocked',
+                'color' => 'info',
+                'category' => 'in_progress',
+            ],
+        ];
+
+        $counts = TestCase::query()
+            ->where('project_id', $project->id)
+            ->with('latestExecution')
+            ->get()
+            ->groupBy(fn (TestCase $testCase): string => $testCase->latestExecution?->status ?? 'NOT_EXECUTED')
+            ->map->count();
+
+        $breakdown = collect();
+        foreach (['PENDENTE', 'APROVADO', 'REPROVADO', 'BLOQUEADO'] as $status) {
+            if (($counts[$status] ?? 0) > 0) {
+                $breakdown->push([
+                    'id' => $status,
+                    'name' => $executionStatuses[$status]['name'],
+                    'description' => null,
+                    'color' => $executionStatuses[$status]['color'],
+                    'category' => $executionStatuses[$status]['category'],
+                    'total' => $counts[$status],
+                ]);
+            }
+        }
+
+        if (($counts['NOT_EXECUTED'] ?? 0) > 0) {
             $breakdown->push([
-                'id' => 0,
-                'name' => 'Sem status',
+                'id' => 'NOT_EXECUTED',
+                'name' => 'Not executed',
                 'description' => null,
                 'color' => 'secondary',
                 'category' => 'in_progress',
-                'total' => $withoutStatus,
+                'total' => $counts['NOT_EXECUTED'],
             ]);
         }
 

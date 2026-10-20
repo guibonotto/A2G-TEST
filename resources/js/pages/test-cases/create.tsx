@@ -1,4 +1,4 @@
-import { Head, useForm } from '@inertiajs/react';
+import { Head, Link, setLayoutProps, useForm, usePage } from '@inertiajs/react';
 // import { Plus, Trash2 } from 'lucide-react'; // desativado: steps múltiplos fora de uso (testes unitários/integração usam só entrada e saída esperada)
 import type { FormEvent } from 'react';
 import { useState } from 'react';
@@ -28,15 +28,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { testCaseStatusLabel } from '@/lib/test-case-status';
 import { index, store } from '@/routes/test-cases';
 import type {
-    Classification,
+    AssignableUser,
     RequirementOption,
     TestCaseStatus,
-    TestTemplate,
 } from '@/types';
 
 type Props = {
-    classifications: Classification[];
-    templates: TestTemplate[];
+    assignableUsers: AssignableUser[];
     statuses: TestCaseStatus[];
     defaultStatusId: number;
     availableRequirements: RequirementOption[];
@@ -50,18 +48,20 @@ type StepForm = {
 const emptyStep: StepForm = { description: '', expected_result: '' };
 
 export default function CreateTestCase({
-    classifications,
-    // templates, // desativado: templates fora de uso
+    assignableUsers,
     statuses,
     defaultStatusId,
     availableRequirements,
 }: Props) {
+    const { currentProject } = usePage().props;
+
     const { data, setData, post, processing, errors } = useForm({
         title: '',
+        tested_method: '',
         description: '',
-        classification_id: '',
-        template_id: '',
         status_id: String(defaultStatusId),
+        template_id: '',
+        assigned_to: '',
         steps: [{ ...emptyStep }] as StepForm[],
         requirement_ids: [] as number[],
     });
@@ -97,6 +97,14 @@ export default function CreateTestCase({
     }
 
     const stepErrors = errors as Record<string, string | undefined>;
+
+    setLayoutProps({
+        breadcrumbs: [
+            { title: currentProject?.name ?? 'Project', href: '#' },
+            { title: 'Test cases', href: index() },
+            { title: 'New', href: '#' },
+        ],
+    });
 
     function updateStep(
         stepIndex: number,
@@ -134,131 +142,125 @@ export default function CreateTestCase({
             <div className="flex flex-col gap-6 p-4">
                 <Heading
                     title="Create test case"
-                    description="Define the general information and execution steps for the test case."
+                    description="Define the tested method, input, and expected output."
                 />
 
                 <form onSubmit={submit} className="flex flex-col gap-6">
                     <Card>
                         <CardContent className="flex flex-col gap-4">
                             <div className="grid gap-2">
-                                <Label htmlFor="title">Title</Label>
+                                <Label htmlFor="tested_method">
+                                    Method/function tested (required)
+                                </Label>
+                                <Input
+                                    id="tested_method"
+                                    value={data.tested_method}
+                                    onChange={(e) =>
+                                        setData('tested_method', e.target.value)
+                                    }
+                                    placeholder="e.g. UserService.validatePassword()"
+                                    required
+                                />
+                                <InputError message={errors.tested_method} />
+                            </div>
+
+                            <div className="grid gap-2">
+                                <Label htmlFor="title">Title (required)</Label>
                                 <Input
                                     id="title"
                                     value={data.title}
                                     onChange={(e) =>
                                         setData('title', e.target.value)
                                     }
+                                    placeholder="e.g. Validates a user password"
+                                    required
                                     autoFocus
                                 />
                                 <InputError message={errors.title} />
                             </div>
 
                             <div className="grid gap-2">
-                                <Label htmlFor="description">Description</Label>
+                                <Label htmlFor="description">
+                                    Description (optional)
+                                </Label>
                                 <Textarea
                                     id="description"
                                     value={data.description}
                                     onChange={(e) =>
                                         setData('description', e.target.value)
                                     }
+                                    placeholder="Optional context about what this test covers"
                                 />
                                 <InputError message={errors.description} />
                             </div>
 
-                            <div className="grid gap-4 sm:grid-cols-3">
-                                <div className="grid gap-2">
-                                    <Label htmlFor="classification_id">
-                                        Classification
-                                    </Label>
-                                    <Select
-                                        value={data.classification_id}
-                                        onValueChange={(value) =>
-                                            setData('classification_id', value)
-                                        }
+                            <div className="grid gap-2">
+                                <Label htmlFor="status_id">Status</Label>
+                                <Select
+                                    value={data.status_id}
+                                    onValueChange={(value) =>
+                                        setData('status_id', value)
+                                    }
+                                >
+                                    <SelectTrigger
+                                        id="status_id"
+                                        className="w-full"
                                     >
-                                        <SelectTrigger
-                                            id="classification_id"
-                                            className="w-full"
-                                        >
-                                            <SelectValue placeholder="Select a classification" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {classifications.map(
-                                                (classification) => (
-                                                    <SelectItem
-                                                        key={classification.id}
-                                                        value={String(
-                                                            classification.id,
-                                                        )}
-                                                    >
-                                                        {classification.name}
-                                                    </SelectItem>
-                                                ),
-                                            )}
-                                        </SelectContent>
-                                    </Select>
-                                    <InputError
-                                        message={errors.classification_id}
-                                    />
-                                </div>
-
-                                {/* Template de caso de teste desativado (funcionalidade fora de uso)
-                                <div className="grid gap-2">
-                                    <Label htmlFor="template_id">
-                                        Template (optional)
-                                    </Label>
-                                    <Select
-                                        value={data.template_id}
-                                        onValueChange={(value) =>
-                                            setData('template_id', value)
-                                        }
-                                    >
-                                        <SelectTrigger id="template_id" className="w-full">
-                                            <SelectValue placeholder="No template" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {templates.map((template) => (
-                                                <SelectItem
-                                                    key={template.id}
-                                                    value={String(template.id)}
-                                                >
-                                                    {template.title}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                    <InputError message={errors.template_id} />
-                                </div>
-                                */}
-
-                                <div className="grid gap-2">
-                                    <Label htmlFor="status_id">Status</Label>
-                                    <Select
-                                        value={data.status_id}
-                                        onValueChange={(value) =>
-                                            setData('status_id', value)
-                                        }
-                                    >
-                                        <SelectTrigger
-                                            id="status_id"
-                                            className="w-full"
-                                        >
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {statuses.map((status) => (
-                                                <SelectItem
-                                                    key={status.id}
-                                                    value={String(status.id)}
-                                                >
-                                                    {testCaseStatusLabel(status.name)}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                    <InputError message={errors.status_id} />
-                                </div>
+                                        <SelectValue placeholder="Draft" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {statuses.map((status) => (
+                                            <SelectItem
+                                                key={status.id}
+                                                value={String(status.id)}
+                                            >
+                                                {testCaseStatusLabel(status.name)}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <InputError message={errors.status_id} />
                             </div>
+
+                            {assignableUsers.length > 0 && (
+                                <div className="grid gap-2">
+                                    <Label htmlFor="assigned_to">
+                                        Assigned to (optional)
+                                    </Label>
+                                    <Select
+                                        value={data.assigned_to || 'unassigned'}
+                                        onValueChange={(value) =>
+                                            setData(
+                                                'assigned_to',
+                                                value === 'unassigned'
+                                                    ? ''
+                                                    : value,
+                                            )
+                                        }
+                                    >
+                                        <SelectTrigger
+                                            id="assigned_to"
+                                            className="w-full"
+                                        >
+                                            <SelectValue placeholder="Unassigned" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="unassigned">
+                                                Unassigned
+                                            </SelectItem>
+                                            {assignableUsers.map((user) => (
+                                                <SelectItem
+                                                    key={user.id}
+                                                    value={String(user.id)}
+                                                >
+                                                    {user.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <InputError message={errors.assigned_to} />
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
 
@@ -273,7 +275,9 @@ export default function CreateTestCase({
                             <InputError message={errors.steps} />
 
                             <div className="grid gap-2">
-                                <Label htmlFor="step-input">Input</Label>
+                                <Label htmlFor="step-input">
+                                    Input (required)
+                                </Label>
 
                                 <Textarea
                                     id="step-input"
@@ -285,6 +289,8 @@ export default function CreateTestCase({
                                             e.target.value,
                                         )
                                     }
+                                    placeholder="e.g. A valid email and password"
+                                    required
                                 />
 
                                 <InputError
@@ -294,7 +300,7 @@ export default function CreateTestCase({
 
                             <div className="grid gap-2">
                                 <Label htmlFor="step-expected">
-                                    Expected output
+                                    Expected output (required)
                                 </Label>
 
                                 <Textarea
@@ -307,6 +313,8 @@ export default function CreateTestCase({
                                             e.target.value,
                                         )
                                     }
+                                    placeholder="e.g. Returns true and allows access"
+                                    required
                                 />
 
                                 <InputError
@@ -416,7 +424,7 @@ export default function CreateTestCase({
                     </Card>
 
                     {availableRequirements.length > 0 && (
-                        <Card>
+                        <Card className="order-first">
                             <CardHeader className="flex flex-row items-center justify-between">
                                 <CardTitle>
                                     Linked requirements (
@@ -548,20 +556,19 @@ export default function CreateTestCase({
                         </Card>
                     )}
 
-                    <div className="flex items-center gap-4">
-                        <Button type="submit" disabled={processing}>
-                            Create test case
-                        </Button>
+                    <div className="fixed inset-x-0 bottom-0 z-10 border-t bg-background/95 backdrop-blur">
+                        <div className="mx-auto flex w-full max-w-3xl items-center justify-end gap-3 px-4 py-3">
+                            <Button type="button" variant="secondary" asChild>
+                                <Link href={index()}>Cancel</Link>
+                            </Button>
+
+                            <Button type="submit" disabled={processing}>
+                                Save test case
+                            </Button>
+                        </div>
                     </div>
                 </form>
             </div>
         </>
     );
 }
-
-CreateTestCase.layout = {
-    breadcrumbs: [
-        { title: 'Test cases', href: index() },
-        { title: 'Create', href: '#' },
-    ],
-};

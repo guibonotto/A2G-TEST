@@ -525,9 +525,9 @@ export default function TestCaseIndex({
                                             )}
                                         </td>
                                         <td className="px-4 py-3">
-                                            {testCase.latestExecution ? (
-                                                <Badge variant={testCase.latestExecution.status === 'APROVADO' ? 'success' : testCase.latestExecution.status === 'REPROVADO' ? 'destructive' : 'warning'}>
-                                                    {executionStatusLabel(testCase.latestExecution.status)}
+                                            {testCase.latest_execution ? (
+                                                <Badge variant={testCase.latest_execution.status === 'APROVADO' ? 'success' : testCase.latest_execution.status === 'REPROVADO' ? 'destructive' : 'warning'}>
+                                                    {executionStatusLabel(testCase.latest_execution.status)}
                                                 </Badge>
                                             ) : (
                                                 <span className="text-muted-foreground">Not executed</span>

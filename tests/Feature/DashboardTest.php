@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Classification;
+use App\Models\Execution;
 use App\Models\Project;
 use App\Models\TestCase as TestCaseModel;
 use App\Models\TestCaseStatus;
@@ -62,12 +63,27 @@ class DashboardTest extends TestCase
             'assigned_to' => $user->id,
             'project_id' => $project->id,
         ]);
+
         TestCaseModel::create([
             'title' => 'Cadastro válido',
             'classification_id' => $classification->id,
             'status_id' => $pendingStatus->id,
             'created_by' => $user->id,
             'project_id' => $project->id,
+        ]);
+
+        $cases = TestCaseModel::where('project_id', $project->id)->orderBy('id')->get();
+        Execution::create([
+            'test_case_id' => $cases[0]->id,
+            'executed_by' => $user->id,
+            'status' => 'APROVADO',
+            'execution_date' => now()->subMinute(),
+        ]);
+        Execution::create([
+            'test_case_id' => $cases[1]->id,
+            'executed_by' => $user->id,
+            'status' => 'REPROVADO',
+            'execution_date' => now(),
         ]);
         TestCaseModel::create([
             'title' => 'Logout válido',
@@ -84,11 +100,13 @@ class DashboardTest extends TestCase
                 ->where('stats.total', 3)
                 ->where('stats.unassigned', 2)
                 ->where('stats.statusesInUse', 2)
-                ->has('statusBreakdown', 2)
-                ->where('statusBreakdown.0.name', 'Pendente')
-                ->where('statusBreakdown.0.total', 2)
-                ->where('statusBreakdown.1.name', 'Aprovado')
+                ->has('statusBreakdown', 3)
+                ->where('statusBreakdown.0.name', 'Passed')
+                ->where('statusBreakdown.0.total', 1)
+                ->where('statusBreakdown.1.name', 'Failed')
                 ->where('statusBreakdown.1.total', 1)
+                ->where('statusBreakdown.2.name', 'Not executed')
+                ->where('statusBreakdown.2.total', 1)
                 ->where('classificationBreakdown.0.total', 3)
                 ->has('workload', 2)
                 ->where('workload.0.name', 'Sem responsável')

@@ -79,13 +79,12 @@ class TestCaseController extends Controller
             })
             ->when($assignedToMe, fn ($query) => $query->where('assigned_to', $request->user()->id))
             ->latest()
-            ->get(['id', 'title', 'classification_id', 'status_id', 'assigned_to', 'created_by', 'created_at']);
+            ->get(['id', 'title', 'tested_method', 'classification_id', 'status_id', 'assigned_to', 'created_by', 'created_at']);
 
         return Inertia::render('test-cases/index', [
             'testCases' => $testCases,
             'classifications' => Classification::query()->orderBy('name')->get(['id', 'name']),
             'statuses' => TestCaseStatus::query()
-                ->whereIn('name', ['Draft', 'Obsolete', 'Ready'])
                 ->orderByRaw("CASE name WHEN 'Draft' THEN 1 WHEN 'Obsolete' THEN 2 WHEN 'Ready' THEN 3 ELSE 4 END")
                 ->get(['id', 'name', 'description', 'color', 'category']),
             'executionResults' => ['PENDENTE', 'APROVADO', 'REPROVADO', 'BLOQUEADO', 'NOT_EXECUTED'],
@@ -107,13 +106,17 @@ class TestCaseController extends Controller
         $defaultStatus = TestCaseStatus::default();
 
         return Inertia::render('test-cases/create', [
-            'classifications' => Classification::query()->orderBy('name')->get(['id', 'name']),
-            'templates' => TestTemplate::query()->orderBy('title')->get(['id', 'title']),
-            'statuses' => TestCaseStatus::query()
-                ->whereIn('name', ['Draft', 'Obsolete', 'Ready'])
-                ->orderByRaw("CASE name WHEN 'Draft' THEN 1 WHEN 'Obsolete' THEN 2 WHEN 'Ready' THEN 3 ELSE 4 END")
-                ->get(['id', 'name', 'description', 'color', 'category']),
+            'assignableUsers' => $request->user()->canManageAccess()
+                ? User::query()
+                    ->whereHas('role', fn ($query) => $query->whereIn('slug', ['qa', 'developer']))
+                    ->orderBy('name')
+                    ->get(['id', 'name'])
+                : [],
             'defaultStatusId' => $defaultStatus->id,
+            'statuses' => TestCaseStatus::query()
+                ->orderByRaw("CASE name WHEN 'Draft' THEN 1 WHEN 'Obsolete' THEN 2 WHEN 'Ready' THEN 3 ELSE 4 END")
+                ->orderBy('name')
+                ->get(['id', 'name', 'description', 'color', 'category']),
             'availableRequirements' => $request->user()->canManageAccess()
                 ? Requirement::query()->orderBy('code')->get(['id', 'code', 'title'])
                 : [],
@@ -130,7 +133,7 @@ class TestCaseController extends Controller
 
         $testCase = DB::transaction(function () use ($request, $project) {
             $testCase = TestCase::create([
-                ...$request->safe()->only(['title', 'description', 'classification_id', 'template_id', 'status_id']),
+                ...$request->safe()->only(['title', 'tested_method', 'description', 'template_id', 'assigned_to']),
                 'status_id' => $request->validated('status_id') ?: TestCaseStatus::default()->id,
                 'created_by' => $request->user()->id,
                 'project_id' => $project->id,
@@ -239,6 +242,12 @@ class TestCaseController extends Controller
             'testCase' => $testCase,
             'classifications' => Classification::query()->orderBy('name')->get(['id', 'name']),
             'templates' => TestTemplate::query()->orderBy('title')->get(['id', 'title']),
+            'assignableUsers' => $request->user()->canManageAccess()
+                ? User::query()
+                    ->whereHas('role', fn ($query) => $query->whereIn('slug', ['qa', 'developer']))
+                    ->orderBy('name')
+                    ->get(['id', 'name'])
+                : [],
             'statuses' => TestCaseStatus::query()
                 ->whereIn('name', ['Draft', 'Obsolete', 'Ready'])
                 ->orderByRaw("CASE name WHEN 'Draft' THEN 1 WHEN 'Obsolete' THEN 2 WHEN 'Ready' THEN 3 ELSE 4 END")
@@ -253,7 +262,7 @@ class TestCaseController extends Controller
     {
         DB::transaction(function () use ($request, $testCase) {
             $testCase->update(
-                $request->safe()->only(['title', 'description', 'classification_id', 'template_id', 'status_id'])
+                $request->safe()->only(['title', 'tested_method', 'description', 'classification_id', 'template_id', 'status_id', 'assigned_to'])
             );
 
             $testCase->steps()->delete();
