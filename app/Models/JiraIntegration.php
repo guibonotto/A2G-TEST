@@ -51,4 +51,12 @@ class JiraIntegration extends Model
     {
         return $this->expires_at !== null && $this->expires_at->isPast();
     }
+
+    /**
+     * Determine if the Jira integration can be disconnected by the given user (ADMIN OR THE USER THAT CONNECTED IT CAN DISCONNECT).
+     */
+    public function canBeDisconnectedBy(User $user): bool
+    {
+        return $user->hasRole('admin') || $this->connected_by === $user->id;
+    }
 }

@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use App\Models\JiraIntegration;
 use App\Models\Requirement;
-use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
@@ -137,6 +136,44 @@ class JiraIntegrationControllerTest extends TestCase
 
         $response->assertRedirect(route('jira.edit'));
         $this->assertDatabaseCount('jira_integrations', 0);
+    }
+
+    public function test_qa_cannot_disconnect_an_integration_connected_by_someone_else(): void
+    {
+        $connector = $this->createUserWithRole('qa');
+        $otherQa = $this->createUserWithRole('qa');
+        $this->createIntegrationFor($connector);
+
+        $this->actingAs($otherQa)->delete(route('jira.destroy'))->assertForbidden();
+
+        $this->assertDatabaseCount('jira_integrations', 1);
+    }
+
+    public function test_admin_can_disconnect_an_integration_connected_by_someone_else(): void
+    {
+        $connector = $this->createUserWithRole('qa');
+        $admin = $this->createUserWithRole('admin');
+        $this->createIntegrationFor($connector);
+
+        $this->actingAs($admin)->delete(route('jira.destroy'))
+            ->assertRedirect(route('jira.edit'));
+
+        $this->assertDatabaseCount('jira_integrations', 0);
+    }
+
+    public function test_integration_page_tells_whether_the_user_can_disconnect(): void
+    {
+        $connector = $this->createUserWithRole('qa');
+        $otherQa = $this->createUserWithRole('qa');
+        $this->createIntegrationFor($connector);
+
+        Http::fake(['api.atlassian.com/*' => Http::response(['values' => []])]);
+
+        $this->actingAs($connector)->get(route('jira.edit'))
+            ->assertInertia(fn (Assert $page) => $page->where('integration.can_disconnect', true));
+
+        $this->actingAs($otherQa)->get(route('jira.edit'))
+            ->assertInertia(fn (Assert $page) => $page->where('integration.can_disconnect', false));
     }
 
     public function test_import_creates_requirements_from_jira_issues(): void
@@ -301,7 +338,7 @@ class JiraIntegrationControllerTest extends TestCase
             ->assertForbidden();
     }
 
-     public function test_callback_returns_to_settings_when_the_user_cancels_on_atlassian(): void
+    public function test_callback_returns_to_settings_when_the_user_cancels_on_atlassian(): void
     {
         $qa = $this->createUserWithRole('qa');
         Http::fake();

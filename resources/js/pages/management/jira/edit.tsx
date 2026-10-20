@@ -219,51 +219,66 @@ export default function JiraIntegrationEdit({
                                     ` on ${new Date(integration.connected_at).toLocaleDateString('en-US')}`}
                             </p>
 
-                            <Dialog>
-                                <DialogTrigger asChild>
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        className="mt-2 w-fit"
-                                    >
-                                        Disconnect
-                                    </Button>
-                                </DialogTrigger>
-                                <DialogContent>
-                                    <DialogTitle>Disconnect Jira?</DialogTitle>
-                                    <DialogDescription>
-                                        This disconnects {integration.site_url}{' '}
-                                        for the whole team, not just for you.
-                                        Requirements already imported are kept,
-                                        but they stop being updated from Jira
-                                        until someone connects again.
-                                    </DialogDescription>
+                             {integration.can_disconnect ? (
+                                <Dialog>
+                                    <DialogTrigger asChild>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="mt-2 w-fit"
+                                        >
+                                            Disconnect
+                                        </Button>
+                                    </DialogTrigger>
+                                    <DialogContent>
+                                        <DialogTitle>
+                                            Disconnect Jira for everyone?
+                                        </DialogTitle>
+                                        <DialogDescription>
+                                            This disconnects{' '}
+                                            {integration.site_url} for{' '}
+                                            <strong>
+                                                every user and every project
+                                            </strong>{' '}
+                                            in A2G Test, not just for you.
+                                            Requirements already imported are
+                                            kept, but nobody can import from
+                                            Jira until someone connects again.
+                                        </DialogDescription>
 
-                                    <Form
-                                        {...JiraIntegrationController.destroy.form()}
-                                    >
-                                        {({ processing }) => (
-                                            <DialogFooter className="gap-2">
-                                                <DialogClose asChild>
+                                        <Form
+                                            {...JiraIntegrationController.destroy.form()}
+                                        >
+                                            {({ processing }) => (
+                                                <DialogFooter className="gap-2">
+                                                    <DialogClose asChild>
+                                                        <Button
+                                                            type="button"
+                                                            variant="secondary"
+                                                        >
+                                                            Cancel
+                                                        </Button>
+                                                    </DialogClose>
                                                     <Button
-                                                        type="button"
-                                                        variant="secondary"
+                                                        type="submit"
+                                                        variant="destructive"
+                                                        disabled={processing}
                                                     >
-                                                        Cancel
+                                                        Disconnect for everyone
                                                     </Button>
-                                                </DialogClose>
-                                                <Button
-                                                    type="submit"
-                                                    variant="destructive"
-                                                    disabled={processing}
-                                                >
-                                                    Disconnect
-                                                </Button>
-                                            </DialogFooter>
-                                        )}
-                                    </Form>
-                                </DialogContent>
-                            </Dialog>
+                                                </DialogFooter>
+                                            )}
+                                        </Form>
+                                    </DialogContent>
+                                </Dialog>
+                            ) : (
+                                <p className="mt-2 text-xs text-muted-foreground">
+                                    Only{' '}
+                                    {integration.connected_by ??
+                                        'the person who connected it'}{' '}
+                                    or an admin can disconnect this site.
+                                </p>
+                            )}
                         </Card>
 
                         <Card className="flex max-w-2xl flex-col gap-4 p-6">

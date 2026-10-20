@@ -24,7 +24,7 @@ class JiraIntegrationController extends Controller
     /**
      * Display the Jira integration settings page.
      */
-    public function edit(): Response
+    public function edit(Request $request): Response
     {
         $integration = JiraIntegration::query()->with('connector:id,name')->first();
 
@@ -44,6 +44,7 @@ class JiraIntegrationController extends Controller
                 'site_url' => $integration->site_url,
                 'connected_by' => $integration->connector?->name,
                 'connected_at' => $integration->connected_at,
+                'can_disconnect' => $integration->canBeDisconnectedBy($request->user()),
             ],
             'projects' => $projects,
             'error' => $error,
@@ -63,8 +64,6 @@ class JiraIntegrationController extends Controller
 
     /**
      * Handle the callback from Atlassian after the user authorizes the connection.
-     * @param Request $request
-     * @return RedirectResponse
      */
     public function callback(Request $request): RedirectResponse
     {
@@ -112,11 +111,9 @@ class JiraIntegrationController extends Controller
             'site' => parse_url($site['url'], PHP_URL_HOST) ?? $site['url'],
         ]));
     }
+
     /**
      * Redirect back to the Jira settings page with a flash message.
-     * @param string $type
-     * @param string $message
-     * @return RedirectResponse
      */
     private function backToSettings(string $type, string $message): RedirectResponse
     {
@@ -130,12 +127,15 @@ class JiraIntegrationController extends Controller
      */
     public function destroy(): RedirectResponse
     {
-        JiraIntegration::query()->delete();
-
-        Inertia::flash('toast', [
-            'type' => 'success',
-            'message' => __('Jira disconnected.'),
-        ]);
+        $integration = JiraIntegration::query()->first();
+        abort_if($integration === null, 404, 'No Jira integration found.');
+        abort_unless(
+            $integration->canBeDisconnectedBy(request()->user()),
+            403,
+            'Only the person who connected Jira or an admin can disconnect it.'
+        );
+        $integration->delete();
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Jira integration disconnected.')]);
 
         return redirect()->route('jira.edit');
     }
