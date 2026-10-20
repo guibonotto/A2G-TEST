@@ -43,6 +43,12 @@ class HandleInertiaRequests extends Middleware
                 'user' => $request->user()?->load('role'),
             ],
             'currentProject' => fn () => optional(Project::current())->only(['id', 'uuid', 'name']),
+            'myProjects' => fn () => $request->user()
+                ? $request->user()->projects()
+                    ->orderBy('name')
+                    ->get(['projects.id', 'projects.uuid', 'projects.name'])
+                    ->map(fn (Project $project): array => $project->only(['id', 'uuid', 'name']))
+                : [],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];
     }

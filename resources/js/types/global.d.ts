@@ -1,5 +1,5 @@
 import type { Auth } from '@/types/auth';
-import type { CurrentProject } from '@/types/projects';
+import type { CurrentProject, ProjectSummary } from '@/types/projects';
 
 declare module 'react' {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -14,6 +14,7 @@ declare module '@inertiajs/core' {
             name: string;
             auth: Auth;
             currentProject: CurrentProject | null;
+            myProjects: ProjectSummary[];
             sidebarOpen: boolean;
             [key: string]: unknown;
         };

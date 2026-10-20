@@ -1,8 +1,10 @@
-import { Link, usePage } from '@inertiajs/react';
+import { Form, Link, usePage } from '@inertiajs/react';
 import {
     Briefcase,
     ClipboardList,
+    ChevronDown,
     FileText,
+    Folder,
     LayoutGrid,
     Plug,
     ShieldCheck,
@@ -21,7 +23,15 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { dashboard } from '@/routes';
+import ProjectController from '@/actions/App/Http/Controllers/ProjectController';
 import { index as accountsIndex } from '@/routes/accounts';
 import { edit as jiraEdit } from '@/routes/jira';
 import { index as projectsIndex } from '@/routes/projects';
@@ -87,7 +97,7 @@ const managementNavItems: NavItem[] = [
 ];
 
 export function AppSidebar() {
-    const { auth, currentProject } = usePage().props;
+    const { auth, currentProject, myProjects } = usePage().props;
     const canManage = ['qa', 'admin'].includes(auth.user.role?.slug ?? '');
     const permissions = auth.user.role?.effective_permissions ?? [];
     const allowedManagementNavItems = managementNavItems.filter(
@@ -107,17 +117,61 @@ export function AppSidebar() {
                     </SidebarMenuItem>
                     {currentProject && (
                         <SidebarMenuItem>
-                            <SidebarMenuButton size="sm" asChild>
-                                <Link
-                                    href={projectsIndex()}
-                                    className="text-muted-foreground"
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <SidebarMenuButton
+                                        size="lg"
+                                        tooltip="Switch project"
+                                    >
+                                        <Folder className="text-primary" />
+                                        <span className="min-w-0 flex-1 truncate font-semibold">
+                                            {currentProject.name}
+                                        </span>
+                                        <ChevronDown className="ml-auto size-4 shrink-0 text-muted-foreground" />
+                                    </SidebarMenuButton>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent
+                                    align="start"
+                                    side="right"
+                                    className="w-64"
                                 >
-                                    <Users />
-                                    <span className="truncate">
-                                        {currentProject.name}
-                                    </span>
-                                </Link>
-                            </SidebarMenuButton>
+                                    <DropdownMenuLabel>
+                                        Switch project
+                                    </DropdownMenuLabel>
+                                    <DropdownMenuSeparator />
+                                    {myProjects.map((project) => (
+                                        <Form
+                                            key={project.id}
+                                            {...ProjectController.select.form(
+                                                project.uuid,
+                                            )}
+                                        >
+                                            <button
+                                                type="submit"
+                                                className="flex w-full items-center gap-2 rounded-sm px-2 py-2 text-left text-sm outline-none hover:bg-accent"
+                                            >
+                                                <Folder className="size-4 text-muted-foreground" />
+                                                <span className="min-w-0 flex-1 truncate">
+                                                    {project.name}
+                                                </span>
+                                                {project.id ===
+                                                    currentProject.id && (
+                                                    <span className="text-xs text-primary">
+                                                        Current
+                                                    </span>
+                                                )}
+                                            </button>
+                                        </Form>
+                                    ))}
+                                    <DropdownMenuSeparator />
+                                    <Link
+                                        href={projectsIndex()}
+                                        className="block rounded-sm px-2 py-2 text-sm hover:bg-accent"
+                                    >
+                                        Manage projects
+                                    </Link>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
                         </SidebarMenuItem>
                     )}
                 </SidebarMenu>
