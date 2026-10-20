@@ -10,37 +10,10 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
-import { cn } from '@/lib/utils';
 import { home, login } from '@/routes';
 import { store } from '@/routes/register';
 
-/**
- * Administrator is deliberately absent: a new account cannot grant itself
- * system-wide access.
- */
-const roles = [
-    {
-        id: 'role-qa',
-        value: 'qa',
-        name: 'QA / Tester',
-        desc: 'Create and edit test cases',
-    },
-    {
-        id: 'role-dev',
-        value: 'developer',
-        name: 'Developer',
-        desc: 'View and execute test cases',
-    },
-    {
-        id: 'role-viewer',
-        value: 'viewer',
-        name: 'Viewer',
-        desc: 'Read only',
-    },
-];
-
 export default function Register() {
-    const [selectedRole, setSelectedRole] = useState('');
     const [password, setPassword] = useState('');
 
     return (
@@ -76,7 +49,8 @@ export default function Register() {
                             </h1>
 
                             <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
-                                All fields are required.
+                                All fields are required. An administrator will
+                                assign your access role after registration.
                             </p>
                         </div>
 
@@ -213,82 +187,6 @@ export default function Register() {
                                             }
                                         />
                                     </div>
-
-                                    <fieldset className="grid gap-2">
-                                        <legend className="mb-2 text-sm leading-none font-medium">
-                                            Access role
-                                        </legend>
-
-                                        {/* One per line: three options in a
-                                            two-column grid left a hole that
-                                            read as a missing fourth choice. */}
-                                        <div className="flex flex-col gap-2">
-                                            {roles.map((role) => {
-                                                const isSelected =
-                                                    selectedRole === role.value;
-
-                                                return (
-                                                    <div key={role.id}>
-                                                        <input
-                                                            type="radio"
-                                                            name="role"
-                                                            id={role.id}
-                                                            value={role.value}
-                                                            checked={isSelected}
-                                                            onChange={() =>
-                                                                setSelectedRole(
-                                                                    role.value,
-                                                                )
-                                                            }
-                                                            className="peer sr-only"
-                                                        />
-
-                                                        <label
-                                                            htmlFor={role.id}
-                                                            className={cn(
-                                                                'flex w-full cursor-pointer items-start gap-3 rounded-lg border bg-background px-4 py-3 transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-ring',
-                                                                isSelected
-                                                                    ? 'border-primary bg-primary/8'
-                                                                    : 'border-input hover:border-primary/40',
-                                                            )}
-                                                        >
-                                                            <span
-                                                                className={cn(
-                                                                    'mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full border transition-colors',
-                                                                    isSelected
-                                                                        ? 'border-primary'
-                                                                        : 'border-input',
-                                                                )}
-                                                                aria-hidden="true"
-                                                            >
-                                                                {isSelected && (
-                                                                    <span className="size-2 rounded-full bg-primary" />
-                                                                )}
-                                                            </span>
-
-                                                            <span className="flex flex-col gap-0.5">
-                                                                <span
-                                                                    className={cn(
-                                                                        'text-sm font-semibold',
-                                                                        isSelected &&
-                                                                            'text-primary',
-                                                                    )}
-                                                                >
-                                                                    {role.name}
-                                                                </span>
-
-                                                                <span className="text-sm leading-relaxed text-muted-foreground">
-                                                                    {role.desc}
-                                                                </span>
-                                                            </span>
-                                                        </label>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-
-                                        <InputError message={errors.role} />
-                                    </fieldset>
 
                                     <Button
                                         type="submit"
