@@ -10,7 +10,7 @@ class LinkRequirementRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->canManageAccess() && $this->user()->can('view', $this->route('testCase'));
+        return $this->user()->can('update', $this->route('testCase'));
     }
 
     /**

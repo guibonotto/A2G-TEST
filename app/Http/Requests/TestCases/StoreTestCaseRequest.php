@@ -45,7 +45,7 @@ class StoreTestCaseRequest extends FormRequest
             'steps' => ['required', 'array', 'min:1'],
             'steps.*.description' => ['required', 'string'],
             'steps.*.expected_result' => ['required', 'string'],
-            'requirement_ids' => [Rule::prohibitedIf(fn () => ! $this->user()->canManageAccess()), 'array'],
+            'requirement_ids' => [Rule::prohibitedIf(fn () => $this->user()->hasRole('viewer')), 'array'],
             'requirement_ids.*' => [
                 'integer',
                 Rule::exists('requirements', 'id')->where('project_id', Project::current()?->id),

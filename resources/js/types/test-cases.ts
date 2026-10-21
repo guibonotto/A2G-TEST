@@ -60,6 +60,7 @@ export type TestCaseListItem = {
     latest_execution: Execution | null;
     creator: { id: number; name: string } | null;
     assignee: AssignableUser | null;
+    requirements: LinkedRequirement[];
     steps_count: number;
     created_at: string;
 };

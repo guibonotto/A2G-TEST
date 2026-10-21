@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\TestCases\AssignTestCaseRequest;
-use App\Http\Requests\TestCases\BulkUpdateTestCaseStatusRequest;
 use App\Http\Requests\TestCases\LinkRequirementRequest;
 use App\Http\Requests\TestCases\StoreEvidenceRequest;
 use App\Http\Requests\TestCases\StoreExecutionRequest;
@@ -56,6 +55,7 @@ class TestCaseController extends Controller
                 ]),
                 'creator:id,name',
                 'assignee:id,name',
+                'requirements:id,code,title',
             ])
             ->withCount('steps')
             ->when($search !== '', function ($query) use ($search) {
@@ -117,7 +117,7 @@ class TestCaseController extends Controller
                 ->orderByRaw("CASE name WHEN 'Draft' THEN 1 WHEN 'Obsolete' THEN 2 WHEN 'Ready' THEN 3 ELSE 4 END")
                 ->orderBy('name')
                 ->get(['id', 'name', 'description', 'color', 'category']),
-            'availableRequirements' => $request->user()->canManageAccess()
+            'availableRequirements' => ! $request->user()->hasRole('viewer')
                 ? Requirement::query()->where('project_id', Project::current()?->id)->orderBy('code')->get(['id', 'code', 'title'])
                 : [],
         ]);
@@ -288,24 +288,6 @@ class TestCaseController extends Controller
     }
 
     /**
-     * Update the status of multiple test cases at once.
-     */
-    public function bulkUpdateStatus(BulkUpdateTestCaseStatusRequest $request): RedirectResponse
-    {
-        $count = TestCase::query()
-            ->whereIn('id', $request->validated('ids'))
-            ->whereHas('project.members', fn ($query) => $query->whereKey($request->user()->id))
-            ->update(['status_id' => $request->validated('status_id')]);
-
-        Inertia::flash('toast', [
-            'type' => 'success',
-            'message' => __(':count test case(s) updated.', ['count' => $count]),
-        ]);
-
-        return back();
-    }
-
-    /**
      * Change the status of a single test case without going through the edit form.
      */
     public function updateStatus(UpdateTestCaseStatusRequest $request, TestCase $testCase): RedirectResponse
@@ -376,7 +358,7 @@ class TestCaseController extends Controller
      */
     public function unlinkRequirement(Request $request, TestCase $testCase): RedirectResponse
     {
-        abort_unless($request->user()->canManageAccess() && $request->user()->can('view', $testCase), 403);
+        abort_unless($request->user()->can('update', $testCase), 403);
 
         $testCase->requirements()->detach($request->integer('requirement_id'));
 

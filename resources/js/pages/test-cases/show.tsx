@@ -7,7 +7,7 @@ import {
     useForm,
     usePage,
 } from '@inertiajs/react';
-import { ArrowLeft, MoreHorizontal, Trash2 } from 'lucide-react';
+import { ArrowLeft, MoreHorizontal, Trash2, Unlink } from 'lucide-react';
 import type { FormEvent } from 'react';
 import { useState } from 'react';
 import TestCaseController from '@/actions/App/Http/Controllers/TestCaseController';
@@ -371,8 +371,20 @@ export default function ShowTestCase({
                         <span className="flex items-center gap-2 text-sm text-muted-foreground">
                             Last result:
                             {testCase.latest_execution ? (
-                                <Badge variant={testCase.latest_execution.status === 'APROVADO' ? 'success' : testCase.latest_execution.status === 'REPROVADO' ? 'destructive' : 'warning'}>
-                                    {executionStatusLabel(testCase.latest_execution.status)}
+                                <Badge
+                                    variant={
+                                        testCase.latest_execution.status ===
+                                        'APROVADO'
+                                            ? 'success'
+                                            : testCase.latest_execution
+                                                    .status === 'REPROVADO'
+                                              ? 'destructive'
+                                              : 'warning'
+                                    }
+                                >
+                                    {executionStatusLabel(
+                                        testCase.latest_execution.status,
+                                    )}
                                 </Badge>
                             ) : (
                                 <span className="text-foreground">
@@ -391,7 +403,6 @@ export default function ShowTestCase({
                     </CardHeader>
 
                     <CardContent className="grid gap-3 text-sm sm:grid-cols-3">
-
                         {/* Template de caso de teste desativado (funcionalidade fora de uso)
                         <div>
                             <div className="text-muted-foreground">
@@ -470,7 +481,7 @@ export default function ShowTestCase({
                             Linked requirements ({testCase.requirements.length})
                         </CardTitle>
 
-                        {auth.user.role?.slug === 'qa' &&
+                        {auth.user.role?.slug !== 'viewer' &&
                             linkableRequirements.length > 0 && (
                                 <Dialog
                                     open={linkRequirementOpen}
@@ -570,16 +581,18 @@ export default function ShowTestCase({
                                         — {requirement.title}
                                     </div>
 
-                                    {auth.user.role?.slug === 'qa' && (
+                                    {auth.user.role?.slug !== 'viewer' && (
                                         <Button
                                             variant="ghost"
                                             size="sm"
+                                            className="text-destructive hover:bg-destructive/10 hover:text-destructive"
                                             onClick={() =>
                                                 unlinkRequirement(
                                                     requirement.id,
                                                 )
                                             }
                                         >
+                                            <Unlink className="size-3.5" />
                                             Unlink
                                         </Button>
                                     )}
@@ -615,7 +628,9 @@ export default function ShowTestCase({
                                         className="h-10 rounded-md border border-input bg-background px-3 text-sm"
                                         required
                                     >
-                                        <option value="PENDENTE">Pending</option>
+                                        <option value="PENDENTE">
+                                            Pending
+                                        </option>
                                         <option value="APROVADO">Passed</option>
                                         <option value="REPROVADO">
                                             Failed

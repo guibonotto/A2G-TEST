@@ -405,7 +405,7 @@ class TestCaseControllerTest extends TestCase
         $this->assertDatabaseCount('test_case_statuses', 1);
     }
 
-    public function test_create_screen_offers_requirements_only_to_qa(): void
+    public function test_create_screen_offers_requirements_to_editors(): void
     {
         $qa = $this->createUserWithRole('qa');
         $developer = $this->createUserWithRole('developer');
@@ -419,11 +419,13 @@ class TestCaseControllerTest extends TestCase
                 ->has('availableRequirements', 1)
             );
 
-        $this->actingAsProjectMember($developer);
+        $project->members()->attach($developer);
+        $this->withSession(['current_project_id' => $project->id]);
+        $this->actingAs($developer);
         $this->get(route('test-cases.create'))
             ->assertInertia(fn (Assert $page) => $page
                 ->component('test-cases/create')
-                ->has('availableRequirements', 0)
+                ->has('availableRequirements', 1)
             );
     }
 
@@ -527,9 +529,10 @@ class TestCaseControllerTest extends TestCase
 
         $this->post(route('test-cases.store'), [
             'title' => 'Login com credenciais válidas',
+            'tested_method' => 'AuthController@login',
             'classification_id' => $classification->id,
             'steps' => [
-                ['description' => 'Acessar a tela de login'],
+                ['description' => 'Acessar a tela de login', 'expected_result' => 'Tela exibida'],
             ],
         ]);
 
@@ -546,9 +549,10 @@ class TestCaseControllerTest extends TestCase
 
         $response = $this->post(route('test-cases.store'), [
             'title' => 'Login com credenciais válidas',
+            'tested_method' => 'AuthController@login',
             'classification_id' => $classification->id,
             'steps' => [
-                ['description' => 'Acessar a tela de login'],
+                ['description' => 'Acessar a tela de login', 'expected_result' => 'Tela exibida'],
             ],
             'requirement_ids' => [999],
         ]);
@@ -557,7 +561,7 @@ class TestCaseControllerTest extends TestCase
         $this->assertDatabaseCount('test_cases', 0);
     }
 
-    public function test_non_qa_users_cannot_link_requirements_while_creating_a_test_case(): void
+    public function test_editors_can_link_requirements_while_creating_a_test_case(): void
     {
         $developer = $this->createUserWithRole('developer');
         $project = $this->actingAsProjectMember($developer);
@@ -566,15 +570,16 @@ class TestCaseControllerTest extends TestCase
 
         $response = $this->post(route('test-cases.store'), [
             'title' => 'Login com credenciais válidas',
+            'tested_method' => 'AuthController@login',
             'classification_id' => $classification->id,
             'steps' => [
-                ['description' => 'Acessar a tela de login'],
+                ['description' => 'Acessar a tela de login', 'expected_result' => 'Tela exibida'],
             ],
             'requirement_ids' => [$requirement->id],
         ]);
 
-        $response->assertSessionHasErrors('requirement_ids');
-        $this->assertDatabaseCount('test_case_requirements', 0);
+        $response->assertRedirect();
+        $this->assertDatabaseCount('test_case_requirements', 1);
     }
 
     public function test_a_test_case_can_be_viewed(): void
@@ -992,118 +997,6 @@ class TestCaseControllerTest extends TestCase
 
         $response->assertForbidden();
         $this->assertDatabaseHas('test_cases', ['id' => $testCase->id, 'assigned_to' => null]);
-    }
-
-    public function test_status_can_be_updated_in_bulk(): void
-    {
-        $user = User::factory()->create();
-        $project = $this->actingAsProjectMember($user);
-        $classification = Classification::create(['name' => 'Funcional']);
-        $pendingStatus = $this->createStatus('Pendente', 'warning');
-        $approvedStatus = $this->createStatus('Aprovado', 'success');
-
-        $first = TestCaseModel::create([
-            'title' => 'Login com credenciais válidas',
-            'classification_id' => $classification->id,
-            'created_by' => $user->id,
-            'status_id' => $pendingStatus->id,
-            'project_id' => $project->id,
-        ]);
-        $second = TestCaseModel::create([
-            'title' => 'Cadastro de usuário',
-            'classification_id' => $classification->id,
-            'created_by' => $user->id,
-            'status_id' => $pendingStatus->id,
-            'project_id' => $project->id,
-        ]);
-        $untouched = TestCaseModel::create([
-            'title' => 'Logout',
-            'classification_id' => $classification->id,
-            'created_by' => $user->id,
-            'status_id' => $pendingStatus->id,
-            'project_id' => $project->id,
-        ]);
-
-        $response = $this->patch(route('test-cases.bulk-status'), [
-            'ids' => [$first->id, $second->id],
-            'status_id' => $approvedStatus->id,
-        ]);
-
-        $response->assertRedirect();
-        $this->assertDatabaseHas('test_cases', ['id' => $first->id, 'status_id' => $approvedStatus->id]);
-        $this->assertDatabaseHas('test_cases', ['id' => $second->id, 'status_id' => $approvedStatus->id]);
-        $this->assertDatabaseHas('test_cases', ['id' => $untouched->id, 'status_id' => $pendingStatus->id]);
-    }
-
-    public function test_bulk_status_update_only_affects_test_cases_in_the_users_project(): void
-    {
-        $user = User::factory()->create();
-        $project = $this->actingAsProjectMember($user);
-        $otherProject = Project::factory()->create();
-        $classification = Classification::create(['name' => 'Funcional']);
-        $pendingStatus = $this->createStatus('Pendente', 'warning');
-        $approvedStatus = $this->createStatus('Aprovado', 'success');
-
-        $mine = TestCaseModel::create([
-            'title' => 'Login com credenciais válidas',
-            'classification_id' => $classification->id,
-            'created_by' => $user->id,
-            'status_id' => $pendingStatus->id,
-            'project_id' => $project->id,
-        ]);
-        $otherProjectsCase = TestCaseModel::create([
-            'title' => 'Cadastro de usuário',
-            'classification_id' => $classification->id,
-            'created_by' => $user->id,
-            'status_id' => $pendingStatus->id,
-            'project_id' => $otherProject->id,
-        ]);
-
-        $this->patch(route('test-cases.bulk-status'), [
-            'ids' => [$mine->id, $otherProjectsCase->id],
-            'status_id' => $approvedStatus->id,
-        ]);
-
-        $this->assertDatabaseHas('test_cases', ['id' => $mine->id, 'status_id' => $approvedStatus->id]);
-        $this->assertDatabaseHas('test_cases', ['id' => $otherProjectsCase->id, 'status_id' => $pendingStatus->id]);
-    }
-
-    public function test_bulk_status_update_fails_without_ids(): void
-    {
-        $user = User::factory()->create();
-        $this->actingAsProjectMember($user);
-        $status = $this->createStatus('Aprovado', 'success');
-
-        $response = $this->patch(route('test-cases.bulk-status'), [
-            'ids' => [],
-            'status_id' => $status->id,
-        ]);
-
-        $response->assertSessionHasErrors('ids');
-    }
-
-    public function test_bulk_status_update_fails_with_invalid_status(): void
-    {
-        $user = User::factory()->create();
-        $project = $this->actingAsProjectMember($user);
-        $classification = Classification::create(['name' => 'Funcional']);
-        $pendingStatus = $this->createStatus('Pendente', 'warning');
-
-        $testCase = TestCaseModel::create([
-            'title' => 'Login com credenciais válidas',
-            'classification_id' => $classification->id,
-            'created_by' => $user->id,
-            'status_id' => $pendingStatus->id,
-            'project_id' => $project->id,
-        ]);
-
-        $response = $this->patch(route('test-cases.bulk-status'), [
-            'ids' => [$testCase->id],
-            'status_id' => 999999,
-        ]);
-
-        $response->assertSessionHasErrors('status_id');
-        $this->assertDatabaseHas('test_cases', ['id' => $testCase->id, 'status_id' => $pendingStatus->id]);
     }
 
     public function test_a_test_case_can_be_deleted(): void
