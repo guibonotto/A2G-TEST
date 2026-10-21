@@ -33,6 +33,7 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import {
     Select,
     SelectContent,
@@ -578,49 +579,6 @@ export default function ShowTestCase({
                                 onSubmit={submitExecution}
                                 className="grid gap-4 md:grid-cols-3"
                             >
-                                <div className="grid gap-2">
-                                    <Label htmlFor="execution_status">
-                                        Result
-                                    </Label>
-                                    <select
-                                        id="execution_status"
-                                        value={executionForm.data.status}
-                                        onChange={(e) => {
-                                            executionForm.setData(
-                                                'status',
-                                                e.target.value,
-                                            );
-
-                                            if (
-                                                e.target.value !== 'REPROVADO'
-                                            ) {
-                                                executionForm.setData(
-                                                    'obtained_output',
-                                                    '',
-                                                );
-                                            }
-                                        }}
-                                        className="h-10 rounded-md border border-input bg-background px-3 text-sm"
-                                        required
-                                    >
-                                        <option value="PENDENTE">
-                                            Pending
-                                        </option>
-                                        <option value="APROVADO">Passed</option>
-                                        <option value="REPROVADO">
-                                            Failed
-                                        </option>
-                                        <option value="BLOQUEADO">
-                                            Blocked
-                                        </option>
-                                    </select>
-                                    {executionErrors.status && (
-                                        <p className="text-sm text-destructive">
-                                            {executionErrors.status}
-                                        </p>
-                                    )}
-                                </div>
-
                                 <div className="grid gap-2 md:col-span-3 md:grid-cols-2">
                                     <div className="grid gap-2">
                                         <Label htmlFor="execution_input">
@@ -683,52 +641,102 @@ export default function ShowTestCase({
                                     </div>
                                 )}
 
-                                <div className="grid gap-2">
-                                    <Label htmlFor="execution_date">
-                                        Date and time
-                                    </Label>
-                                    <input
-                                        id="execution_date"
-                                        type="datetime-local"
-                                        value={
-                                            executionForm.data.execution_date
-                                        }
-                                        onChange={(e) =>
-                                            executionForm.setData(
-                                                'execution_date',
-                                                e.target.value,
-                                            )
-                                        }
-                                        className="h-10 rounded-md border border-input bg-background px-3 text-sm"
-                                        required
-                                    />
-                                    {executionErrors.execution_date && (
-                                        <p className="text-sm text-destructive">
-                                            {executionErrors.execution_date}
-                                        </p>
-                                    )}
-                                </div>
+                                <div className="grid gap-4 md:col-span-3 md:grid-cols-3 md:items-start">
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="execution_status">
+                                            Result
+                                        </Label>
+                                        <Select
+                                            value={executionForm.data.status}
+                                            onValueChange={(value) => {
+                                                executionForm.setData(
+                                                    'status',
+                                                    value,
+                                                );
 
-                                <div className="grid gap-2">
-                                    <Label htmlFor="execution_comment">
-                                        Comment
-                                    </Label>
-                                    <Textarea
-                                        id="execution_comment"
-                                        value={executionForm.data.comment}
-                                        onChange={(e) =>
-                                            executionForm.setData(
-                                                'comment',
-                                                e.target.value,
-                                            )
-                                        }
-                                        placeholder="Execution notes"
-                                    />
-                                    {executionErrors.comment && (
-                                        <p className="text-sm text-destructive">
-                                            {executionErrors.comment}
-                                        </p>
-                                    )}
+                                                if (value !== 'REPROVADO') {
+                                                    executionForm.setData(
+                                                        'obtained_output',
+                                                        '',
+                                                    );
+                                                }
+                                            }}
+                                        >
+                                            <SelectTrigger
+                                                id="execution_status"
+                                                className="w-full"
+                                            >
+                                                <SelectValue placeholder="Select result" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="PENDENTE">
+                                                    Pending
+                                                </SelectItem>
+                                                <SelectItem value="APROVADO">
+                                                    Passed
+                                                </SelectItem>
+                                                <SelectItem value="REPROVADO">
+                                                    Failed
+                                                </SelectItem>
+                                                <SelectItem value="BLOQUEADO">
+                                                    Blocked
+                                                </SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        {executionErrors.status && (
+                                            <p className="text-sm text-destructive">
+                                                {executionErrors.status}
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="execution_date">
+                                            Date and time
+                                        </Label>
+                                        <Input
+                                            id="execution_date"
+                                            type="datetime-local"
+                                            value={
+                                                executionForm.data
+                                                    .execution_date
+                                            }
+                                            onChange={(e) =>
+                                                executionForm.setData(
+                                                    'execution_date',
+                                                    e.target.value,
+                                                )
+                                            }
+                                            required
+                                        />
+                                        {executionErrors.execution_date && (
+                                            <p className="text-sm text-destructive">
+                                                {executionErrors.execution_date}
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="execution_comment">
+                                            Comment
+                                        </Label>
+                                        <Textarea
+                                            id="execution_comment"
+                                            value={executionForm.data.comment}
+                                            onChange={(e) =>
+                                                executionForm.setData(
+                                                    'comment',
+                                                    e.target.value,
+                                                )
+                                            }
+                                            placeholder="Execution notes"
+                                        />
+                                        {executionErrors.comment && (
+                                            <p className="text-sm text-destructive">
+                                                {executionErrors.comment}
+                                            </p>
+                                        )}
+                                    </div>
                                 </div>
 
                                 <div className="grid gap-2 md:col-span-2">
