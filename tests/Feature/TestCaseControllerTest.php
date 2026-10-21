@@ -1176,4 +1176,25 @@ class TestCaseControllerTest extends TestCase
 
         $this->assertDatabaseHas('test_cases', ['id' => $testCase->id, 'status_id' => $pending->id]);
     }
+
+    public function test_show_offers_requirements_in_numeric_order(): void
+    {
+        $qa = $this->createUserWithRole('qa');
+        $project = $this->actingAsProjectMember($qa);
+        $testCase = TestCaseModel::create([
+            'title' => 'Login',
+            'created_by' => $qa->id,
+            'project_id' => $project->id,
+        ]);
+        foreach (['PROJ-10', 'PROJ-2', 'PROJ-1'] as $code) {
+            Requirement::create(['project_id' => $project->id, 'code' => $code, 'type' => 'funcional', 'title' => $code]);
+        }
+
+        $this->get(route('test-cases.show', $testCase))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('availableRequirements.0.code', 'PROJ-1')
+                ->where('availableRequirements.1.code', 'PROJ-2')
+                ->where('availableRequirements.2.code', 'PROJ-10')
+            );
+    }
 }

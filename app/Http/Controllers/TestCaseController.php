@@ -119,7 +119,8 @@ class TestCaseController extends Controller
                 ->orderBy('name')
                 ->get(['id', 'name', 'description', 'color', 'category']),
             'availableRequirements' => ! $request->user()->hasRole('viewer')
-                ? Requirement::query()->where('project_id', Project::current()?->id)->orderBy('code')->get(['id', 'code', 'title'])
+                // ? Requirement::query()->where('project_id', Project::current()?->id)->orderBy('code')->get(['id', 'code', 'title'])
+                ? Requirement::query()->where('project_id', Project::current()?->id)->get(['id', 'code', 'title'])->sortBy('code', SORT_NATURAL | SORT_FLAG_CASE)->values()
                 : [],
         ]);
     }
@@ -184,8 +185,10 @@ class TestCaseController extends Controller
             'steps',
             'executions.executor:id,name',
             'executions.evidences:id,execution_id,file_name,mime_type,size,uploaded_at',
-            'requirements' => fn ($query) => $query->orderBy('code'),
+            // 'requirements' => fn ($query) => $query->orderBy('code'),
+            'requirements',
         ]);
+        $testCase->setRelation('requirements', $testCase->requirements->sortBy('code', SORT_NATURAL | SORT_FLAG_CASE)->values());
 
         return Inertia::render('test-cases/show', [
             'testCase' => $testCase,
@@ -202,8 +205,9 @@ class TestCaseController extends Controller
             'executionStatuses' => ['PENDENTE', 'APROVADO', 'REPROVADO', 'BLOQUEADO'],
             'availableRequirements' => Requirement::query()
                 ->where('project_id', $testCase->project_id)
-                ->orderBy('code')
-                ->get(['id', 'code', 'title']),
+                // ->orderBy('code')
+                ->get(['id', 'code', 'title'])
+                ->sortBy('code', SORT_NATURAL | SORT_FLAG_CASE)->values(),
         ]);
     }
 

@@ -45,6 +45,22 @@ class RequirementControllerTest extends TestCase
         ]);
     }
 
+    public function test_requirements_are_listed_in_numeric_order(): void
+    {
+        $qa = $this->createProjectMember('qa');
+        foreach (['PROJ-10', 'PROJ-2', 'PROJ-1', 'PROJ-19'] as $code) {
+            $this->createRequirement(['code' => $code]);
+        }
+
+        $this->actingAs($qa)->get(route('requirements.index'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('requirements.0.code', 'PROJ-1')
+                ->where('requirements.1.code', 'PROJ-2')
+                ->where('requirements.2.code', 'PROJ-10')
+                ->where('requirements.3.code', 'PROJ-19')
+            );
+    }
+
     public function test_guests_cannot_access_requirement_management(): void
     {
         $requirement = $this->createRequirement();

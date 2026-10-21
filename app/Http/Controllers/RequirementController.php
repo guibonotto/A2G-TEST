@@ -22,8 +22,9 @@ class RequirementController extends Controller
             'requirements' => Project::current()->requirements()
                 ->withCount('testCases')
                 ->with('creator:id,name')
-                ->orderBy('code')
-                ->get(['id', 'code', 'type', 'title', 'description', 'priority', 'status', 'created_by']),
+                ->get(['id', 'code', 'type', 'title', 'description', 'priority', 'status', 'created_by'])
+                ->sortBy('code', SORT_NATURAL | SORT_FLAG_CASE)
+                ->values(),
         ]);
     }
 
