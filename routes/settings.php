@@ -21,5 +21,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->middleware('throttle:6,1')
         ->name('user-password.update');
 
+    Route::delete('settings/sessions/{session}', [SecurityController::class, 'destroySession'])
+        ->name('sessions.destroy');
+
     Route::inertia('settings/appearance', 'settings/appearance')->name('appearance.edit');
 });

@@ -19,7 +19,6 @@ class ProjectStoreRequest extends FormRequest
     {
         return [
             'name' => $this->projectNameRules(),
-            'password' => $this->projectPasswordRules(),
         ];
     }
 }

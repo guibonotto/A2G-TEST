@@ -1,6 +1,6 @@
 import { Form, Head } from '@inertiajs/react';
-import { useRef } from 'react';
 import SecurityController from '@/actions/App/Http/Controllers/Settings/SecurityController';
+import { useRef } from 'react';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import type { Props as ManagePasskeysProps } from '@/components/manage-passkeys';
@@ -12,7 +12,16 @@ import { edit } from '@/routes/security';
 
 type Props = {
     passwordRules: string;
+    sessions: SessionInfo[];
 } & ManagePasskeysProps;
+
+type SessionInfo = {
+    id: string;
+    ip_address: string | null;
+    user_agent: string | null;
+    last_activity: string | null;
+    is_current: boolean;
+};
 
 const labelClassName =
     'font-mono text-xs tracking-wide text-muted-foreground uppercase';
@@ -160,6 +169,63 @@ export default function Security(props: Props) {
                         canManagePasskeys={props.canManagePasskeys}
                         passkeys={props.passkeys}
                     />
+                </div>
+
+                <div className="space-y-6 border-t border-border pt-8">
+                    <Heading
+                        variant="small"
+                        title="Your logins"
+                        description="Review where your account is signed in and revoke any access you do not recognize."
+                    />
+
+                    <div className="max-w-xl space-y-3">
+                        {props.sessions.length === 0 ? (
+                            <p className="text-sm text-muted-foreground">
+                                No active login sessions found.
+                            </p>
+                        ) : (
+                            props.sessions.map((session) => (
+                                <div
+                                    key={session.id}
+                                    className="flex flex-wrap items-center gap-3 rounded-lg border p-4"
+                                >
+                                    <div className="min-w-0 flex-1">
+                                        <p className="truncate text-sm font-medium">
+                                            {session.user_agent ??
+                                                'Unknown device'}
+                                        </p>
+                                        <p className="mt-1 text-xs text-muted-foreground">
+                                            {session.ip_address ??
+                                                'Unknown IP'}{' '}
+                                            ·{' '}
+                                            {session.last_activity ??
+                                                'Unknown activity time'}
+                                        </p>
+                                    </div>
+
+                                    {session.is_current ? (
+                                        <span className="text-xs font-medium text-success">
+                                            This device
+                                        </span>
+                                    ) : (
+                                        <Form
+                                            {...SecurityController.destroySession.form(
+                                                session.id,
+                                            )}
+                                        >
+                                            <Button
+                                                type="submit"
+                                                variant="destructive"
+                                                size="sm"
+                                            >
+                                                Revoke
+                                            </Button>
+                                        </Form>
+                                    )}
+                                </div>
+                            ))
+                        )}
+                    </div>
                 </div>
             </div>
         </>

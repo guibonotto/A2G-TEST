@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\ProjectJoinRequest;
 use App\Http\Requests\ProjectStoreRequest;
 use App\Models\Project;
+use App\Models\ProjectInvitation;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -18,7 +21,15 @@ class ProjectController extends Controller
     public function index(Request $request): Response
     {
         return Inertia::render('projects/index', [
-            'myProjects' => $request->user()->projects()->orderBy('name')->get(['projects.id', 'projects.uuid', 'projects.name']),
+            'myProjects' => $request->user()->projects()
+                ->orderBy('name')
+                ->get(['projects.id', 'projects.uuid', 'projects.name', 'projects.owner_id'])
+                ->map(fn (Project $project): array => [
+                    'id' => $project->id,
+                    'uuid' => $project->uuid,
+                    'name' => $project->name,
+                    'isOwner' => $project->owner_id === $request->user()->id,
+                ]),
         ]);
     }
 
@@ -29,7 +40,6 @@ class ProjectController extends Controller
     {
         $project = $request->user()->ownedProjects()->create([
             'name' => $request->validated('name'),
-            'password' => $request->validated('password'),
         ]);
 
         $project->members()->attach($request->user());
@@ -41,18 +51,66 @@ class ProjectController extends Controller
         return to_route('projects.show', $project);
     }
 
-    /**
-     * Join an existing project using its id and password.
-     */
-    public function join(ProjectJoinRequest $request): RedirectResponse
+    public function invite(Request $request, string $token): RedirectResponse
     {
-        $project = $request->project();
+        $project = DB::transaction(function () use ($request, $token): Project {
+            $invitation = ProjectInvitation::query()
+                ->where('token_hash', hash('sha256', $token))
+                ->whereNull('revoked_at')
+                ->whereNull('accepted_at')
+                ->with('project')
+                ->lockForUpdate()
+                ->firstOrFail();
+            $project = $invitation->project;
 
-        $project->members()->attach($request->user());
+            if ($project->members()->whereKey($request->user()->id)->doesntExist()) {
+                $project->members()->attach($request->user());
+            }
+
+            $invitation->forceFill([
+                'accepted_at' => now(),
+                'accepted_by' => $request->user()->id,
+            ])->save();
+
+            return $project;
+        });
 
         session(['current_project_id' => $project->id]);
-
         Inertia::flash('toast', ['type' => 'success', 'message' => __('You joined the ":name" project.', ['name' => $project->name])]);
+
+        return to_route('projects.show', $project);
+    }
+
+    public function createInvite(Request $request, Project $project): RedirectResponse
+    {
+        abort_unless($project->owner_id === $request->user()->id, 403);
+
+        $token = Str::random(64);
+        $project->invitations()->create([
+            'token_hash' => hash('sha256', $token),
+        ]);
+
+        session()->flash('invite_link', route('projects.invite', $token));
+
+        return to_route('projects.show', $project);
+    }
+
+    public function revokeInvite(Request $request, Project $project, ProjectInvitation $invitation): RedirectResponse
+    {
+        abort_unless($project->owner_id === $request->user()->id, 403);
+        abort_unless($invitation->project_id === $project->id, 404);
+
+        $invitation->update(['revoked_at' => now()]);
+
+        return to_route('projects.show', $project);
+    }
+
+    public function removeMember(Request $request, Project $project, User $user): RedirectResponse
+    {
+        abort_unless($project->owner_id === $request->user()->id, 403);
+        abort_unless($user->isNot($request->user()) && $project->members()->whereKey($user->id)->exists(), 404);
+
+        $project->members()->detach($user);
 
         return to_route('projects.show', $project);
     }
@@ -82,12 +140,26 @@ class ProjectController extends Controller
             403
         );
 
+        $isOwner = $project->owner_id === $request->user()->id;
+
         return Inertia::render('projects/show', [
             'project' => [
                 'uuid' => $project->uuid,
                 'name' => $project->name,
-                'isOwner' => $project->owner_id === $request->user()->id,
+                'ownerId' => $project->owner_id,
+                'isOwner' => $isOwner,
+                'members' => $isOwner
+                    ? $project->members()->get(['users.id', 'users.name', 'users.email'])
+                    : [],
+                'pendingInvites' => $isOwner
+                    ? $project->invitations()
+                        ->whereNull('accepted_at')
+                        ->whereNull('revoked_at')
+                        ->latest()
+                        ->get(['id', 'created_at'])
+                    : [],
             ],
+            'inviteLink' => session('invite_link'),
         ]);
     }
 }

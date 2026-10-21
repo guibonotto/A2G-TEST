@@ -36,6 +36,7 @@ import ProjectController from '@/actions/App/Http/Controllers/ProjectController'
 import { index as accountsIndex } from '@/routes/accounts';
 import { edit as jiraEdit } from '@/routes/jira';
 import { index as projectsIndex } from '@/routes/projects';
+import { show as projectsShow } from '@/routes/projects';
 import { index as requirementsIndex } from '@/routes/requirements';
 import { index as rolePermissionsIndex } from '@/routes/role-permissions';
 import { index as testCaseStatusesIndex } from '@/routes/test-case-statuses';
@@ -175,6 +176,14 @@ export function AppSidebar() {
                                     >
                                         Manage projects
                                     </Link>
+                                    {currentProject.owner_id === auth.user.id && (
+                                        <Link
+                                            href={projectsShow(currentProject.uuid)}
+                                            className="block rounded-sm px-2 py-2 text-sm hover:bg-accent"
+                                        >
+                                            Manage access
+                                        </Link>
+                                    )}
                                 </DropdownMenuContent>
                             </DropdownMenu>
                         </SidebarMenuItem>

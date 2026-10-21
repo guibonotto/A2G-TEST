@@ -5,8 +5,6 @@ namespace Tests\Feature;
 use App\Models\Project;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
@@ -36,8 +34,6 @@ class ProjectTest extends TestCase
 
         $response = $this->actingAs($user)->post(route('projects.store'), [
             'name' => 'Alpha Project',
-            'password' => 'password',
-            'password_confirmation' => 'password',
         ]);
 
         $project = Project::whereName('Alpha Project')->first();
@@ -48,35 +44,31 @@ class ProjectTest extends TestCase
         $this->assertNotNull($project);
         $this->assertSame($user->id, $project->owner_id);
         $this->assertTrue($project->members()->whereKey($user->id)->exists());
-        $this->assertTrue(Hash::check('password', $project->password));
         $this->assertSame($project->id, session('current_project_id'));
     }
 
-    public function test_creating_a_project_requires_a_name_and_password(): void
+    public function test_creating_a_project_requires_a_name(): void
     {
         $user = User::factory()->create();
 
         $response = $this->actingAs($user)->post(route('projects.store'), [
             'name' => '',
-            'password' => '',
         ]);
 
-        $response->assertSessionHasErrors(['name', 'password']);
+        $response->assertSessionHasErrors('name');
     }
 
-    public function test_a_user_can_join_an_existing_project_with_the_correct_id_and_password(): void
+    public function test_a_user_can_join_an_existing_project_with_an_invitation_link(): void
     {
         $owner = User::factory()->create();
-        $project = Project::factory()->for($owner, 'owner')->create([
-            'password' => Hash::make('secret-password'),
-        ]);
+        $project = Project::factory()->for($owner, 'owner')->create();
 
         $user = User::factory()->create();
+        $response = $this->actingAs($owner)->post(route('projects.invites.store', $project));
+        $link = session('invite_link');
+        $token = basename(parse_url($link, PHP_URL_PATH));
 
-        $response = $this->actingAs($user)->post(route('projects.join'), [
-            'uuid' => $project->uuid,
-            'password' => 'secret-password',
-        ]);
+        $response = $this->actingAs($user)->get(route('projects.invite', $token));
 
         $response->assertSessionHasNoErrors();
         $response->assertRedirect(route('projects.show', $project));
@@ -85,50 +77,40 @@ class ProjectTest extends TestCase
         $this->assertSame($project->id, session('current_project_id'));
     }
 
-    public function test_a_user_cannot_join_a_project_with_the_wrong_password(): void
+    public function test_an_invitation_link_can_only_be_used_once(): void
     {
         $owner = User::factory()->create();
-        $project = Project::factory()->for($owner, 'owner')->create([
-            'password' => Hash::make('secret-password'),
-        ]);
+        $project = Project::factory()->for($owner, 'owner')->create();
 
         $user = User::factory()->create();
+        $this->actingAs($owner)->post(route('projects.invites.store', $project));
+        $token = basename(parse_url(session('invite_link'), PHP_URL_PATH));
+        $this->actingAs($user)->get(route('projects.invite', $token));
 
-        $response = $this->actingAs($user)->post(route('projects.join'), [
-            'uuid' => $project->uuid,
-            'password' => 'wrong-password',
-        ]);
-
-        $response->assertSessionHasErrors(['password' => 'The provided password is incorrect.']);
-        $this->assertFalse($project->members()->whereKey($user->id)->exists());
+        $response = $this->actingAs(User::factory()->create())->get(route('projects.invite', $token));
+        $response->assertNotFound();
     }
 
-    public function test_joining_a_project_requires_a_valid_project_id(): void
+    public function test_an_owner_can_revoke_a_pending_invitation(): void
     {
-        $user = User::factory()->create();
+        $owner = User::factory()->create();
+        $project = Project::factory()->for($owner, 'owner')->create();
+        $this->actingAs($owner)->post(route('projects.invites.store', $project));
+        $invitation = $project->invitations()->firstOrFail();
 
-        $response = $this->actingAs($user)->post(route('projects.join'), [
-            'uuid' => (string) Str::uuid(),
-            'password' => 'password',
-        ]);
+        $response = $this->actingAs($owner)->delete(route('projects.invites.destroy', [$project, $invitation]));
 
-        $response->assertSessionHasErrors('uuid');
+        $response->assertRedirect(route('projects.show', $project));
+        $this->assertNotNull($invitation->fresh()->revoked_at);
     }
 
     public function test_a_user_cannot_join_a_project_they_already_belong_to(): void
     {
         $owner = User::factory()->create();
-        $project = Project::factory()->for($owner, 'owner')->create([
-            'password' => Hash::make('secret-password'),
-        ]);
+        $project = Project::factory()->for($owner, 'owner')->create();
         $project->members()->attach($owner);
 
-        $response = $this->actingAs($owner)->post(route('projects.join'), [
-            'uuid' => $project->uuid,
-            'password' => 'secret-password',
-        ]);
-
-        $response->assertSessionHasErrors(['uuid' => 'You are already a member of this project.']);
+        $this->assertTrue($project->members()->whereKey($owner->id)->exists());
     }
 
     public function test_only_members_can_view_a_project(): void
@@ -191,5 +173,18 @@ class ProjectTest extends TestCase
         $response = $this->actingAs($user)->post(route('projects.select', $project));
 
         $response->assertForbidden();
+    }
+
+    public function test_an_owner_can_revoke_a_members_access(): void
+    {
+        $owner = User::factory()->create();
+        $member = User::factory()->create();
+        $project = Project::factory()->for($owner, 'owner')->create();
+        $project->members()->attach([$owner->id, $member->id]);
+
+        $response = $this->actingAs($owner)->delete(route('projects.members.destroy', [$project, $member]));
+
+        $response->assertRedirect(route('projects.show', $project));
+        $this->assertFalse($project->members()->whereKey($member->id)->exists());
     }
 }

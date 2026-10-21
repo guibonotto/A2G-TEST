@@ -43,12 +43,15 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $request->user()?->load('role'),
             ],
-            'currentProject' => fn () => optional(Project::current())->only(['id', 'uuid', 'name']),
+            'currentProject' => fn () => optional(Project::current())->only(['id', 'uuid', 'name', 'owner_id']),
             'myProjects' => fn () => $request->user()
                 ? $request->user()->projects()
                     ->orderBy('name')
-                    ->get(['projects.id', 'projects.uuid', 'projects.name'])
-                    ->map(fn (Project $project): array => $project->only(['id', 'uuid', 'name']))
+                    ->get(['projects.id', 'projects.uuid', 'projects.name', 'projects.owner_id'])
+                    ->map(fn (Project $project): array => [
+                        ...$project->only(['id', 'uuid', 'name']),
+                        'isOwner' => $project->owner_id === $request->user()->id,
+                    ])
                 : [],
             'assignedToMeCount' => function () use ($request): int {
                 $project = Project::current();

@@ -4,7 +4,6 @@ namespace App\Models;
 
 use Database\Factories\ProjectFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
-use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -13,24 +12,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Str;
 
-#[Fillable(['uuid', 'name', 'password', 'owner_id'])]
-#[Hidden(['password'])]
+#[Fillable(['uuid', 'name', 'owner_id'])]
 class Project extends Model
 {
     /** @use HasFactory<ProjectFactory> */
     use HasFactory;
-
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'password' => 'hashed',
-        ];
-    }
 
     protected static function booted(): void
     {
@@ -55,6 +41,11 @@ class Project extends Model
     public function members(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'project_user')->withTimestamps();
+    }
+
+    public function invitations(): HasMany
+    {
+        return $this->hasMany(ProjectInvitation::class);
     }
 
     public function requirements(): HasMany
