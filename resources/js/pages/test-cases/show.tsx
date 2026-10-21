@@ -13,6 +13,7 @@ import { useState } from 'react';
 import TestCaseController from '@/actions/App/Http/Controllers/TestCaseController';
 import EvidenceFilePicker from '@/components/evidence-file-picker';
 import Heading from '@/components/heading';
+import { RequirementPicker } from '@/components/requirement-picker';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -499,46 +500,24 @@ export default function ShowTestCase({
                                             Link requirement
                                         </DialogTitle>
                                         <DialogDescription>
-                                            Select a requirement to link to
-                                            &quot;{testCase.title}&quot;.
+                                            Search and pick a requirement to
+                                            link to &quot;{testCase.title}
+                                            &quot;.
                                         </DialogDescription>
 
                                         <form
                                             onSubmit={submitLinkRequirement}
                                             className="flex flex-col gap-4"
                                         >
-                                            <Select
+                                            <RequirementPicker
+                                                requirements={
+                                                    linkableRequirements
+                                                }
                                                 value={selectedRequirementId}
-                                                onValueChange={
+                                                onChange={
                                                     setSelectedRequirementId
                                                 }
-                                            >
-                                                <SelectTrigger className="w-full">
-                                                    <SelectValue placeholder="Select a requirement" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {linkableRequirements.map(
-                                                        (requirement) => (
-                                                            <SelectItem
-                                                                key={
-                                                                    requirement.id
-                                                                }
-                                                                value={String(
-                                                                    requirement.id,
-                                                                )}
-                                                            >
-                                                                {
-                                                                    requirement.code
-                                                                }{' '}
-                                                                —{' '}
-                                                                {
-                                                                    requirement.title
-                                                                }
-                                                            </SelectItem>
-                                                        ),
-                                                    )}
-                                                </SelectContent>
-                                            </Select>
+                                            />
 
                                             <DialogFooter className="gap-2">
                                                 <DialogClose asChild>

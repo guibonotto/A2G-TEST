@@ -4,6 +4,7 @@ import type { FormEvent } from 'react';
 import { useState } from 'react';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
+import { RequirementPicker } from '@/components/requirement-picker';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -214,7 +215,9 @@ export default function CreateTestCase({
                                                 key={status.id}
                                                 value={String(status.id)}
                                             >
-                                                {testCaseStatusLabel(status.name)}
+                                                {testCaseStatusLabel(
+                                                    status.name,
+                                                )}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
@@ -450,45 +453,22 @@ export default function CreateTestCase({
                                                 Link requirement
                                             </DialogTitle>
                                             <DialogDescription>
-                                                Select a requirement to link to
-                                                this test case.
+                                                Search and pick a requirement to
+                                                link to this test case.
                                             </DialogDescription>
 
                                             <div className="flex flex-col gap-4">
-                                                <Select
+                                                <RequirementPicker
+                                                    requirements={
+                                                        linkableRequirements
+                                                    }
                                                     value={
                                                         selectedRequirementId
                                                     }
-                                                    onValueChange={
+                                                    onChange={
                                                         setSelectedRequirementId
                                                     }
-                                                >
-                                                    <SelectTrigger className="w-full">
-                                                        <SelectValue placeholder="Select a requirement" />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        {linkableRequirements.map(
-                                                            (requirement) => (
-                                                                <SelectItem
-                                                                    key={
-                                                                        requirement.id
-                                                                    }
-                                                                    value={String(
-                                                                        requirement.id,
-                                                                    )}
-                                                                >
-                                                                    {
-                                                                        requirement.code
-                                                                    }{' '}
-                                                                    —{' '}
-                                                                    {
-                                                                        requirement.title
-                                                                    }
-                                                                </SelectItem>
-                                                            ),
-                                                        )}
-                                                    </SelectContent>
-                                                </Select>
+                                                />
 
                                                 <DialogFooter className="gap-2">
                                                     <DialogClose asChild>
