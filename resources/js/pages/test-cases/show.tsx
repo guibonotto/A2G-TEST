@@ -63,6 +63,7 @@ type ExecutionFormData = {
     status: string;
     execution_date: string;
     comment: string;
+    obtained_output: string;
     evidences: File[];
 };
 
@@ -95,6 +96,7 @@ export default function ShowTestCase({
         status: 'PENDENTE',
         execution_date: localDateTimeNow(),
         comment: '',
+        obtained_output: '',
         evidences: [],
     });
     const executionErrors = executionForm.errors as FieldErrors;
@@ -619,12 +621,21 @@ export default function ShowTestCase({
                                     <select
                                         id="execution_status"
                                         value={executionForm.data.status}
-                                        onChange={(e) =>
+                                        onChange={(e) => {
                                             executionForm.setData(
                                                 'status',
                                                 e.target.value,
-                                            )
-                                        }
+                                            );
+
+                                            if (
+                                                e.target.value !== 'REPROVADO'
+                                            ) {
+                                                executionForm.setData(
+                                                    'obtained_output',
+                                                    '',
+                                                );
+                                            }
+                                        }}
                                         className="h-10 rounded-md border border-input bg-background px-3 text-sm"
                                         required
                                     >
@@ -645,6 +656,68 @@ export default function ShowTestCase({
                                         </p>
                                     )}
                                 </div>
+
+                                <div className="grid gap-2 md:col-span-3 md:grid-cols-2">
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="execution_input">
+                                            Input
+                                        </Label>
+                                        <Textarea
+                                            id="execution_input"
+                                            value={
+                                                testCase.steps[0]
+                                                    ?.description ?? '—'
+                                            }
+                                            readOnly
+                                            className="bg-muted"
+                                        />
+                                    </div>
+
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="execution_expected_output">
+                                            Expected output
+                                        </Label>
+                                        <Textarea
+                                            id="execution_expected_output"
+                                            value={
+                                                testCase.steps[0]
+                                                    ?.expected_result ?? '—'
+                                            }
+                                            readOnly
+                                            className="bg-muted"
+                                        />
+                                    </div>
+                                </div>
+
+                                {executionForm.data.status === 'REPROVADO' && (
+                                    <div className="grid gap-2 md:col-span-3">
+                                        <Label htmlFor="obtained_output">
+                                            Obtained output
+                                        </Label>
+                                        <Textarea
+                                            id="obtained_output"
+                                            value={
+                                                executionForm.data
+                                                    .obtained_output
+                                            }
+                                            onChange={(e) =>
+                                                executionForm.setData(
+                                                    'obtained_output',
+                                                    e.target.value,
+                                                )
+                                            }
+                                            placeholder="Describe the actual output returned by the test."
+                                            required
+                                        />
+                                        {executionErrors.obtained_output && (
+                                            <p className="text-sm text-destructive">
+                                                {
+                                                    executionErrors.obtained_output
+                                                }
+                                            </p>
+                                        )}
+                                    </div>
+                                )}
 
                                 <div className="grid gap-2">
                                     <Label htmlFor="execution_date">
@@ -799,6 +872,17 @@ export default function ShowTestCase({
                                             {execution.comment}
                                         </p>
                                     )}
+                                    {execution.status === 'REPROVADO' &&
+                                        execution.obtained_output && (
+                                            <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3">
+                                                <p className="text-xs font-medium text-destructive">
+                                                    Obtained output
+                                                </p>
+                                                <p className="mt-1 text-sm whitespace-pre-wrap">
+                                                    {execution.obtained_output}
+                                                </p>
+                                            </div>
+                                        )}
                                     {execution.evidences.length > 0 && (
                                         <div className="flex flex-wrap gap-3 pt-1">
                                             {execution.evidences.map(

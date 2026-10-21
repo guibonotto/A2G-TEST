@@ -17,6 +17,7 @@ use Throwable;
     'executed_by',
     'status',
     'comment',
+    'obtained_output',
     'batch_id',
     'execution_date',
 ])]

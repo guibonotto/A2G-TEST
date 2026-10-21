@@ -656,6 +656,48 @@ class TestCaseControllerTest extends TestCase
         ]);
     }
 
+    public function test_failed_execution_requires_obtained_output(): void
+    {
+        $user = User::factory()->create();
+        $project = $this->actingAsProjectMember($user);
+        $testCase = TestCaseModel::create([
+            'title' => 'Login com credenciais válidas',
+            'created_by' => $user->id,
+            'project_id' => $project->id,
+        ]);
+
+        $response = $this->post(route('test-cases.executions.store', $testCase), [
+            'status' => 'REPROVADO',
+            'execution_date' => '2026-08-23 10:30:00',
+        ]);
+
+        $response->assertSessionHasErrors('obtained_output');
+        $this->assertDatabaseCount('executions', 0);
+    }
+
+    public function test_failed_execution_stores_obtained_output(): void
+    {
+        $user = User::factory()->create();
+        $project = $this->actingAsProjectMember($user);
+        $testCase = TestCaseModel::create([
+            'title' => 'Login com credenciais válidas',
+            'created_by' => $user->id,
+            'project_id' => $project->id,
+        ]);
+
+        $this->post(route('test-cases.executions.store', $testCase), [
+            'status' => 'REPROVADO',
+            'obtained_output' => 'Mensagem de erro não foi exibida.',
+            'execution_date' => '2026-08-23 10:30:00',
+        ])->assertRedirect();
+
+        $this->assertDatabaseHas('executions', [
+            'test_case_id' => $testCase->id,
+            'status' => 'REPROVADO',
+            'obtained_output' => 'Mensagem de erro não foi exibida.',
+        ]);
+    }
+
     public function test_test_case_detail_includes_execution_history(): void
     {
         $user = User::factory()->create();
@@ -672,6 +714,7 @@ class TestCaseControllerTest extends TestCase
             'executed_by' => $user->id,
             'status' => 'REPROVADO',
             'comment' => 'Mensagem de erro não foi exibida.',
+            'obtained_output' => 'Mensagem de erro não foi exibida.',
             'execution_date' => '2026-08-23 11:00:00',
         ]);
 
@@ -681,6 +724,7 @@ class TestCaseControllerTest extends TestCase
                 ->has('testCase.executions', 1)
                 ->where('testCase.executions.0.status', 'REPROVADO')
                 ->where('testCase.executions.0.comment', 'Mensagem de erro não foi exibida.')
+                ->where('testCase.executions.0.obtained_output', 'Mensagem de erro não foi exibida.')
                 ->where('testCase.executions.0.executor.name', $user->name)
             );
     }

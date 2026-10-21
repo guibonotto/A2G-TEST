@@ -20,6 +20,7 @@ class StoreExecutionRequest extends FormRequest
         return [
             'status' => ['required', 'string', 'in:APROVADO,REPROVADO,BLOQUEADO,PENDENTE'],
             'comment' => ['nullable', 'string', 'max:5000'],
+            'obtained_output' => ['required_if:status,REPROVADO', 'nullable', 'string', 'max:10000'],
             'execution_date' => ['required', 'date'],
             'evidences' => ['nullable', 'array', 'max:10'],
             'evidences.*' => [

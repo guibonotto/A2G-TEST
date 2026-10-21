@@ -93,6 +93,7 @@ export type Execution = {
     id: number;
     status: string;
     comment: string | null;
+    obtained_output: string | null;
     execution_date: string;
     executor: { id: number; name: string } | null;
     evidences: Evidence[];
