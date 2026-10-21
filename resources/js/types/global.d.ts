@@ -15,6 +15,8 @@ declare module '@inertiajs/core' {
             auth: Auth;
             currentProject: CurrentProject | null;
             myProjects: ProjectSummary[];
+            /** Test cases assigned to the user that still need a run. */
+            assignedToMeCount: number;
             sidebarOpen: boolean;
             [key: string]: unknown;
         };

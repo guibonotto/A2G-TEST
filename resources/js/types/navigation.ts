@@ -13,4 +13,6 @@ export type NavItem = {
     isActive?: boolean;
     /** Permission the route behind this item requires, when it guards one. */
     permission?: string;
+    /** Count shown next to the item; hidden when zero. */
+    badge?: number;
 };

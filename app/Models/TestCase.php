@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Database\Factories\TestCaseFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -92,5 +94,30 @@ class TestCase extends Model
     public function requirements(): BelongsToMany
     {
         return $this->belongsToMany(Requirement::class, 'test_case_requirements');
+    }
+
+    /**
+     * Test cases a user is responsible for in a project, leaving out the
+     * obsolete ones, which nobody should run any more.
+     */
+    #[Scope]
+    protected function assignedTo(Builder $query, User $user, int $projectId): void
+    {
+        $query->where('project_id', $projectId)
+            ->where('assigned_to', $user->id)
+            ->whereDoesntHave('status', fn (Builder $query) => $query->where('name', 'Obsolete'));
+    }
+
+    /**
+     * Test cases that still need someone to run them: never executed, or
+     * whose last run did not pass (failed or blocked cases need a new run).
+     */
+    #[Scope]
+    protected function awaitingExecution(Builder $query): void
+    {
+        $query->where(fn (Builder $query) => $query
+            ->whereDoesntHave('executions')
+            ->orWhereHas('latestExecution', fn (Builder $query) => $query->where('status', '!=', 'APROVADO'))
+        );
     }
 }

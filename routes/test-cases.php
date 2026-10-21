@@ -8,6 +8,7 @@ Route::middleware(['auth', 'verified', 'project'])->group(function () {
     Route::get('test-templates/{testTemplate}', [TestTemplateController::class, 'show'])->name('test-templates.show');
 
     Route::get('test-cases', [TestCaseController::class, 'index'])->name('test-cases.index');
+    Route::get('assigned-to-me', [TestCaseController::class, 'assigned'])->name('test-cases.assigned');
     Route::get('test-cases/create', [TestCaseController::class, 'create'])->name('test-cases.create');
     Route::post('test-cases', [TestCaseController::class, 'store'])->name('test-cases.store');
     Route::get('test-cases/{testCase}', [TestCaseController::class, 'show'])->name('test-cases.show');

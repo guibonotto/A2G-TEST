@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\Project;
+use App\Models\TestCase;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -49,6 +50,13 @@ class HandleInertiaRequests extends Middleware
                     ->get(['projects.id', 'projects.uuid', 'projects.name'])
                     ->map(fn (Project $project): array => $project->only(['id', 'uuid', 'name']))
                 : [],
+            'assignedToMeCount' => function () use ($request): int {
+                $project = Project::current();
+
+                return $request->user() && $project
+                    ? TestCase::query()->assignedTo($request->user(), $project->id)->awaitingExecution()->count()
+                    : 0;
+            },
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];
     }

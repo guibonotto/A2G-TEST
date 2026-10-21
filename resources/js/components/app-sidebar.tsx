@@ -9,6 +9,7 @@ import {
     Plug,
     ShieldCheck,
     Tags,
+    UserCheck,
     Users,
 } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
@@ -38,7 +39,10 @@ import { index as projectsIndex } from '@/routes/projects';
 import { index as requirementsIndex } from '@/routes/requirements';
 import { index as rolePermissionsIndex } from '@/routes/role-permissions';
 import { index as testCaseStatusesIndex } from '@/routes/test-case-statuses';
-import { index as testCasesIndex } from '@/routes/test-cases';
+import {
+    assigned as testCasesAssigned,
+    index as testCasesIndex,
+} from '@/routes/test-cases';
 // import { index as testTemplatesIndex } from '@/routes/test-templates';
 import type { NavItem } from '@/types';
 
@@ -97,7 +101,8 @@ const managementNavItems: NavItem[] = [
 ];
 
 export function AppSidebar() {
-    const { auth, currentProject, myProjects } = usePage().props;
+    const { auth, currentProject, myProjects, assignedToMeCount } =
+        usePage().props;
     const canManage = ['qa', 'admin'].includes(auth.user.role?.slug ?? '');
     const permissions = auth.user.role?.effective_permissions ?? [];
     const allowedManagementNavItems = managementNavItems.filter(
@@ -178,7 +183,17 @@ export function AppSidebar() {
             </SidebarHeader>
 
             <SidebarContent>
-                <NavMain items={mainNavItems} />
+                <NavMain
+                    items={[
+                        ...mainNavItems,
+                        {
+                            title: 'Assigned to me',
+                            href: testCasesAssigned(),
+                            icon: UserCheck,
+                            badge: assignedToMeCount,
+                        },
+                    ]}
+                />
                 {canManage && allowedManagementNavItems.length > 0 && (
                     <NavMain
                         items={allowedManagementNavItems}

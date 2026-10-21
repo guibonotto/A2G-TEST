@@ -102,6 +102,42 @@ class TestCaseController extends Controller
     }
 
     /**
+     * The test cases the current user is responsible for in the active
+     * project, split between what still needs a run and what already passed.
+     */
+    public function assigned(Request $request): Response
+    {
+        $relations = [
+            'status:id,name,color',
+            'latestExecution' => fn ($query) => $query->select([
+                'executions.id',
+                'executions.test_case_id',
+                'executions.status',
+                'executions.execution_date',
+            ]),
+        ];
+        $columns = ['id', 'title', 'tested_method', 'status_id', 'created_at'];
+        $projectId = Project::current()->id;
+
+        return Inertia::render('test-cases/assigned', [
+            'toRun' => TestCase::query()
+                ->assignedTo($request->user(), $projectId)
+                ->awaitingExecution()
+                ->with($relations)
+                ->withExists('executions')
+                ->orderBy('executions_exists')
+                ->oldest()
+                ->get($columns),
+            'passed' => TestCase::query()
+                ->assignedTo($request->user(), $projectId)
+                ->whereHas('latestExecution', fn ($query) => $query->where('status', 'APROVADO'))
+                ->with($relations)
+                ->latest()
+                ->get($columns),
+        ]);
+    }
+
+    /**
      * Show the form for creating a new test case.
      */
     public function create(Request $request): Response
@@ -302,11 +338,12 @@ class TestCaseController extends Controller
     public function assign(AssignTestCaseRequest $request, TestCase $testCase): RedirectResponse
     {
         $testCase->update($request->safe()->only(['assigned_to']));
+        $assignee = $testCase->assignee()->value('name');
 
         Inertia::flash('toast', [
             'type' => 'success',
-            'message' => $request->validated('assigned_to')
-                ? __('Test case assigned.')
+            'message' => $assignee !== null
+                ? __('Test case assigned to :name. It now shows up in their "Assigned to me" list.', ['name' => $assignee])
                 : __('Test case unassigned.'),
         ]);
 
