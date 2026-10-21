@@ -635,11 +635,13 @@ class TestCaseControllerTest extends TestCase
         $user = User::factory()->create();
         $project = $this->actingAsProjectMember($user);
         $classification = Classification::create(['name' => 'Funcional']);
+        $ready = $this->createStatus('Ready');
         $testCase = TestCaseModel::create([
             'title' => 'Login com credenciais válidas',
             'classification_id' => $classification->id,
             'created_by' => $user->id,
             'project_id' => $project->id,
+            'status_id' => $ready->id,
         ]);
 
         $response = $this->post(route('test-cases.executions.store', $testCase), [
@@ -661,10 +663,12 @@ class TestCaseControllerTest extends TestCase
     {
         $user = User::factory()->create();
         $project = $this->actingAsProjectMember($user);
+        $ready = $this->createStatus('Ready');
         $testCase = TestCaseModel::create([
             'title' => 'Login com credenciais válidas',
             'created_by' => $user->id,
             'project_id' => $project->id,
+            'status_id' => $ready->id,
         ]);
 
         $response = $this->post(route('test-cases.executions.store', $testCase), [
@@ -680,10 +684,12 @@ class TestCaseControllerTest extends TestCase
     {
         $user = User::factory()->create();
         $project = $this->actingAsProjectMember($user);
+        $ready = $this->createStatus('Ready');
         $testCase = TestCaseModel::create([
             'title' => 'Login com credenciais válidas',
             'created_by' => $user->id,
             'project_id' => $project->id,
+            'status_id' => $ready->id,
         ]);
 
         $this->post(route('test-cases.executions.store', $testCase), [
@@ -697,6 +703,52 @@ class TestCaseControllerTest extends TestCase
             'status' => 'REPROVADO',
             'obtained_output' => 'Mensagem de erro não foi exibida.',
         ]);
+    }
+
+    public function test_a_draft_test_case_cannot_register_an_execution(): void
+    {
+        $user = User::factory()->create();
+        $project = $this->actingAsProjectMember($user);
+        $testCase = TestCaseModel::create([
+            'title' => 'Login com credenciais válidas',
+            'created_by' => $user->id,
+            'project_id' => $project->id,
+            'status_id' => TestCaseStatus::default()->id,
+        ]);
+
+        $response = $this->post(route('test-cases.executions.store', $testCase), [
+            'status' => 'APROVADO',
+            'execution_date' => '2026-08-23 10:30:00',
+        ]);
+
+        $response->assertSessionHasErrors('testCase');
+        $this->assertDatabaseCount('executions', 0);
+    }
+
+    public function test_a_test_case_with_an_execution_cannot_return_to_draft(): void
+    {
+        $user = User::factory()->create();
+        $project = $this->actingAsProjectMember($user);
+        $ready = $this->createStatus('Ready');
+        $draft = TestCaseStatus::default();
+        $testCase = TestCaseModel::create([
+            'title' => 'Login com credenciais válidas',
+            'created_by' => $user->id,
+            'project_id' => $project->id,
+            'status_id' => $ready->id,
+        ]);
+        $testCase->executions()->create([
+            'executed_by' => $user->id,
+            'status' => 'APROVADO',
+            'execution_date' => now(),
+        ]);
+
+        $response = $this->patch(route('test-cases.status', $testCase), [
+            'status_id' => $draft->id,
+        ]);
+
+        $response->assertSessionHasErrors('status_id');
+        $this->assertSame($ready->id, $testCase->fresh()->status_id);
     }
 
     public function test_test_case_detail_includes_execution_history(): void

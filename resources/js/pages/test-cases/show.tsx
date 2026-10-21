@@ -93,6 +93,7 @@ export default function ShowTestCase({
     const [deleteOpen, setDeleteOpen] = useState(false);
     const [executionStatusFilter, setExecutionStatusFilter] = useState('all');
     const [recordingOpen, setRecordingOpen] = useState(false);
+    const canRecordExecution = testCase.status?.name !== 'Draft';
 
     const executionForm = useForm<ExecutionFormData>({
         status: 'PENDENTE',
@@ -567,7 +568,7 @@ export default function ShowTestCase({
                     </CardContent>
                 </Card>
 
-                {recordingOpen ? (
+                {recordingOpen && canRecordExecution ? (
                     <Card>
                         <CardHeader>
                             <CardTitle>Record execution</CardTitle>
@@ -762,13 +763,22 @@ export default function ShowTestCase({
                         </CardContent>
                     </Card>
                 ) : (
-                    <Button
-                        type="button"
-                        className="w-fit"
-                        onClick={() => setRecordingOpen(true)}
-                    >
-                        Record execution
-                    </Button>
+                    <div className="flex flex-wrap items-center gap-3">
+                        <Button
+                            type="button"
+                            className="w-fit"
+                            disabled={!canRecordExecution}
+                            onClick={() => setRecordingOpen(true)}
+                        >
+                            Record execution
+                        </Button>
+                        {!canRecordExecution && (
+                            <p className="text-sm text-muted-foreground">
+                                This test case must leave Draft before an
+                                execution can be recorded.
+                            </p>
+                        )}
+                    </div>
                 )}
 
                 <Card>

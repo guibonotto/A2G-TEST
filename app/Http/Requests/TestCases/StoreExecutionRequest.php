@@ -4,6 +4,7 @@ namespace App\Http\Requests\TestCases;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
 
 class StoreExecutionRequest extends FormRequest
 {
@@ -28,6 +29,27 @@ class StoreExecutionRequest extends FormRequest
                 'max:10240',
                 'mimetypes:image/png,image/jpeg,image/gif,image/webp,application/pdf,text/plain',
             ],
+        ];
+    }
+
+    /**
+     * A draft test case is not ready to be executed.
+     *
+     * @return array<int, callable>
+     */
+    public function after(): array
+    {
+        return [
+            function (Validator $validator): void {
+                $testCase = $this->route('testCase');
+
+                if ($testCase->status?->name === 'Draft') {
+                    $validator->errors()->add(
+                        'testCase',
+                        __('A test case must leave Draft before an execution can be registered.'),
+                    );
+                }
+            },
         ];
     }
 }

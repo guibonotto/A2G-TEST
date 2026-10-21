@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Validation\ValidationException;
 
 #[Fillable([
     'title',
@@ -28,6 +29,25 @@ class TestCase extends Model
 {
     /** @use HasFactory<TestCaseFactory> */
     use HasFactory;
+
+    protected static function booted(): void
+    {
+        static::updating(function (self $testCase): void {
+            if (! $testCase->isDirty('status_id') || $testCase->status_id === null) {
+                return;
+            }
+
+            $statusName = TestCaseStatus::query()
+                ->whereKey($testCase->status_id)
+                ->value('name');
+
+            if ($statusName === TestCaseStatus::DEFAULT_NAME && $testCase->executions()->exists()) {
+                throw ValidationException::withMessages([
+                    'status_id' => __('A test case with executions cannot return to Draft.'),
+                ]);
+            }
+        });
+    }
 
     /**
      * The table associated with the model.
