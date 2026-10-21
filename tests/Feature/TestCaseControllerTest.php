@@ -752,7 +752,7 @@ class TestCaseControllerTest extends TestCase
         $this->actingAs($qa)->get(route('test-cases.show', $testCase))
             ->assertInertia(fn (Assert $page) => $page
                 ->component('test-cases/show')
-                ->has('assignableUsers', 3)
+                ->has('assignableUsers', 2)
             );
 
         $this->actingAs($developer)->get(route('test-cases.show', $testCase))
@@ -940,6 +940,7 @@ class TestCaseControllerTest extends TestCase
         $qa = $this->createUserWithRole('qa');
         $otherQa = $this->createUserWithRole('qa');
         $project = $this->actingAsProjectMember($qa);
+        $project->members()->attach($otherQa);
         $classification = Classification::create(['name' => 'Funcional']);
 
         $testCase = TestCaseModel::create([
@@ -962,6 +963,7 @@ class TestCaseControllerTest extends TestCase
         $qa = $this->createUserWithRole('qa');
         $developer = $this->createUserWithRole('developer');
         $project = $this->actingAsProjectMember($qa);
+        $project->members()->attach($developer);
         $classification = Classification::create(['name' => 'Funcional']);
 
         $testCase = TestCaseModel::create([
@@ -1244,6 +1246,58 @@ class TestCaseControllerTest extends TestCase
                 ->where('availableRequirements.0.code', 'PROJ-1')
                 ->where('availableRequirements.0.jira_url', null)
                 ->where('availableRequirements.0.test_cases_count', 0)
+            );
+    }
+
+    public function test_only_project_members_can_be_assigned(): void
+    {
+        $qa = $this->createUserWithRole('qa');
+        $project = $this->actingAsProjectMember($qa);
+        $member = $this->createUserWithRole('developer');
+        $project->members()->attach($member);
+        $outsider = $this->createUserWithRole('developer');
+        $testCase = TestCaseModel::create(['title' => 'Login', 'created_by' => $qa->id, 'project_id' => $project->id]);
+
+        $this->get(route('test-cases.show', $testCase))
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('assignableUsers', 2)
+                ->where('assignableUsers', fn ($users) => collect($users)->pluck('id')->doesntContain($outsider->id))
+            );
+
+        $this->patch(route('test-cases.assign', $testCase), ['assigned_to' => $outsider->id])
+            ->assertSessionHasErrors('assigned_to');
+        $this->patch(route('test-cases.assign', $testCase), ['assigned_to' => $member->id])
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame($member->id, $testCase->fresh()->assigned_to);
+    }
+
+    public function test_a_test_case_cannot_be_created_for_someone_outside_the_project(): void
+    {
+        $qa = $this->createUserWithRole('qa');
+        $this->actingAsProjectMember($qa);
+        $outsider = $this->createUserWithRole('developer');
+
+        $this->post(route('test-cases.store'), [
+            'title' => 'Login',
+            'tested_method' => 'AuthController@login',
+            'assigned_to' => $outsider->id,
+            'steps' => [['description' => 'Entrar', 'expected_result' => 'Logado']],
+        ])->assertSessionHasErrors('assigned_to');
+
+        $this->assertDatabaseCount('test_cases', 0);
+    }
+
+    public function test_assignable_users_show_their_role_and_email(): void
+    {
+        $qa = $this->createUserWithRole('qa');
+        $project = $this->actingAsProjectMember($qa);
+        $testCase = TestCaseModel::create(['title' => 'Login', 'created_by' => $qa->id, 'project_id' => $project->id]);
+
+        $this->get(route('test-cases.show', $testCase))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('assignableUsers.0.email', $qa->email)
+                ->where('assignableUsers.0.role', $qa->role->name)
             );
     }
 }

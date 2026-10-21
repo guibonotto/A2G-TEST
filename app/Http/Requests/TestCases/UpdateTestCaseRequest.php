@@ -2,9 +2,9 @@
 
 namespace App\Http\Requests\TestCases;
 
+use App\Models\Role;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
-use App\Models\Role;
 use Illuminate\Validation\Rule;
 
 class UpdateTestCaseRequest extends FormRequest
@@ -37,9 +37,10 @@ class UpdateTestCaseRequest extends FormRequest
                 Rule::exists('users', 'id')->where(
                     fn ($query) => $query->whereIn(
                         'role_id',
-                        Role::query()->whereIn('slug', ['qa', 'developer'])->pluck('id'),
+                        Role::query()->whereIn('slug', Role::ASSIGNABLE_SLUGS)->pluck('id'),
                     ),
                 ),
+                Rule::exists('project_user', 'user_id')->where('project_id', $this->route('testCase')->project_id),
             ],
             'steps' => ['required', 'array', 'min:1'],
             'steps.*.description' => ['required', 'string'],

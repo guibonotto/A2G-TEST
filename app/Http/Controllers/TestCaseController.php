@@ -15,6 +15,7 @@ use App\Models\Execution;
 use App\Models\JiraIntegration;
 use App\Models\Project;
 use App\Models\Requirement;
+use App\Models\Role;
 use App\Models\TestCase;
 use App\Models\TestCaseStatus;
 use App\Models\TestTemplate;
@@ -109,10 +110,7 @@ class TestCaseController extends Controller
 
         return Inertia::render('test-cases/create', [
             'assignableUsers' => $request->user()->canManageAccess()
-                ? User::query()
-                    ->whereHas('role', fn ($query) => $query->whereIn('slug', ['qa', 'developer']))
-                    ->orderBy('name')
-                    ->get(['id', 'name'])
+                ? $this->assignableUsers(Project::current()->id)
                 : [],
             'defaultStatusId' => $defaultStatus->id,
             'statuses' => TestCaseStatus::query()
@@ -193,10 +191,7 @@ class TestCaseController extends Controller
         return Inertia::render('test-cases/show', [
             'testCase' => $testCase,
             'assignableUsers' => $request->user()->canManageAccess()
-                ? User::query()
-                    ->whereHas('role', fn ($query) => $query->whereIn('slug', ['qa', 'developer']))
-                    ->orderBy('name')
-                    ->get(['id', 'name'])
+                ? $this->assignableUsers($testCase->project_id)
                 : [],
             'statuses' => TestCaseStatus::query()
                 ->whereIn('name', ['Draft', 'Obsolete', 'Ready'])
@@ -248,10 +243,7 @@ class TestCaseController extends Controller
             'classifications' => Classification::query()->orderBy('name')->get(['id', 'name']),
             'templates' => TestTemplate::query()->orderBy('title')->get(['id', 'title']),
             'assignableUsers' => $request->user()->canManageAccess()
-                ? User::query()
-                    ->whereHas('role', fn ($query) => $query->whereIn('slug', ['qa', 'developer']))
-                    ->orderBy('name')
-                    ->get(['id', 'name'])
+                ? $this->assignableUsers($testCase->project_id)
                 : [],
             'statuses' => TestCaseStatus::query()
                 ->whereIn('name', ['Draft', 'Obsolete', 'Ready'])
@@ -446,6 +438,29 @@ class TestCaseController extends Controller
                     : null,
             ])
             ->values()
+            ->all();
+    }
+
+    /**
+     * Project members who can be put in charge of a test case, with their role
+     * and email so people with similar names can be told apart.
+     *
+     * @return list<array{id: int, name: string, email: string, role: ?string}>
+     */
+    private function assignableUsers(int $projectId): array
+    {
+        return User::query()
+            ->whereHas('projects', fn ($query) => $query->whereKey($projectId))
+            ->whereHas('role', fn ($query) => $query->whereIn('slug', Role::ASSIGNABLE_SLUGS))
+            ->with('role:id,name')
+            ->orderBy('name')
+            ->get(['id', 'name', 'email', 'role_id'])
+            ->map(fn (User $user): array => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'role' => $user->role?->name,
+            ])
             ->all();
     }
 }

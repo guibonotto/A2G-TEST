@@ -215,7 +215,9 @@ export default function EditTestCase({
                                         onValueChange={(value) =>
                                             setData(
                                                 'assigned_to',
-                                                value === 'unassigned' ? '' : value,
+                                                value === 'unassigned'
+                                                    ? ''
+                                                    : value,
                                             )
                                         }
                                     >
@@ -235,6 +237,8 @@ export default function EditTestCase({
                                                     value={String(user.id)}
                                                 >
                                                     {user.name}
+                                                    {user.role &&
+                                                        ` · ${user.role}`}
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>
@@ -242,7 +246,6 @@ export default function EditTestCase({
                                     <InputError message={errors.assigned_to} />
                                 </div>
                             )}
-
                         </CardContent>
                     </Card>
 

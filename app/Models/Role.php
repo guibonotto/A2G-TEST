@@ -38,6 +38,11 @@ class Role extends Model
      */
     public const array MANAGEMENT_SLUGS = ['qa', self::ADMIN];
 
+    /**
+     * Roles whose users can be put in charge of a test case.
+     */
+    public const array ASSIGNABLE_SLUGS = ['qa', 'developer'];
+
     public function level(): int
     {
         return self::LEVELS[$this->slug] ?? 0;

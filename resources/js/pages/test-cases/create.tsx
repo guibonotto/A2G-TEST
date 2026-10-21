@@ -257,6 +257,8 @@ export default function CreateTestCase({
                                                     value={String(user.id)}
                                                 >
                                                     {user.name}
+                                                    {user.role &&
+                                                        ` · ${user.role}`}
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>

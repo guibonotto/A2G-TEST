@@ -49,6 +49,9 @@ export type TestCaseStatusCategory =
 export type AssignableUser = {
     id: number;
     name: string;
+    email: string;
+    /** Role name, e.g. "QA / Tester". */
+    role: string | null;
 };
 
 export type TestCaseListItem = {

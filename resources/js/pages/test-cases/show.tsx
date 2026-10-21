@@ -41,6 +41,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { UserPicker } from '@/components/user-picker';
 import { executionStatusLabel } from '@/lib/execution-status';
 import { testCaseStatusLabel } from '@/lib/test-case-status';
 import { show as evidenceShow } from '@/routes/evidences';
@@ -240,29 +241,12 @@ export default function ShowTestCase({
                                         onSubmit={submitAssignment}
                                         className="flex flex-col gap-4"
                                     >
-                                        <Select
+                                        <UserPicker
+                                            users={assignableUsers}
                                             value={selectedAssignee}
-                                            onValueChange={setSelectedAssignee}
-                                        >
-                                            <SelectTrigger className="w-full">
-                                                <SelectValue placeholder="Select an assignee" />
-                                            </SelectTrigger>
-
-                                            <SelectContent>
-                                                <SelectItem value={UNASSIGNED}>
-                                                    Unassigned
-                                                </SelectItem>
-
-                                                {assignableUsers.map((user) => (
-                                                    <SelectItem
-                                                        key={user.id}
-                                                        value={String(user.id)}
-                                                    >
-                                                        {user.name}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
+                                            unassignedValue={UNASSIGNED}
+                                            onChange={setSelectedAssignee}
+                                        />
 
                                         <DialogFooter className="gap-2">
                                             <DialogClose asChild>

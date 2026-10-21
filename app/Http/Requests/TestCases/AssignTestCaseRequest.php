@@ -31,9 +31,10 @@ class AssignTestCaseRequest extends FormRequest
                 Rule::exists('users', 'id')->where(
                     fn ($query) => $query->whereIn(
                         'role_id',
-                        Role::query()->whereIn('slug', ['admin', 'qa', 'developer'])->pluck('id')
+                        Role::query()->whereIn('slug', Role::ASSIGNABLE_SLUGS)->pluck('id')
                     )
                 ),
+                Rule::exists('project_user', 'user_id')->where('project_id', $this->route('testCase')->project_id),
             ],
         ];
     }
