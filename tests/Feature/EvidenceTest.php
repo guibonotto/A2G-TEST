@@ -99,6 +99,7 @@ class EvidenceTest extends TestCase
 
         $response = $this->actingAs($qa)->post(route('test-cases.executions.store', $testCase), [
             'status' => 'REPROVADO',
+            'obtained_output' => 'Tela exibiu erro 500.',
             'execution_date' => now()->toDateTimeString(),
             'evidences' => [
                 UploadedFile::fake()->create('screenshot-1.png', 64, 'image/png'),
@@ -148,6 +149,7 @@ class EvidenceTest extends TestCase
 
         $response = $this->actingAs($qa)->post(route('test-cases.executions.store', $testCase), [
             'status' => 'REPROVADO',
+            'obtained_output' => 'Tela exibiu erro 500.',
             'execution_date' => now()->toDateTimeString(),
         ]);
 
