@@ -1,11 +1,18 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { ClipboardList, Plus } from 'lucide-react';
+import { ClipboardList, List, Plus } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import Heading from '@/components/heading';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -43,6 +50,8 @@ export default function TestCaseIndex({
 }: Props) {
     const { currentProject } = usePage().props;
     const [search, setSearch] = useState(filters.search);
+    const [requirementsDialogTestCase, setRequirementsDialogTestCase] =
+        useState<TestCaseListItem | null>(null);
     const isFirstRender = useRef(true);
 
     const hasActiveFilters =
@@ -418,23 +427,43 @@ export default function TestCaseIndex({
                                         <td className="px-4 py-3">
                                             {testCase.requirements.length >
                                             0 ? (
-                                                <div className="flex flex-wrap gap-1">
-                                                    {testCase.requirements.map(
-                                                        (requirement) => (
-                                                            <Badge
-                                                                key={
-                                                                    requirement.id
-                                                                }
-                                                                variant="secondary"
-                                                                title={
-                                                                    requirement.title
-                                                                }
-                                                            >
-                                                                {
-                                                                    requirement.code
-                                                                }
-                                                            </Badge>
-                                                        ),
+                                                <div className="flex items-center gap-2">
+                                                    <Badge
+                                                        variant="secondary"
+                                                        title={
+                                                            testCase
+                                                                .requirements[0]
+                                                                .title
+                                                        }
+                                                    >
+                                                        {
+                                                            testCase
+                                                                .requirements[0]
+                                                                .code
+                                                        }
+                                                    </Badge>
+                                                    {testCase.requirements
+                                                        .length > 1 && (
+                                                        <Button
+                                                            type="button"
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            className="h-7 px-2 text-xs"
+                                                            onClick={() =>
+                                                                setRequirementsDialogTestCase(
+                                                                    testCase,
+                                                                )
+                                                            }
+                                                        >
+                                                            <List />
+                                                            View all (
+                                                            {
+                                                                testCase
+                                                                    .requirements
+                                                                    .length
+                                                            }
+                                                            )
+                                                        </Button>
                                                     )}
                                                 </div>
                                             ) : (
@@ -465,6 +494,41 @@ export default function TestCaseIndex({
                     </Card>
                 )}
             </div>
+            <Dialog
+                open={requirementsDialogTestCase !== null}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setRequirementsDialogTestCase(null);
+                    }
+                }}
+            >
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Linked requirements</DialogTitle>
+                        <DialogDescription>
+                            Requirements linked to test case "
+                            {requirementsDialogTestCase?.title}".
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="flex max-h-80 flex-col gap-2 overflow-y-auto">
+                        {requirementsDialogTestCase?.requirements.map(
+                            (requirement) => (
+                                <div
+                                    key={requirement.id}
+                                    className="rounded-md border p-3"
+                                >
+                                    <div className="font-medium">
+                                        {requirement.code}
+                                    </div>
+                                    <div className="text-sm text-muted-foreground">
+                                        {requirement.title}
+                                    </div>
+                                </div>
+                            ),
+                        )}
+                    </div>
+                </DialogContent>
+            </Dialog>
         </>
     );
 }
