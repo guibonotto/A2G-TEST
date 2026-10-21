@@ -12,6 +12,7 @@ use App\Http\Requests\TestCases\UpdateTestCaseStatusRequest;
 use App\Models\Classification;
 use App\Models\Evidence;
 use App\Models\Execution;
+use App\Models\JiraIntegration;
 use App\Models\Project;
 use App\Models\Requirement;
 use App\Models\TestCase;
@@ -119,8 +120,7 @@ class TestCaseController extends Controller
                 ->orderBy('name')
                 ->get(['id', 'name', 'description', 'color', 'category']),
             'availableRequirements' => ! $request->user()->hasRole('viewer')
-                // ? Requirement::query()->where('project_id', Project::current()?->id)->orderBy('code')->get(['id', 'code', 'title'])
-                ? Requirement::query()->where('project_id', Project::current()?->id)->get(['id', 'code', 'title'])->sortBy('code', SORT_NATURAL | SORT_FLAG_CASE)->values()
+                ? $this->linkableRequirements(Project::current()->id)
                 : [],
         ]);
     }
@@ -203,11 +203,7 @@ class TestCaseController extends Controller
                 ->orderByRaw("CASE name WHEN 'Draft' THEN 1 WHEN 'Obsolete' THEN 2 WHEN 'Ready' THEN 3 ELSE 4 END")
                 ->get(['id', 'name', 'description', 'color', 'category']),
             'executionStatuses' => ['PENDENTE', 'APROVADO', 'REPROVADO', 'BLOQUEADO'],
-            'availableRequirements' => Requirement::query()
-                ->where('project_id', $testCase->project_id)
-                // ->orderBy('code')
-                ->get(['id', 'code', 'title'])
-                ->sortBy('code', SORT_NATURAL | SORT_FLAG_CASE)->values(),
+            'availableRequirements' => $this->linkableRequirements($testCase->project_id),
         ]);
     }
 
@@ -421,5 +417,35 @@ class TestCaseController extends Controller
         ]);
 
         return to_route('test-cases.show', $testCase);
+    }
+
+    /**
+     * Requirements of a project that a test case can be linked to, with what
+     * the picker needs to describe each one: its description, how many test
+     * cases already cover it and, when it came from Jira, a link to the issue.
+     *
+     * @return list<array{id: int, code: string, title: string, description: ?string, test_cases_count: int, jira_url: ?string}>
+     */
+    private function linkableRequirements(int $projectId): array
+    {
+        $jiraSiteUrl = JiraIntegration::query()->where('project_id', $projectId)->value('site_url');
+
+        return Requirement::query()
+            ->where('project_id', $projectId)
+            ->withCount('testCases')
+            ->get(['id', 'code', 'title', 'description', 'jira_synced_at'])
+            ->sortBy('code', SORT_NATURAL | SORT_FLAG_CASE)
+            ->map(fn (Requirement $requirement): array => [
+                'id' => $requirement->id,
+                'code' => $requirement->code,
+                'title' => $requirement->title,
+                'description' => $requirement->description,
+                'test_cases_count' => $requirement->test_cases_count,
+                'jira_url' => $jiraSiteUrl !== null && $requirement->jira_synced_at !== null
+                    ? rtrim($jiraSiteUrl, '/').'/browse/'.rawurlencode($requirement->code)
+                    : null,
+            ])
+            ->values()
+            ->all();
     }
 }

@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Classification;
+use App\Models\JiraIntegration;
 use App\Models\Project;
 use App\Models\Requirement;
 use App\Models\Role;
@@ -1195,6 +1196,54 @@ class TestCaseControllerTest extends TestCase
                 ->where('availableRequirements.0.code', 'PROJ-1')
                 ->where('availableRequirements.1.code', 'PROJ-2')
                 ->where('availableRequirements.2.code', 'PROJ-10')
+            );
+    }
+
+    public function test_show_describes_each_requirement_with_its_coverage_and_jira_link(): void
+    {
+        $qa = $this->createUserWithRole('qa');
+        $project = $this->actingAsProjectMember($qa);
+        JiraIntegration::factory()->create(['project_id' => $project->id, 'site_url' => 'https://example.atlassian.net']);
+        $testCase = TestCaseModel::create(['title' => 'Login', 'created_by' => $qa->id, 'project_id' => $project->id]);
+        $otherCase = TestCaseModel::create(['title' => 'Cadastro', 'created_by' => $qa->id, 'project_id' => $project->id]);
+
+        $fromJira = Requirement::create([
+            'project_id' => $project->id,
+            'code' => 'PROJ-1',
+            'type' => 'funcional',
+            'title' => 'Do Jira',
+            'description' => 'Deve permitir login.',
+        ]);
+        $fromJira->forceFill(['jira_synced_at' => now()])->save();
+        $fromJira->testCases()->attach([$otherCase->id]);
+
+        Requirement::create(['project_id' => $project->id, 'code' => 'RF-2', 'type' => 'funcional', 'title' => 'Manual']);
+
+        $this->get(route('test-cases.show', $testCase))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('availableRequirements.0.code', 'PROJ-1')
+                ->where('availableRequirements.0.description', 'Deve permitir login.')
+                ->where('availableRequirements.0.test_cases_count', 1)
+                ->where('availableRequirements.0.jira_url', 'https://example.atlassian.net/browse/PROJ-1')
+                ->where('availableRequirements.1.code', 'RF-2')
+                ->where('availableRequirements.1.test_cases_count', 0)
+                ->where('availableRequirements.1.jira_url', null)
+            );
+    }
+
+    public function test_requirements_have_no_jira_link_when_the_project_is_not_connected(): void
+    {
+        $qa = $this->createUserWithRole('qa');
+        $project = $this->actingAsProjectMember($qa);
+        Classification::create(['name' => 'Funcional']);
+        $requirement = Requirement::create(['project_id' => $project->id, 'code' => 'PROJ-1', 'type' => 'funcional', 'title' => 'Do Jira']);
+        $requirement->forceFill(['jira_synced_at' => now()])->save();
+
+        $this->get(route('test-cases.create'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('availableRequirements.0.code', 'PROJ-1')
+                ->where('availableRequirements.0.jira_url', null)
+                ->where('availableRequirements.0.test_cases_count', 0)
             );
     }
 }

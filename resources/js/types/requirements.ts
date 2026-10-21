@@ -22,4 +22,9 @@ export type RequirementOption = {
     id: number;
     code: string;
     title: string;
+    description: string | null;
+    /** Test cases already linked to this requirement, across the project. */
+    test_cases_count: number;
+    /** Link to the Jira issue; null when the requirement was created here. */
+    jira_url: string | null;
 };
