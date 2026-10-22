@@ -35,7 +35,7 @@ export default function ManageRolePermissions({
             <div className="flex flex-col gap-6 p-4">
                 <Heading
                     title="Manage permissions"
-                    description="Set which actions each role can perform in the system. You can only edit roles below your own; the administrator role always has every permission."
+                    description="Set which actions each role can perform in the current project; other projects are not affected. You can only edit roles below your own; the administrator role always has every permission."
                 />
 
                 <div className="flex flex-col gap-4">

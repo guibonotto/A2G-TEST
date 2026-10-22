@@ -51,16 +51,42 @@ class Role extends Model
     }
 
     /**
-     * The permissions actually enforced for this role.
+     * Permission sets already looked up in this request, keyed by project id.
      *
-     * A null set means the role predates permission enforcement and was never
+     * @var array<int, array<int, string>|null>
+     */
+    private array $permissionsByProject = [];
+
+    /**
+     * The permissions actually enforced for this role in the given project
+     * (the current one by default).
+     *
+     * A project that changed the role's permissions uses its own set; any
+     * other project falls back to the role's default set. In that default, a
+     * null set means the role predates permission enforcement and was never
      * configured, which for the management roles means full access; an empty
      * array is an explicit "none" and is honoured as such.
      *
      * @return array<int, string>
      */
-    public function effectivePermissions(): array
+    public function effectivePermissions(?Project $project = null): array
     {
+        $project ??= Project::current();
+
+        if ($project !== null) {
+            if (! array_key_exists($project->id, $this->permissionsByProject)) {
+                $this->permissionsByProject[$project->id] = ProjectRolePermission::query()
+                    ->where('project_id', $project->id)
+                    ->where('role_id', $this->id)
+                    ->first()
+                    ?->permissions;
+            }
+
+            if ($this->permissionsByProject[$project->id] !== null) {
+                return $this->permissionsByProject[$project->id];
+            }
+        }
+
         if ($this->permissions !== null) {
             return $this->permissions;
         }

@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Enums\Permission;
+use App\Models\Project;
+use App\Models\ProjectRolePermission;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -59,11 +61,64 @@ class RolePermissionControllerTest extends TestCase
         ]);
 
         $response->assertRedirect();
-        $this->assertDatabaseHas('roles', ['id' => $developerRole->id]);
         $this->assertSame(
             [Permission::AssignTestCases->value],
-            $developerRole->fresh()->permissions,
+            $developerRole->fresh()->effectivePermissions($this->sessionProject()),
         );
+    }
+
+    public function test_changing_permissions_only_affects_the_current_project(): void
+    {
+        $qa = $this->createUserWithRole('qa');
+        $developerRole = Role::firstOrCreate(['slug' => 'developer'], ['name' => 'developer', 'permissions' => []]);
+        $otherProject = Project::factory()->create();
+
+        $this->actingAs($qa)->put(route('role-permissions.update', $developerRole), [
+            'permissions' => [Permission::AssignTestCases->value],
+        ]);
+
+        $this->assertSame([Permission::AssignTestCases->value], $developerRole->fresh()->effectivePermissions($this->sessionProject()));
+        $this->assertSame([], $developerRole->fresh()->effectivePermissions($otherProject));
+        $this->assertSame([], $developerRole->fresh()->permissions);
+    }
+
+    public function test_a_permission_granted_in_one_project_is_only_enforced_there(): void
+    {
+        $qa = $this->createUserWithRole('qa');
+        $developer = $this->createUserWithRole('developer');
+        $project = $this->sessionProject();
+        $otherProject = Project::factory()->create();
+        $otherProject->addMember($developer, 'developer');
+        $developerRole = Role::where('slug', 'developer')->firstOrFail();
+
+        $this->actingAs($qa)->put(route('role-permissions.update', $developerRole), [
+            'permissions' => [Permission::AssignTestCases->value],
+        ]);
+
+        $this->assertTrue($developer->fresh()->hasPermission(Permission::AssignTestCases, $project));
+        $this->assertFalse($developer->fresh()->hasPermission(Permission::AssignTestCases, $otherProject));
+    }
+
+    public function test_the_permission_list_shows_the_current_project_set(): void
+    {
+        $qa = $this->createUserWithRole('qa');
+        $developerRole = Role::firstOrCreate(['slug' => 'developer'], ['name' => 'developer', 'permissions' => []]);
+        ProjectRolePermission::create([
+            'project_id' => Project::factory()->create()->id,
+            'role_id' => $developerRole->id,
+            'permissions' => [Permission::ManageStatuses->value],
+        ]);
+        ProjectRolePermission::create([
+            'project_id' => $this->sessionProject()->id,
+            'role_id' => $developerRole->id,
+            'permissions' => [Permission::AssignTestCases->value],
+        ]);
+
+        $this->actingAs($qa)->get(route('role-permissions.index'))
+            ->assertInertia(fn (Assert $page) => $page->where(
+                'roles',
+                fn ($roles) => collect($roles)->firstWhere('slug', 'developer')['effective_permissions'] === [Permission::AssignTestCases->value],
+            ));
     }
 
     public function test_permission_update_fails_with_an_unknown_permission(): void

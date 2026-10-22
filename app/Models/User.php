@@ -102,18 +102,19 @@ class User extends Authenticatable implements PasskeyUser
      * (see canEditPermissionsOf), so reading it would let a missing or empty
      * set lock the last account out of the screens that could repair it.
      *
-     * The role checked is the one held in the given project, or in the
-     * current project when none is given.
+     * Both the role and its permissions are the ones of the given project, or
+     * of the current project when none is given.
      */
     public function hasPermission(Permission $permission, ?Project $project = null): bool
     {
-        $role = $project !== null ? $this->roleIn($project) : $this->currentRole();
+        $project ??= Project::current();
+        $role = $this->roleIn($project);
 
         if ($role?->slug === Role::ADMIN) {
             return true;
         }
 
-        return in_array($permission->value, $role?->effectivePermissions() ?? [], true);
+        return in_array($permission->value, $role?->effectivePermissions($project) ?? [], true);
     }
 
     public function level(): int
