@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\Permission;
+use App\Models\Project;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -113,6 +114,17 @@ class RolePermissionControllerTest extends TestCase
         $this->actingAs($qa)->get(route('role-permissions.index'))->assertForbidden();
     }
 
+    /**
+     * Account management is scoped to the selected project.
+     */
+    private function projectWithMember(User $user): Project
+    {
+        $project = Project::factory()->create();
+        $project->members()->attach($user);
+
+        return $project;
+    }
+
     public function test_admins_keep_access_even_when_their_stored_permissions_are_empty(): void
     {
         $admin = $this->createUserWithRole('admin');
@@ -120,7 +132,8 @@ class RolePermissionControllerTest extends TestCase
 
         $this->actingAs($admin)->get(route('role-permissions.index'))->assertOk();
         $this->actingAs($admin)->get(route('test-case-statuses.index'))->assertOk();
-        $this->actingAs($admin)->get(route('accounts.index'))->assertOk();
+        $this->actingAs($admin)->withSession(['current_project_id' => $this->projectWithMember($admin)->id])
+            ->get(route('accounts.index'))->assertOk();
     }
 
     public function test_management_roles_that_were_never_configured_keep_full_access(): void
@@ -130,7 +143,8 @@ class RolePermissionControllerTest extends TestCase
 
         $this->actingAs($qa)->get(route('role-permissions.index'))->assertOk();
         $this->actingAs($qa)->get(route('test-case-statuses.index'))->assertOk();
-        $this->actingAs($qa)->get(route('accounts.index'))->assertOk();
+        $this->actingAs($qa)->withSession(['current_project_id' => $this->projectWithMember($qa)->id])
+            ->get(route('accounts.index'))->assertOk();
     }
 
     public function test_roles_below_management_that_were_never_configured_get_nothing(): void

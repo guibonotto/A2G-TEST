@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\Permission;
 use App\Http\Requests\ProjectStoreRequest;
 use App\Models\Project;
 use App\Models\ProjectInvitation;
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -35,14 +37,33 @@ class ProjectController extends Controller
 
     /**
      * Create a new project owned by the authenticated user.
+     *
+     * Whoever creates a project becomes an administrator, so they can manage
+     * everything their project needs (members, permissions, requirements...).
+     * Roles are global, so this makes them an administrator of the whole system.
      */
     public function store(ProjectStoreRequest $request): RedirectResponse
     {
-        $project = $request->user()->ownedProjects()->create([
-            'name' => $request->validated('name'),
-        ]);
+        $user = $request->user();
 
-        $project->members()->attach($request->user());
+        $project = DB::transaction(function () use ($request, $user): Project {
+            $project = $user->ownedProjects()->create([
+                'name' => $request->validated('name'),
+            ]);
+
+            $project->members()->attach($user);
+
+            if (! $user->hasRole(Role::ADMIN)) {
+                $adminRole = Role::firstOrCreate(
+                    ['slug' => Role::ADMIN],
+                    ['name' => 'Administrator', 'permissions' => array_column(Permission::cases(), 'value')],
+                );
+
+                $user->update(['role_id' => $adminRole->id]);
+            }
+
+            return $project;
+        });
 
         session(['current_project_id' => $project->id]);
 

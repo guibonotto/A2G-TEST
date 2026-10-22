@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Project;
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -45,6 +46,68 @@ class ProjectTest extends TestCase
         $this->assertSame($user->id, $project->owner_id);
         $this->assertTrue($project->members()->whereKey($user->id)->exists());
         $this->assertSame($project->id, session('current_project_id'));
+    }
+
+    public function test_a_user_without_a_role_becomes_an_administrator_when_creating_a_project(): void
+    {
+        $user = User::factory()->create(['role_id' => null]);
+
+        $this->actingAs($user)->post(route('projects.store'), ['name' => 'Alpha Project']);
+
+        $this->assertTrue($user->fresh()->hasRole(Role::ADMIN));
+    }
+
+    public function test_a_new_administrator_can_reach_the_management_screens(): void
+    {
+        $user = User::factory()->create(['role_id' => null]);
+
+        $this->actingAs($user)->post(route('projects.store'), ['name' => 'Alpha Project']);
+
+        $this->actingAs($user->fresh())->get(route('accounts.index'))->assertOk();
+        $this->actingAs($user->fresh())->get(route('requirements.index'))->assertOk();
+    }
+
+    public function test_a_lower_role_is_promoted_to_administrator_when_creating_a_project(): void
+    {
+        $user = $this->createUserWithRole('developer');
+
+        $this->actingAs($user)->post(route('projects.store'), ['name' => 'Alpha Project']);
+
+        $this->assertTrue($user->fresh()->hasRole(Role::ADMIN));
+    }
+
+    public function test_an_administrator_keeps_the_same_role_when_creating_a_project(): void
+    {
+        $user = $this->createUserWithRole(Role::ADMIN);
+        $adminRoleId = $user->role_id;
+
+        $this->actingAs($user)->post(route('projects.store'), ['name' => 'Alpha Project']);
+
+        $this->assertSame($adminRoleId, $user->fresh()->role_id);
+        $this->assertSame(1, Role::where('slug', Role::ADMIN)->count());
+    }
+
+    public function test_a_failed_project_creation_does_not_change_the_role(): void
+    {
+        $user = User::factory()->create(['role_id' => null]);
+
+        $this->actingAs($user)->post(route('projects.store'), ['name' => '']);
+
+        $this->assertNull($user->fresh()->role_id);
+    }
+
+    public function test_joining_a_project_by_invitation_does_not_grant_a_role(): void
+    {
+        $owner = User::factory()->create();
+        $project = Project::factory()->create(['owner_id' => $owner->id]);
+        $token = 'invite-token-for-role-test';
+        $project->invitations()->create(['token_hash' => hash('sha256', $token)]);
+        $guest = User::factory()->create(['role_id' => null]);
+
+        $this->actingAs($guest)->get(route('projects.invite', $token));
+
+        $this->assertTrue($project->members()->whereKey($guest->id)->exists());
+        $this->assertNull($guest->fresh()->role_id);
     }
 
     public function test_creating_a_project_requires_a_name(): void

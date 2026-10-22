@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Accounts;
 
+use App\Models\Project;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Contracts\Validation\ValidationRule;
@@ -18,7 +19,10 @@ class UpdateAccountRoleRequest extends FormRequest
         $target = $this->route('account');
         $newRole = Role::find($this->input('role_id'));
 
-        return $this->user()->canChangeRoleOf($target)
+        $isProjectMember = Project::current()?->members()->whereKey($target->id)->exists() ?? false;
+
+        return $isProjectMember
+            && $this->user()->canChangeRoleOf($target)
             && $this->user()->canAssignRole($newRole);
     }
 

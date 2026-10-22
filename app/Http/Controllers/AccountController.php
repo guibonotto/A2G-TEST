@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\Accounts\UpdateAccountRoleRequest;
+use App\Models\Project;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
@@ -13,7 +14,7 @@ use Inertia\Response;
 class AccountController extends Controller
 {
     /**
-     * Display a listing of the user accounts.
+     * Display the accounts of the current project's members.
      */
     public function index(Request $request): Response
     {
@@ -21,6 +22,7 @@ class AccountController extends Controller
 
         return Inertia::render('management/accounts/index', [
             'accounts' => User::query()
+                ->whereHas('projects', fn ($query) => $query->whereKey(Project::current()->id))
                 ->with('role:id,name,slug')
                 ->orderBy('name')
                 ->get(['id', 'name', 'email', 'role_id', 'created_at'])

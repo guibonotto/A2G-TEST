@@ -14,7 +14,7 @@ Route::middleware(['auth', 'verified', 'role:qa,admin'])->group(function () {
         Route::put('management/statuses/{testCaseStatus}', [TestCaseStatusController::class, 'update'])->name('test-case-statuses.update');
         Route::delete('management/statuses/{testCaseStatus}', [TestCaseStatusController::class, 'destroy'])->name('test-case-statuses.destroy');
     });
-    Route::middleware('permission:users.manage')->group(function () {
+    Route::middleware(['permission:users.manage', 'project'])->group(function () {
         Route::get('management/accounts', [AccountController::class, 'index'])->name('accounts.index');
         Route::put('management/accounts/{account}', [AccountController::class, 'update'])->name('accounts.update');
     });
