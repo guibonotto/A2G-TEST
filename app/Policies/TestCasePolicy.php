@@ -21,7 +21,7 @@ class TestCasePolicy
      */
     public function update(User $user, TestCase $testCase): bool
     {
-        return ! $user->hasRole('viewer') && $this->belongsToProject($user, $testCase);
+        return ! $user->hasRoleIn($testCase->project, 'viewer') && $this->belongsToProject($user, $testCase);
     }
 
     /**
@@ -29,7 +29,7 @@ class TestCasePolicy
      */
     public function delete(User $user, TestCase $testCase): bool
     {
-        return ! $user->hasRole('viewer') && $this->belongsToProject($user, $testCase);
+        return ! $user->hasRoleIn($testCase->project, 'viewer') && $this->belongsToProject($user, $testCase);
     }
 
     /**
@@ -37,7 +37,7 @@ class TestCasePolicy
      */
     public function assign(User $user, TestCase $testCase): bool
     {
-        return $user->hasPermission(Permission::AssignTestCases) && $this->belongsToProject($user, $testCase);
+        return $user->hasPermission(Permission::AssignTestCases, $testCase->project) && $this->belongsToProject($user, $testCase);
     }
 
     /**

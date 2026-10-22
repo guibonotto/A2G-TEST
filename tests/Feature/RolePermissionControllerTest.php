@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Enums\Permission;
-use App\Models\Project;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -34,7 +33,7 @@ class RolePermissionControllerTest extends TestCase
         $developer = $this->createUserWithRole('developer');
 
         $this->actingAs($developer)->get(route('role-permissions.index'))->assertForbidden();
-        $this->actingAs($developer)->put(route('role-permissions.update', $developer->role))->assertForbidden();
+        $this->actingAs($developer)->put(route('role-permissions.update', $this->roleOf($developer)))->assertForbidden();
     }
 
     public function test_qa_can_view_the_role_permission_list(): void
@@ -95,7 +94,7 @@ class RolePermissionControllerTest extends TestCase
         $qa = $this->createUserWithRole('qa');
         $adminRole = Role::firstOrCreate(['slug' => 'admin'], ['name' => 'admin']);
 
-        $this->actingAs($qa)->put(route('role-permissions.update', $qa->role), ['permissions' => []])->assertForbidden();
+        $this->actingAs($qa)->put(route('role-permissions.update', $this->roleOf($qa)), ['permissions' => []])->assertForbidden();
         $this->actingAs($qa)->put(route('role-permissions.update', $adminRole), ['permissions' => []])->assertForbidden();
     }
 
@@ -103,54 +102,41 @@ class RolePermissionControllerTest extends TestCase
     {
         $admin = $this->createUserWithRole('admin');
 
-        $this->actingAs($admin)->put(route('role-permissions.update', $admin->role), ['permissions' => []])->assertForbidden();
+        $this->actingAs($admin)->put(route('role-permissions.update', $this->roleOf($admin)), ['permissions' => []])->assertForbidden();
     }
 
     public function test_qa_without_the_manage_roles_permission_is_blocked(): void
     {
         $qa = $this->createUserWithRole('qa');
-        $qa->role->update(['permissions' => []]);
+        $this->roleOf($qa)->update(['permissions' => []]);
 
         $this->actingAs($qa)->get(route('role-permissions.index'))->assertForbidden();
-    }
-
-    /**
-     * Account management is scoped to the selected project.
-     */
-    private function projectWithMember(User $user): Project
-    {
-        $project = Project::factory()->create();
-        $project->members()->attach($user);
-
-        return $project;
     }
 
     public function test_admins_keep_access_even_when_their_stored_permissions_are_empty(): void
     {
         $admin = $this->createUserWithRole('admin');
-        $admin->role->update(['permissions' => []]);
+        $this->roleOf($admin)->update(['permissions' => []]);
 
         $this->actingAs($admin)->get(route('role-permissions.index'))->assertOk();
         $this->actingAs($admin)->get(route('test-case-statuses.index'))->assertOk();
-        $this->actingAs($admin)->withSession(['current_project_id' => $this->projectWithMember($admin)->id])
-            ->get(route('accounts.index'))->assertOk();
+        $this->actingAs($admin)->get(route('accounts.index'))->assertOk();
     }
 
     public function test_management_roles_that_were_never_configured_keep_full_access(): void
     {
         $qa = $this->createUserWithRole('qa');
-        $qa->role->update(['permissions' => null]);
+        $this->roleOf($qa)->update(['permissions' => null]);
 
         $this->actingAs($qa)->get(route('role-permissions.index'))->assertOk();
         $this->actingAs($qa)->get(route('test-case-statuses.index'))->assertOk();
-        $this->actingAs($qa)->withSession(['current_project_id' => $this->projectWithMember($qa)->id])
-            ->get(route('accounts.index'))->assertOk();
+        $this->actingAs($qa)->get(route('accounts.index'))->assertOk();
     }
 
     public function test_roles_below_management_that_were_never_configured_get_nothing(): void
     {
         $developer = $this->createUserWithRole('developer');
-        $developer->role->update(['permissions' => null]);
+        $this->roleOf($developer)->update(['permissions' => null]);
 
         $this->assertFalse($developer->fresh()->hasPermission(Permission::ManageStatuses));
     }
@@ -158,7 +144,7 @@ class RolePermissionControllerTest extends TestCase
     public function test_an_explicitly_empty_set_is_still_honoured(): void
     {
         $qa = $this->createUserWithRole('qa');
-        $qa->role->update(['permissions' => []]);
+        $this->roleOf($qa)->update(['permissions' => []]);
 
         $this->actingAs($qa)->get(route('role-permissions.index'))->assertForbidden();
     }
@@ -167,7 +153,7 @@ class RolePermissionControllerTest extends TestCase
     {
         $qa = $this->createUserWithRole('qa');
         $developer = $this->createUserWithRole('developer');
-        $developer->role->update(['permissions' => null]);
+        $this->roleOf($developer)->update(['permissions' => null]);
 
         $response = $this->actingAs($qa)->get(route('role-permissions.index'));
 

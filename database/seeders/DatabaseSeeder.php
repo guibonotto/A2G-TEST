@@ -4,16 +4,17 @@ namespace Database\Seeders;
 
 use App\Enums\Permission;
 use App\Models\Classification;
+use App\Models\Project;
 use App\Models\Role;
 use App\Models\TestCaseStatus;
 use App\Models\User;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
+/**
+ * Model events stay on: roles and projects generate their uuid when created.
+ */
 class DatabaseSeeder extends Seeder
 {
-    use WithoutModelEvents;
-
     /**
      * Seed the application's database.
      */
@@ -41,16 +42,21 @@ class DatabaseSeeder extends Seeder
             ['name' => 'Viewer Demo', 'email' => 'viewer@a2gtest.com', 'role' => 'viewer'],
         ];
 
+        /** Roles are held per project, so the demo accounts share a demo project where each one has its role. */
+        $demoProject = null;
+
         foreach ($demoUsers as $demoUser) {
-            User::firstOrCreate(
+            $user = User::firstOrCreate(
                 ['email' => $demoUser['email']],
                 [
                     'name' => $demoUser['name'],
                     'password' => 'password',
                     'email_verified_at' => now(),
-                    'role_id' => Role::where('slug', $demoUser['role'])->value('id'),
                 ]
             );
+
+            $demoProject ??= Project::firstOrCreate(['name' => 'Demo Project'], ['owner_id' => $user->id]);
+            $demoProject->addMember($user, $demoUser['role']);
         }
 
         $classifications = [

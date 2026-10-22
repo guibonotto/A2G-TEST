@@ -23,6 +23,8 @@ class Role extends Model
 
     public const string ADMIN = 'admin';
 
+    public const string VIEWER = 'viewer';
+
     /**
      * Fixed hierarchy: a role may only manage roles and users strictly below its own level.
      */

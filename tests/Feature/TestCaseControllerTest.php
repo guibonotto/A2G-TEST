@@ -32,13 +32,13 @@ class TestCaseControllerTest extends TestCase
     }
 
     /**
-     * Create a project, attach the given user as a member, mark it as the
-     * user's active project in session, and authenticate as that user.
+     * Use the project the user already holds a role in (or a new one), mark it
+     * as the user's active project in session, and authenticate as that user.
      */
     private function actingAsProjectMember(User $user): Project
     {
-        $project = Project::factory()->create();
-        $project->members()->attach($user);
+        $project = $user->projects()->first() ?? Project::factory()->create();
+        $project->members()->syncWithoutDetaching($user);
         $this->withSession(['current_project_id' => $project->id]);
         $this->actingAs($user);
 
@@ -420,7 +420,7 @@ class TestCaseControllerTest extends TestCase
                 ->has('availableRequirements', 1)
             );
 
-        $project->members()->attach($developer);
+        $project->members()->syncWithoutDetaching($developer);
         $this->withSession(['current_project_id' => $project->id]);
         $this->actingAs($developer);
         $this->get(route('test-cases.create'))
@@ -784,15 +784,14 @@ class TestCaseControllerTest extends TestCase
 
     public function test_show_includes_assignable_users_only_for_qa(): void
     {
-        $qa = $this->createUserWithRole('qa');
-        $this->createUserWithRole('developer');
-        $this->createUserWithRole('viewer');
-        $developer = $this->createUserWithRole('developer');
-        $classification = Classification::create(['name' => 'Funcional']);
-
+        $otherProject = Project::factory()->create();
+        $this->createUserWithRole('developer', $otherProject);
+        $this->createUserWithRole('viewer', $otherProject);
         $project = Project::factory()->create();
-        $project->members()->attach([$qa->id, $developer->id]);
         $this->withSession(['current_project_id' => $project->id]);
+        $qa = $this->createUserWithRole('qa', $project);
+        $developer = $this->createUserWithRole('developer', $project);
+        $classification = Classification::create(['name' => 'Funcional']);
 
         $testCase = TestCaseModel::create([
             'title' => 'Login com credenciais válidas',
@@ -992,7 +991,7 @@ class TestCaseControllerTest extends TestCase
         $qa = $this->createUserWithRole('qa');
         $otherQa = $this->createUserWithRole('qa');
         $project = $this->actingAsProjectMember($qa);
-        $project->members()->attach($otherQa);
+        $project->members()->syncWithoutDetaching($otherQa);
         $classification = Classification::create(['name' => 'Funcional']);
 
         $testCase = TestCaseModel::create([
@@ -1015,7 +1014,7 @@ class TestCaseControllerTest extends TestCase
         $qa = $this->createUserWithRole('qa');
         $developer = $this->createUserWithRole('developer');
         $project = $this->actingAsProjectMember($qa);
-        $project->members()->attach($developer);
+        $project->members()->syncWithoutDetaching($developer);
         $classification = Classification::create(['name' => 'Funcional']);
 
         $testCase = TestCaseModel::create([
@@ -1212,7 +1211,7 @@ class TestCaseControllerTest extends TestCase
     {
         $owner = User::factory()->create();
         $ownerProject = Project::factory()->create();
-        $ownerProject->members()->attach($owner);
+        $ownerProject->members()->syncWithoutDetaching($owner);
         $classification = Classification::create(['name' => 'Funcional']);
         $pending = $this->createStatus('Pending', 'warning');
         $failed = $this->createStatus('Failed', 'destructive');
@@ -1306,8 +1305,8 @@ class TestCaseControllerTest extends TestCase
         $qa = $this->createUserWithRole('qa');
         $project = $this->actingAsProjectMember($qa);
         $member = $this->createUserWithRole('developer');
-        $project->members()->attach($member);
-        $outsider = $this->createUserWithRole('developer');
+        $project->members()->syncWithoutDetaching($member);
+        $outsider = $this->createUserWithRole('developer', Project::factory()->create());
         $testCase = TestCaseModel::create(['title' => 'Login', 'created_by' => $qa->id, 'project_id' => $project->id]);
 
         $this->get(route('test-cases.show', $testCase))
@@ -1328,7 +1327,7 @@ class TestCaseControllerTest extends TestCase
     {
         $qa = $this->createUserWithRole('qa');
         $this->actingAsProjectMember($qa);
-        $outsider = $this->createUserWithRole('developer');
+        $outsider = $this->createUserWithRole('developer', Project::factory()->create());
 
         $this->post(route('test-cases.store'), [
             'title' => 'Login',
@@ -1349,7 +1348,7 @@ class TestCaseControllerTest extends TestCase
         $this->get(route('test-cases.show', $testCase))
             ->assertInertia(fn (Assert $page) => $page
                 ->where('assignableUsers.0.email', $qa->email)
-                ->where('assignableUsers.0.role', $qa->role->name)
+                ->where('assignableUsers.0.role', $this->roleOf($qa)->name)
             );
     }
 }

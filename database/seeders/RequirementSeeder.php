@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Project;
 use App\Models\Requirement;
 use Illuminate\Database\Seeder;
 
@@ -47,13 +48,20 @@ class RequirementSeeder extends Seeder
     ];
 
     /**
-     * Seed the functional requirements from the project proposal.
+     * Seed the functional requirements from the project proposal into the demo
+     * project, since requirements belong to a project.
      */
     public function run(): void
     {
+        $demoProject = Project::query()->where('name', 'Demo Project')->first();
+
+        if ($demoProject === null) {
+            return;
+        }
+
         foreach ($this->requirements as $requirement) {
             Requirement::firstOrCreate(
-                ['code' => $requirement['code']],
+                ['project_id' => $demoProject->id, 'code' => $requirement['code']],
                 [
                     'type' => 'funcional',
                     'title' => $requirement['title'],

@@ -28,18 +28,14 @@ class AccountControllerTest extends TestCase
      */
     private function memberWithRole(string $slug): User
     {
-        $user = $this->createUserWithRole($slug);
-        $this->project->members()->attach($user);
-
-        return $user;
+        return $this->createUserWithRole($slug, $this->project);
     }
 
     public function test_only_members_of_the_current_project_are_listed(): void
     {
         $admin = $this->memberWithRole('admin');
         $member = $this->memberWithRole('developer');
-        $outsider = $this->createUserWithRole('developer');
-        Project::factory()->create()->members()->attach($outsider);
+        $outsider = $this->createUserWithRole('developer', Project::factory()->create());
 
         $this->actingAs($admin)->get(route('accounts.index'))
             ->assertInertia(fn (Assert $page) => $page
@@ -50,11 +46,25 @@ class AccountControllerTest extends TestCase
     public function test_the_role_of_a_user_outside_the_current_project_cannot_be_changed(): void
     {
         $admin = $this->memberWithRole('admin');
-        $outsider = $this->createUserWithRole('developer');
+        $outsider = $this->createUserWithRole('developer', Project::factory()->create());
         $viewerRole = Role::firstOrCreate(['slug' => 'viewer'], ['name' => 'viewer']);
 
         $this->actingAs($admin)->put(route('accounts.update', $outsider), ['role_id' => $viewerRole->id])->assertForbidden();
-        $this->assertNotSame($viewerRole->id, $outsider->fresh()->role_id);
+        $this->assertSame('developer', $this->roleOf($outsider)->slug);
+    }
+
+    public function test_changing_a_role_only_affects_the_current_project(): void
+    {
+        $admin = $this->memberWithRole('admin');
+        $developer = $this->memberWithRole('developer');
+        $otherProject = Project::factory()->create();
+        $otherProject->addMember($developer, 'developer');
+        $viewerRole = Role::firstOrCreate(['slug' => 'viewer'], ['name' => 'viewer']);
+
+        $this->actingAs($admin)->put(route('accounts.update', $developer), ['role_id' => $viewerRole->id]);
+
+        $this->assertSame('viewer', $developer->roleIn($this->project)?->slug);
+        $this->assertSame('developer', $developer->fresh()->roleIn($otherProject)?->slug);
     }
 
     public function test_account_management_requires_a_selected_project(): void
@@ -108,7 +118,7 @@ class AccountControllerTest extends TestCase
         ]);
 
         $response->assertRedirect();
-        $this->assertDatabaseHas('users', ['id' => $developer->id, 'role_id' => $viewerRole->id]);
+        $this->assertDatabaseHas('project_user', ['project_id' => $this->project->id, 'user_id' => $developer->id, 'role_id' => $viewerRole->id]);
     }
 
     public function test_qa_can_unset_a_users_role(): void
@@ -121,7 +131,7 @@ class AccountControllerTest extends TestCase
         ]);
 
         $response->assertRedirect();
-        $this->assertDatabaseHas('users', ['id' => $developer->id, 'role_id' => null]);
+        $this->assertDatabaseHas('project_user', ['project_id' => $this->project->id, 'user_id' => $developer->id, 'role_id' => null]);
     }
 
     public function test_role_update_fails_with_an_unknown_role(): void
@@ -144,7 +154,7 @@ class AccountControllerTest extends TestCase
 
         $this->actingAs($admin)->get(route('accounts.index'))->assertOk();
         $this->actingAs($admin)->put(route('accounts.update', $developer), ['role_id' => $qaRole->id])->assertRedirect();
-        $this->assertDatabaseHas('users', ['id' => $developer->id, 'role_id' => $qaRole->id]);
+        $this->assertDatabaseHas('project_user', ['project_id' => $this->project->id, 'user_id' => $developer->id, 'role_id' => $qaRole->id]);
     }
 
     public function test_admin_can_promote_another_user_to_admin(): void
@@ -152,8 +162,8 @@ class AccountControllerTest extends TestCase
         $admin = $this->memberWithRole('admin');
         $developer = $this->memberWithRole('developer');
 
-        $this->actingAs($admin)->put(route('accounts.update', $developer), ['role_id' => $admin->role_id])->assertRedirect();
-        $this->assertDatabaseHas('users', ['id' => $developer->id, 'role_id' => $admin->role_id]);
+        $this->actingAs($admin)->put(route('accounts.update', $developer), ['role_id' => $this->roleOf($admin)->id])->assertRedirect();
+        $this->assertDatabaseHas('project_user', ['project_id' => $this->project->id, 'user_id' => $developer->id, 'role_id' => $this->roleOf($admin)->id]);
     }
 
     public function test_qa_cannot_promote_a_user_to_qa_or_admin(): void
@@ -162,7 +172,7 @@ class AccountControllerTest extends TestCase
         $developer = $this->memberWithRole('developer');
         $adminRole = Role::firstOrCreate(['slug' => 'admin'], ['name' => 'admin']);
 
-        $this->actingAs($qa)->put(route('accounts.update', $developer), ['role_id' => $qa->role_id])->assertForbidden();
+        $this->actingAs($qa)->put(route('accounts.update', $developer), ['role_id' => $this->roleOf($qa)->id])->assertForbidden();
         $this->actingAs($qa)->put(route('accounts.update', $developer), ['role_id' => $adminRole->id])->assertForbidden();
     }
 

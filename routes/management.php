@@ -7,14 +7,15 @@ use App\Http\Controllers\TestCaseStatusController;
 use App\Http\Controllers\TestTemplateController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['auth', 'verified', 'role:qa,admin'])->group(function () {
+/** Roles are held per project, so every management screen needs a selected project to know the user's role. */
+Route::middleware(['auth', 'verified', 'project', 'role:qa,admin'])->group(function () {
     Route::middleware('permission:statuses.manage')->group(function () {
         Route::get('management/statuses', [TestCaseStatusController::class, 'index'])->name('test-case-statuses.index');
         Route::post('management/statuses', [TestCaseStatusController::class, 'store'])->name('test-case-statuses.store');
         Route::put('management/statuses/{testCaseStatus}', [TestCaseStatusController::class, 'update'])->name('test-case-statuses.update');
         Route::delete('management/statuses/{testCaseStatus}', [TestCaseStatusController::class, 'destroy'])->name('test-case-statuses.destroy');
     });
-    Route::middleware(['permission:users.manage', 'project'])->group(function () {
+    Route::middleware('permission:users.manage')->group(function () {
         Route::get('management/accounts', [AccountController::class, 'index'])->name('accounts.index');
         Route::put('management/accounts/{account}', [AccountController::class, 'update'])->name('accounts.update');
     });
@@ -24,12 +25,10 @@ Route::middleware(['auth', 'verified', 'role:qa,admin'])->group(function () {
         Route::put('management/permissions/{role}', [RolePermissionController::class, 'update'])->name('role-permissions.update');
     });
 
-    Route::middleware('project')->group(function () {
-        Route::get('management/requirements', [RequirementController::class, 'index'])->name('requirements.index');
-        Route::post('management/requirements', [RequirementController::class, 'store'])->name('requirements.store');
-        Route::put('management/requirements/{requirement}', [RequirementController::class, 'update'])->name('requirements.update');
-        Route::delete('management/requirements/{requirement}', [RequirementController::class, 'destroy'])->name('requirements.destroy');
-    });
+    Route::get('management/requirements', [RequirementController::class, 'index'])->name('requirements.index');
+    Route::post('management/requirements', [RequirementController::class, 'store'])->name('requirements.store');
+    Route::put('management/requirements/{requirement}', [RequirementController::class, 'update'])->name('requirements.update');
+    Route::delete('management/requirements/{requirement}', [RequirementController::class, 'destroy'])->name('requirements.destroy');
 
     Route::get('management/templates', [TestTemplateController::class, 'index'])->name('test-templates.index');
     Route::post('management/templates', [TestTemplateController::class, 'store'])->name('test-templates.store');

@@ -35,13 +35,10 @@ class StoreTestCaseRequest extends FormRequest
             'assigned_to' => [
                 'nullable',
                 'integer',
-                Rule::exists('users', 'id')->where(
-                    fn ($query) => $query->whereIn(
-                        'role_id',
-                        Role::query()->whereIn('slug', Role::ASSIGNABLE_SLUGS)->pluck('id'),
-                    ),
-                ),
-                Rule::exists('project_user', 'user_id')->where('project_id', Project::current()?->id),
+                /** Only members holding an assignable role in this project. */
+                Rule::exists('project_user', 'user_id')
+                    ->where('project_id', Project::current()?->id)
+                    ->whereIn('role_id', Role::query()->whereIn('slug', Role::ASSIGNABLE_SLUGS)->pluck('id')->all()),
             ],
             'steps' => ['required', 'array', 'min:1'],
             'steps.*.description' => ['required', 'string'],

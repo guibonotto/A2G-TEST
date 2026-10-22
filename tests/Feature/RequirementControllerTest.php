@@ -26,7 +26,7 @@ class RequirementControllerTest extends TestCase
     private function createProjectMember(string $role): User
     {
         $user = $this->createUserWithRole($role);
-        $this->project->members()->attach($user);
+        $this->project->members()->syncWithoutDetaching($user);
 
         return $user;
     }
@@ -86,7 +86,8 @@ class RequirementControllerTest extends TestCase
     {
         $qa = $this->createUserWithRole('qa');
 
-        $this->actingAs($qa)->get(route('requirements.index'))->assertRedirect(route('projects.index'));
+        $this->actingAs($qa)->withSession(['current_project_id' => null])
+            ->get(route('requirements.index'))->assertRedirect(route('projects.index'));
     }
 
     public function test_qa_can_view_the_requirement_list(): void

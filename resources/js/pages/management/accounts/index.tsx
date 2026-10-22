@@ -73,7 +73,7 @@ export default function ManageAccounts({ accounts, roles }: Props) {
             <div className="flex flex-col gap-6 p-4">
                 <Heading
                     title="Manage accounts"
-                    description="Set the role of each member of the current project. A user's role applies to every project they belong to. You can only change users below your own role, and only to roles you outrank."
+                    description="Set the role each member holds in the current project. Roles are per project, so the same person can have a different role elsewhere. You can only change users below your own role, and only to roles you outrank."
                 />
 
                 <Card className="overflow-hidden py-0">

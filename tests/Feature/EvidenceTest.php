@@ -34,7 +34,7 @@ class EvidenceTest extends TestCase
         $classification = Classification::firstOrCreate(['name' => 'Integration']);
 
         $project = Project::factory()->create();
-        $project->members()->attach($user);
+        $project->members()->syncWithoutDetaching($user);
         $this->withSession(['current_project_id' => $project->id]);
 
         return TestCaseModel::create([
@@ -303,9 +303,8 @@ class EvidenceTest extends TestCase
      */
     private function actingAsMemberOfAnotherProject(): User
     {
-        $outsider = $this->createUserWithRole('qa');
         $otherProject = Project::factory()->create();
-        $otherProject->members()->attach($outsider);
+        $outsider = $this->createUserWithRole('qa', $otherProject);
 
         $this->withSession(['current_project_id' => $otherProject->id]);
         $this->actingAs($outsider);

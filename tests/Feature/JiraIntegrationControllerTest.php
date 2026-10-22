@@ -29,7 +29,7 @@ class JiraIntegrationControllerTest extends TestCase
     private function createProjectMember(string $role): User
     {
         $user = $this->createUserWithRole($role);
-        $this->project->members()->attach($user);
+        $this->project->members()->syncWithoutDetaching($user);
 
         return $user;
     }

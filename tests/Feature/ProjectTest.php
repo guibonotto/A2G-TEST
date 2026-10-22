@@ -48,66 +48,81 @@ class ProjectTest extends TestCase
         $this->assertSame($project->id, session('current_project_id'));
     }
 
-    public function test_a_user_without_a_role_becomes_an_administrator_when_creating_a_project(): void
+    public function test_the_creator_becomes_administrator_of_the_new_project(): void
     {
-        $user = User::factory()->create(['role_id' => null]);
+        $user = User::factory()->create();
 
         $this->actingAs($user)->post(route('projects.store'), ['name' => 'Alpha Project']);
 
-        $this->assertTrue($user->fresh()->hasRole(Role::ADMIN));
+        $project = Project::whereName('Alpha Project')->first();
+        $this->assertSame(Role::ADMIN, $user->roleIn($project)?->slug);
     }
 
     public function test_a_new_administrator_can_reach_the_management_screens(): void
     {
-        $user = User::factory()->create(['role_id' => null]);
+        $user = User::factory()->create();
 
         $this->actingAs($user)->post(route('projects.store'), ['name' => 'Alpha Project']);
 
-        $this->actingAs($user->fresh())->get(route('accounts.index'))->assertOk();
-        $this->actingAs($user->fresh())->get(route('requirements.index'))->assertOk();
+        $this->actingAs($user)->get(route('accounts.index'))->assertOk();
+        $this->actingAs($user)->get(route('requirements.index'))->assertOk();
     }
 
-    public function test_a_lower_role_is_promoted_to_administrator_when_creating_a_project(): void
+    public function test_creating_a_project_does_not_change_the_role_held_in_other_projects(): void
     {
-        $user = $this->createUserWithRole('developer');
+        $existingProject = Project::factory()->create();
+        $user = $this->createUserWithRole('developer', $existingProject);
 
         $this->actingAs($user)->post(route('projects.store'), ['name' => 'Alpha Project']);
 
-        $this->assertTrue($user->fresh()->hasRole(Role::ADMIN));
+        $this->assertSame('developer', $user->fresh()->roleIn($existingProject)?->slug);
+        $this->assertSame(Role::ADMIN, $user->fresh()->roleIn(Project::whereName('Alpha Project')->first())?->slug);
     }
 
-    public function test_an_administrator_keeps_the_same_role_when_creating_a_project(): void
+    public function test_the_same_user_can_hold_different_roles_in_different_projects(): void
     {
-        $user = $this->createUserWithRole(Role::ADMIN);
-        $adminRoleId = $user->role_id;
+        $qaProject = Project::factory()->create();
+        $viewerProject = Project::factory()->create();
+        $user = $this->createUserWithRole('qa', $qaProject);
+        $viewerProject->addMember($user, 'viewer');
 
-        $this->actingAs($user)->post(route('projects.store'), ['name' => 'Alpha Project']);
-
-        $this->assertSame($adminRoleId, $user->fresh()->role_id);
-        $this->assertSame(1, Role::where('slug', Role::ADMIN)->count());
+        $this->actingAs($user)->withSession(['current_project_id' => $qaProject->id])
+            ->get(route('requirements.index'))->assertOk();
+        $this->actingAs($user->fresh())->withSession(['current_project_id' => $viewerProject->id])
+            ->get(route('requirements.index'))->assertForbidden();
     }
 
-    public function test_a_failed_project_creation_does_not_change_the_role(): void
+    public function test_the_shared_user_role_is_the_one_held_in_the_selected_project(): void
     {
-        $user = User::factory()->create(['role_id' => null]);
+        $project = Project::factory()->create();
+        $user = $this->createUserWithRole('qa', $project);
+        Project::factory()->create()->addMember($user, 'viewer');
+
+        $this->actingAs($user)->withSession(['current_project_id' => $project->id])
+            ->get(route('projects.index'))
+            ->assertInertia(fn (Assert $page) => $page->where('auth.user.role.slug', 'qa'));
+    }
+
+    public function test_a_failed_project_creation_grants_no_role(): void
+    {
+        $user = User::factory()->create();
 
         $this->actingAs($user)->post(route('projects.store'), ['name' => '']);
 
-        $this->assertNull($user->fresh()->role_id);
+        $this->assertDatabaseCount('project_user', 0);
     }
 
-    public function test_joining_a_project_by_invitation_does_not_grant_a_role(): void
+    public function test_joining_a_project_by_invitation_starts_as_viewer(): void
     {
         $owner = User::factory()->create();
         $project = Project::factory()->create(['owner_id' => $owner->id]);
         $token = 'invite-token-for-role-test';
         $project->invitations()->create(['token_hash' => hash('sha256', $token)]);
-        $guest = User::factory()->create(['role_id' => null]);
+        $guest = User::factory()->create();
 
         $this->actingAs($guest)->get(route('projects.invite', $token));
 
-        $this->assertTrue($project->members()->whereKey($guest->id)->exists());
-        $this->assertNull($guest->fresh()->role_id);
+        $this->assertSame(Role::VIEWER, $guest->roleIn($project)?->slug);
     }
 
     public function test_creating_a_project_requires_a_name(): void
@@ -171,7 +186,7 @@ class ProjectTest extends TestCase
     {
         $owner = User::factory()->create();
         $project = Project::factory()->for($owner, 'owner')->create();
-        $project->members()->attach($owner);
+        $project->members()->syncWithoutDetaching($owner);
 
         $this->assertTrue($project->members()->whereKey($owner->id)->exists());
     }
@@ -180,7 +195,7 @@ class ProjectTest extends TestCase
     {
         $owner = User::factory()->create();
         $project = Project::factory()->for($owner, 'owner')->create();
-        $project->members()->attach($owner);
+        $project->members()->syncWithoutDetaching($owner);
 
         $outsider = User::factory()->create();
 
@@ -193,7 +208,7 @@ class ProjectTest extends TestCase
     {
         $owner = User::factory()->create();
         $project = Project::factory()->for($owner, 'owner')->create();
-        $project->members()->attach($owner);
+        $project->members()->syncWithoutDetaching($owner);
 
         $response = $this->actingAs($owner)->get(route('projects.show', $project));
 
@@ -204,7 +219,7 @@ class ProjectTest extends TestCase
     {
         $user = User::factory()->create();
         $project = Project::factory()->create(['name' => 'Alpha Project']);
-        $project->members()->attach($user);
+        $project->members()->syncWithoutDetaching($user);
         Project::factory()->create();
 
         $response = $this->actingAs($user)->get(route('projects.index'));
@@ -220,7 +235,7 @@ class ProjectTest extends TestCase
     {
         $user = User::factory()->create();
         $project = Project::factory()->create();
-        $project->members()->attach($user);
+        $project->members()->syncWithoutDetaching($user);
 
         $response = $this->actingAs($user)->post(route('projects.select', $project));
 
@@ -243,7 +258,7 @@ class ProjectTest extends TestCase
         $owner = User::factory()->create();
         $member = User::factory()->create();
         $project = Project::factory()->for($owner, 'owner')->create();
-        $project->members()->attach([$owner->id, $member->id]);
+        $project->members()->syncWithoutDetaching([$owner->id, $member->id]);
 
         $response = $this->actingAs($owner)->delete(route('projects.members.destroy', [$project, $member]));
 

@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\Permission;
 use App\Http\Requests\ProjectStoreRequest;
 use App\Models\Project;
 use App\Models\ProjectInvitation;
@@ -38,9 +37,9 @@ class ProjectController extends Controller
     /**
      * Create a new project owned by the authenticated user.
      *
-     * Whoever creates a project becomes an administrator, so they can manage
-     * everything their project needs (members, permissions, requirements...).
-     * Roles are global, so this makes them an administrator of the whole system.
+     * Whoever creates a project becomes its administrator, so they can manage
+     * everything the project needs (members, roles, requirements...). The role
+     * only applies to this project.
      */
     public function store(ProjectStoreRequest $request): RedirectResponse
     {
@@ -51,16 +50,7 @@ class ProjectController extends Controller
                 'name' => $request->validated('name'),
             ]);
 
-            $project->members()->attach($user);
-
-            if (! $user->hasRole(Role::ADMIN)) {
-                $adminRole = Role::firstOrCreate(
-                    ['slug' => Role::ADMIN],
-                    ['name' => 'Administrator', 'permissions' => array_column(Permission::cases(), 'value')],
-                );
-
-                $user->update(['role_id' => $adminRole->id]);
-            }
+            $project->addMember($user, Role::ADMIN);
 
             return $project;
         });
@@ -84,8 +74,9 @@ class ProjectController extends Controller
                 ->firstOrFail();
             $project = $invitation->project;
 
+            /** Newcomers start with the least access; the project's admin raises it in Manage accounts. */
             if ($project->members()->whereKey($request->user()->id)->doesntExist()) {
-                $project->members()->attach($request->user());
+                $project->addMember($request->user(), Role::VIEWER);
             }
 
             $invitation->forceFill([

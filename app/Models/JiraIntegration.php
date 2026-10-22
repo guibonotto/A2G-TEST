@@ -63,6 +63,6 @@ class JiraIntegration extends Model
      */
     public function canBeDisconnectedBy(User $user): bool
     {
-        return $user->hasRole('admin') || $this->connected_by === $user->id;
+        return $user->hasRoleIn($this->project, Role::ADMIN) || $this->connected_by === $user->id;
     }
 }

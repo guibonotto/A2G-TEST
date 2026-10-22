@@ -40,7 +40,23 @@ class Project extends Model
 
     public function members(): BelongsToMany
     {
-        return $this->belongsToMany(User::class, 'project_user')->withTimestamps();
+        return $this->belongsToMany(User::class, 'project_user')->withPivot('role_id')->withTimestamps();
+    }
+
+    /**
+     * Add the user to the project with the given role (by slug), or update
+     * the role they hold when they already belong to it. A role missing from an
+     * unseeded database is created with no stored permissions, which the
+     * management roles read as full access and every other role as none.
+     */
+    public function addMember(User $user, ?string $roleSlug): void
+    {
+        $roleId = $roleSlug !== null
+            ? Role::firstOrCreate(['slug' => $roleSlug], ['name' => Str::headline($roleSlug)])->id
+            : null;
+
+        $this->members()->syncWithoutDetaching([$user->id => ['role_id' => $roleId]]);
+        $user->forgetRoles();
     }
 
     public function invitations(): HasMany

@@ -30,7 +30,7 @@ class TestTemplateControllerTest extends TestCase
     private function actingAsProjectMember(User $user): Project
     {
         $project = Project::factory()->create();
-        $project->members()->attach($user);
+        $project->members()->syncWithoutDetaching($user);
         $this->withSession(['current_project_id' => $project->id]);
         $this->actingAs($user);
 
@@ -104,7 +104,8 @@ class TestTemplateControllerTest extends TestCase
         $developer = $this->createUserWithRole('developer');
         $template = TestTemplate::factory()->create();
 
-        $this->actingAs($developer)->get(route('test-templates.show', $template))
+        $this->actingAs($developer)->withSession(['current_project_id' => null])
+            ->get(route('test-templates.show', $template))
             ->assertRedirect(route('projects.index'));
     }
 

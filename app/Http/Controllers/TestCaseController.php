@@ -494,17 +494,17 @@ class TestCaseController extends Controller
      */
     private function assignableUsers(int $projectId): array
     {
-        return User::query()
-            ->whereHas('projects', fn ($query) => $query->whereKey($projectId))
-            ->whereHas('role', fn ($query) => $query->whereIn('slug', Role::ASSIGNABLE_SLUGS))
-            ->with('role:id,name')
+        $assignableRoles = Role::query()->whereIn('slug', Role::ASSIGNABLE_SLUGS)->pluck('name', 'id');
+
+        return Project::findOrFail($projectId)->members()
+            ->wherePivotIn('role_id', $assignableRoles->keys())
             ->orderBy('name')
-            ->get(['id', 'name', 'email', 'role_id'])
+            ->get(['users.id', 'users.name', 'users.email'])
             ->map(fn (User $user): array => [
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
-                'role' => $user->role?->name,
+                'role' => $assignableRoles[$user->pivot->role_id] ?? null,
             ])
             ->all();
     }

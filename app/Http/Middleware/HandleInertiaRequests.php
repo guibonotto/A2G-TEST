@@ -41,7 +41,10 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'name' => config('app.name'),
             'auth' => [
-                'user' => $request->user()?->load('role'),
+                /** The role shown is the one held in the selected project. */
+                'user' => $request->user()
+                    ? [...$request->user()->toArray(), 'role' => $request->user()->currentRole()]
+                    : null,
             ],
             'currentProject' => fn () => optional(Project::current())->only(['id', 'uuid', 'name', 'owner_id']),
             'myProjects' => fn () => $request->user()

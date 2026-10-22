@@ -22,10 +22,9 @@ class AssignedToMeTest extends TestCase
     {
         parent::setUp();
 
-        $this->qa = $this->createUserWithRole('qa');
         $this->project = Project::factory()->create();
-        $this->project->members()->attach($this->qa);
         $this->withSession(['current_project_id' => $this->project->id]);
+        $this->qa = $this->createUserWithRole('qa', $this->project);
     }
 
     /**
@@ -130,7 +129,7 @@ class AssignedToMeTest extends TestCase
     {
         $developer = $this->createUserWithRole('developer');
         $developer->update(['name' => 'Fulano de Tal']);
-        $this->project->members()->attach($developer);
+        $this->project->members()->syncWithoutDetaching($developer);
         $testCase = $this->createCase('Login', ['assigned_to' => null]);
 
         $this->actingAs($this->qa)
@@ -145,7 +144,7 @@ class AssignedToMeTest extends TestCase
     public function test_the_assignment_toast_offers_to_restore_the_previous_assignee(): void
     {
         $developer = $this->createUserWithRole('developer');
-        $this->project->members()->attach($developer);
+        $this->project->members()->syncWithoutDetaching($developer);
         $testCase = $this->createCase('Login');
 
         $this->actingAs($this->qa)
@@ -161,7 +160,7 @@ class AssignedToMeTest extends TestCase
     public function test_undoing_restores_the_previous_assignee(): void
     {
         $developer = $this->createUserWithRole('developer');
-        $this->project->members()->attach($developer);
+        $this->project->members()->syncWithoutDetaching($developer);
         $testCase = $this->createCase('Login');
 
         $this->actingAs($this->qa)->patch(route('test-cases.assign', $testCase), ['assigned_to' => $developer->id]);
@@ -174,7 +173,7 @@ class AssignedToMeTest extends TestCase
     public function test_undoing_an_assignment_to_nobody_leaves_the_case_unassigned(): void
     {
         $developer = $this->createUserWithRole('developer');
-        $this->project->members()->attach($developer);
+        $this->project->members()->syncWithoutDetaching($developer);
         $testCase = $this->createCase('Login', ['assigned_to' => null]);
 
         $this->actingAs($this->qa)
@@ -196,7 +195,7 @@ class AssignedToMeTest extends TestCase
     public function test_undo_is_refused_when_the_previous_assignee_left_the_project(): void
     {
         $leaver = $this->createUserWithRole('developer');
-        $this->project->members()->attach($leaver);
+        $this->project->members()->syncWithoutDetaching($leaver);
         $testCase = $this->createCase('Login', ['assigned_to' => $leaver->id]);
 
         $this->actingAs($this->qa)->patch(route('test-cases.assign', $testCase), ['assigned_to' => $this->qa->id]);

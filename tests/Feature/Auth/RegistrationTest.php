@@ -31,7 +31,7 @@ class RegistrationTest extends TestCase
 
         $this->assertNotNull($user);
         $this->assertSame('João Silva', $user->name);
-        $this->assertNull($user->role_id);
+        $this->assertSame(0, $user->projects()->count());
 
         // RegisterResponse customizado desloga o usuário e manda para o login.
         $this->assertGuest();
@@ -51,10 +51,8 @@ class RegistrationTest extends TestCase
 
         $response->assertRedirect(route('login'));
         $this->assertGuest();
-        $this->assertDatabaseHas('users', [
-            'email' => 'joao@example.com',
-            'role_id' => null,
-        ]);
+        $this->assertDatabaseHas('users', ['email' => 'joao@example.com']);
+        $this->assertDatabaseCount('project_user', 0);
     }
 
     public function test_registration_requires_first_and_last_name(): void
