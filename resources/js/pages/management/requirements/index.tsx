@@ -1,4 +1,5 @@
-import { Form, Head, Link, useForm } from '@inertiajs/react';
+// import { Form, Head, Link, useForm, usePage } from '@inertiajs/react';
+import { Form, Head, Link, useForm, usePage } from '@inertiajs/react';
 import { ChevronDown, FileText, MoreHorizontal, Plus } from 'lucide-react';
 import type { FormEvent } from 'react';
 import { useState } from 'react';
@@ -244,6 +245,7 @@ function RequirementForm({
 }
 
 export default function ManageRequirements({ requirements }: Props) {
+    const projectName = usePage().props.currentProject?.name ?? 'this project';
     const [createOpen, setCreateOpen] = useState(false);
     const [search, setSearch] = useState('');
     const [uncoveredOnly, setUncoveredOnly] = useState(false);
@@ -297,7 +299,7 @@ export default function ManageRequirements({ requirements }: Props) {
                 <div className="flex items-center justify-between">
                     <Heading
                         title="Manage requirements"
-                        description="Functional and non-functional requirements that can be linked to test cases."
+                        description={`Requirements of ${projectName} that can be linked to test cases.`}
                     />
 
                     {/* Most requirements arrive from Jira, but that path used
@@ -328,7 +330,7 @@ export default function ManageRequirements({ requirements }: Props) {
                             <DialogTitle>New requirement</DialogTitle>
                             <DialogDescription>
                                 Register a functional or non-functional
-                                requirement.
+                                requirement in <strong>{projectName}</strong>.
                             </DialogDescription>
                             <RequirementForm
                                 form={createForm}
@@ -434,6 +436,7 @@ function RequirementRow({
     showType: boolean;
 }) {
     const [editOpen, setEditOpen] = useState(false);
+    const projectName = usePage().props.currentProject?.name ?? 'this project';
     const [deleteOpen, setDeleteOpen] = useState(false);
 
     const editForm = useForm<RequirementFormData>({
@@ -510,7 +513,7 @@ function RequirementRow({
                             <DialogTitle>Edit requirement</DialogTitle>
                             <DialogDescription>
                                 Update the details of &quot;{requirement.code}
-                                &quot;.
+                                &quot; in <strong>{projectName}</strong>.
                             </DialogDescription>
                             <RequirementForm
                                 form={editForm}

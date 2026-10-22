@@ -200,6 +200,45 @@ class RequirementControllerTest extends TestCase
         ]);
     }
 
+    public function test_the_creation_toast_names_the_project(): void
+    {
+        $qa = $this->createProjectMember('qa');
+        $this->project->update(['name' => 'Projeto 2']);
+
+        $this->actingAs($qa)
+            ->followingRedirects()
+            ->post(route('requirements.store'), [
+                'code' => 'RF050',
+                'type' => 'funcional',
+                'title' => 'Novo',
+                'priority' => 'media',
+            ])
+            ->assertInertia(fn (Assert $page) => $page->hasFlash(
+                'toast.message',
+                'Requirement "RF050" created in Projeto 2.',
+            ));
+    }
+
+    public function test_the_update_toast_names_the_project(): void
+    {
+        $qa = $this->createProjectMember('qa');
+        $this->project->update(['name' => 'Projeto 2']);
+        $requirement = $this->createRequirement();
+
+        $this->actingAs($qa)
+            ->followingRedirects()
+            ->put(route('requirements.update', $requirement), [
+                'code' => 'RF001',
+                'type' => 'funcional',
+                'title' => 'Cadastro',
+                'priority' => 'media',
+            ])
+            ->assertInertia(fn (Assert $page) => $page->hasFlash(
+                'toast.message',
+                'Requirement "RF001" updated in Projeto 2.',
+            ));
+    }
+
     public function test_a_requirement_needs_a_priority(): void
     {
         $qa = $this->createProjectMember('qa');
