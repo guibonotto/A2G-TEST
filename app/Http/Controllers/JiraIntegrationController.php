@@ -7,6 +7,7 @@ use App\Models\JiraExcludedIssue;
 use App\Models\JiraIntegration;
 use App\Models\Project;
 use App\Models\Requirement;
+use App\Models\Role;
 use App\Services\Jira\JiraClient;
 use App\Services\Jira\JiraIssueMapper;
 use Carbon\CarbonInterface;
@@ -53,6 +54,7 @@ class JiraIntegrationController extends Controller
                 'connected_at' => $integration->connected_at,
                 'can_disconnect' => $integration->canBeDisconnectedBy($request->user()),
             ],
+            'can_connect' => $request->user()->hasRole(Role::ADMIN),
             'projects' => $projects,
             'error' => $error,
             'last_synced_at' => $lastSyncedAt === null ? null : Carbon::parse($lastSyncedAt)->toIso8601String(),
@@ -141,7 +143,7 @@ class JiraIntegrationController extends Controller
         abort_unless(
             $integration->canBeDisconnectedBy(request()->user()),
             403,
-            'Only the person who connected Jira or an admin can disconnect it.'
+            'Only a project administrator can disconnect Jira.'
         );
         $integration->delete();
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Jira integration disconnected.')]);

@@ -59,10 +59,11 @@ class JiraIntegration extends Model
     }
 
     /**
-     * Determine if the Jira integration can be disconnected by the given user (ADMIN OR THE USER THAT CONNECTED IT CAN DISCONNECT).
+     * Only an administrator of the integration's project can disconnect it,
+     * the same people who can connect it.
      */
     public function canBeDisconnectedBy(User $user): bool
     {
-        return $user->hasRoleIn($this->project, Role::ADMIN) || $this->connected_by === $user->id;
+        return $user->hasRoleIn($this->project, Role::ADMIN);
     }
 }

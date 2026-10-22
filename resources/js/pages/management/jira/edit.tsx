@@ -43,6 +43,7 @@ import type {
 
 type Props = {
     integration: JiraIntegration | null;
+    can_connect: boolean;
     projects: JiraProject[];
     error: string | null;
     last_synced_at: string | null;
@@ -90,6 +91,7 @@ function isStory(name: string): boolean {
 
 export default function JiraIntegrationEdit({
     integration,
+    can_connect,
     projects,
     error,
     last_synced_at,
@@ -289,11 +291,17 @@ export default function JiraIntegrationEdit({
                             </p>
                         </div>
 
-                        <Button asChild>
-                            <a href={jiraOauthRedirect.url()}>
-                                <Plug /> Connect to Jira
-                            </a>
-                        </Button>
+                        {can_connect ? (
+                            <Button asChild>
+                                <a href={jiraOauthRedirect.url()}>
+                                    <Plug /> Connect to Jira
+                                </a>
+                            </Button>
+                        ) : (
+                            <p className="text-xs text-muted-foreground">
+                                Only a project administrator can connect Jira.
+                            </p>
+                        )}
                     </Card>
                 ) : (
                     <>
@@ -374,10 +382,8 @@ export default function JiraIntegrationEdit({
                                 </Dialog>
                             ) : (
                                 <p className="mt-2 text-xs text-muted-foreground">
-                                    Only{' '}
-                                    {integration.connected_by ??
-                                        'the person who connected it'}{' '}
-                                    or an admin can disconnect this site.
+                                    Only a project administrator can disconnect
+                                    this site.
                                 </p>
                             )}
                         </Card>

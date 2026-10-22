@@ -66,9 +66,9 @@ class JiraIntegrationControllerTest extends TestCase
 
     public function test_redirect_sends_the_user_to_atlassian_with_a_state(): void
     {
-        $qa = $this->createProjectMember('qa');
+        $admin = $this->createProjectMember('admin');
 
-        $response = $this->actingAs($qa)->get(route('jira.redirect'));
+        $response = $this->actingAs($admin)->get(route('jira.redirect'));
 
         $response->assertRedirectContains('https://auth.atlassian.com/authorize');
         $this->assertNotNull(session('jira_oauth_state'));
@@ -76,9 +76,9 @@ class JiraIntegrationControllerTest extends TestCase
 
     public function test_callback_rejects_a_mismatched_state(): void
     {
-        $qa = $this->createProjectMember('qa');
+        $admin = $this->createProjectMember('admin');
 
-        $response = $this->actingAs($qa)
+        $response = $this->actingAs($admin)
             ->withSession(['jira_oauth_state' => 'expected-state'])
             ->get(route('jira.callback', ['state' => 'wrong-state', 'code' => 'abc']));
 
@@ -87,7 +87,7 @@ class JiraIntegrationControllerTest extends TestCase
 
     public function test_callback_stores_the_connection_on_success(): void
     {
-        $qa = $this->createProjectMember('qa');
+        $admin = $this->createProjectMember('admin');
 
         Http::fake([
             'auth.atlassian.com/oauth/token' => Http::response([
@@ -100,7 +100,7 @@ class JiraIntegrationControllerTest extends TestCase
             ]),
         ]);
 
-        $response = $this->actingAs($qa)
+        $response = $this->actingAs($admin)
             ->withSession(['jira_oauth_state' => 'expected-state'])
             ->get(route('jira.callback', ['state' => 'expected-state', 'code' => 'abc']));
 
@@ -109,13 +109,13 @@ class JiraIntegrationControllerTest extends TestCase
             'project_id' => $this->project->id,
             'site_url' => 'https://example.atlassian.net',
             'cloud_id' => 'cloud-123',
-            'connected_by' => $qa->id,
+            'connected_by' => $admin->id,
         ]);
     }
 
     public function test_connecting_keeps_the_connection_of_other_projects(): void
     {
-        $qa = $this->createProjectMember('qa');
+        $admin = $this->createProjectMember('admin');
         $otherIntegration = JiraIntegration::factory()->create();
 
         Http::fake([
@@ -129,7 +129,7 @@ class JiraIntegrationControllerTest extends TestCase
             ]),
         ]);
 
-        $this->actingAs($qa)
+        $this->actingAs($admin)
             ->withSession(['jira_oauth_state' => 'expected-state'])
             ->get(route('jira.callback', ['state' => 'expected-state', 'code' => 'abc']));
 
@@ -148,11 +148,11 @@ class JiraIntegrationControllerTest extends TestCase
 
     public function test_disconnecting_only_removes_the_current_project_connection(): void
     {
-        $qa = $this->createProjectMember('qa');
-        $this->createIntegrationFor($qa);
+        $admin = $this->createProjectMember('admin');
+        $this->createIntegrationFor($admin);
         $otherIntegration = JiraIntegration::factory()->create();
 
-        $this->actingAs($qa)->delete(route('jira.destroy'))->assertRedirect(route('jira.edit'));
+        $this->actingAs($admin)->delete(route('jira.destroy'))->assertRedirect(route('jira.edit'));
 
         $this->assertDatabaseMissing('jira_integrations', ['project_id' => $this->project->id]);
         $this->assertDatabaseHas('jira_integrations', ['id' => $otherIntegration->id]);
@@ -216,24 +216,35 @@ class JiraIntegrationControllerTest extends TestCase
             );
     }
 
-    public function test_qa_can_disconnect_jira(): void
+    public function test_qa_cannot_connect_jira(): void
     {
         $qa = $this->createProjectMember('qa');
-        JiraIntegration::create([
-            'project_id' => $this->project->id,
-            'site_url' => 'https://example.atlassian.net',
-            'cloud_id' => 'cloud-123',
-            'access_token' => 'token',
-            'refresh_token' => 'refresh',
-            'expires_at' => now()->addHour(),
-            'connected_by' => $qa->id,
-            'connected_at' => now(),
-        ]);
 
-        $response = $this->actingAs($qa)->delete(route('jira.destroy'));
+        $this->actingAs($qa)->get(route('jira.redirect'))->assertForbidden();
+        $this->actingAs($qa)->get(route('jira.callback', ['code' => 'abc', 'state' => 'xyz']))->assertForbidden();
 
-        $response->assertRedirect(route('jira.edit'));
         $this->assertDatabaseCount('jira_integrations', 0);
+    }
+
+    public function test_qa_cannot_disconnect_jira_even_if_they_connected_it(): void
+    {
+        $qa = $this->createProjectMember('qa');
+        $this->createIntegrationFor($qa);
+
+        $this->actingAs($qa)->delete(route('jira.destroy'))->assertForbidden();
+
+        $this->assertDatabaseCount('jira_integrations', 1);
+    }
+
+    public function test_the_page_tells_whether_the_user_can_connect(): void
+    {
+        $qa = $this->createProjectMember('qa');
+        $admin = $this->createProjectMember('admin');
+
+        $this->actingAs($qa)->get(route('jira.edit'))
+            ->assertInertia(fn (Assert $page) => $page->where('can_connect', false));
+        $this->actingAs($admin)->get(route('jira.edit'))
+            ->assertInertia(fn (Assert $page) => $page->where('can_connect', true));
     }
 
     public function test_qa_cannot_disconnect_an_integration_connected_by_someone_else(): void
@@ -262,16 +273,15 @@ class JiraIntegrationControllerTest extends TestCase
     public function test_integration_page_tells_whether_the_user_can_disconnect(): void
     {
         $connector = $this->createProjectMember('qa');
-        $otherQa = $this->createProjectMember('qa');
         $this->createIntegrationFor($connector);
 
         Http::fake(['api.atlassian.com/*' => Http::response(['values' => []])]);
 
         $this->actingAs($connector)->get(route('jira.edit'))
-            ->assertInertia(fn (Assert $page) => $page->where('integration.can_disconnect', true));
-
-        $this->actingAs($otherQa)->get(route('jira.edit'))
             ->assertInertia(fn (Assert $page) => $page->where('integration.can_disconnect', false));
+
+        $this->actingAs($this->createProjectMember('admin'))->get(route('jira.edit'))
+            ->assertInertia(fn (Assert $page) => $page->where('integration.can_disconnect', true));
     }
 
     public function test_import_creates_requirements_from_jira_issues(): void
@@ -553,10 +563,10 @@ class JiraIntegrationControllerTest extends TestCase
 
     public function test_callback_returns_to_settings_when_the_user_cancels_on_atlassian(): void
     {
-        $qa = $this->createProjectMember('qa');
+        $admin = $this->createProjectMember('admin');
         Http::fake();
 
-        $response = $this->actingAs($qa)
+        $response = $this->actingAs($admin)
             ->withSession(['jira_oauth_state' => 'expected-state'])
             ->get(route('jira.callback', [
                 'state' => 'expected-state',
@@ -571,7 +581,7 @@ class JiraIntegrationControllerTest extends TestCase
 
     public function test_callback_returns_to_settings_when_no_jira_site_is_accessible(): void
     {
-        $qa = $this->createProjectMember('qa');
+        $admin = $this->createProjectMember('admin');
 
         Http::fake([
             'auth.atlassian.com/oauth/token' => Http::response([
@@ -582,7 +592,7 @@ class JiraIntegrationControllerTest extends TestCase
             'api.atlassian.com/oauth/token/accessible-resources' => Http::response([]),
         ]);
 
-        $response = $this->actingAs($qa)
+        $response = $this->actingAs($admin)
             ->withSession(['jira_oauth_state' => 'expected-state'])
             ->get(route('jira.callback', ['state' => 'expected-state', 'code' => 'abc']));
 
