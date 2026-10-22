@@ -141,4 +141,70 @@ class AssignedToMeTest extends TestCase
                 'Test case assigned to Fulano de Tal. It now shows up in their "Assigned to me" list.',
             ));
     }
+
+    public function test_the_assignment_toast_offers_to_restore_the_previous_assignee(): void
+    {
+        $developer = $this->createUserWithRole('developer');
+        $this->project->members()->attach($developer);
+        $testCase = $this->createCase('Login');
+
+        $this->actingAs($this->qa)
+            ->followingRedirects()
+            ->patch(route('test-cases.assign', $testCase), ['assigned_to' => $developer->id])
+            ->assertInertia(fn (Assert $page) => $page
+                ->hasFlash('toast.undo.url', route('test-cases.assign', $testCase, false))
+                ->hasFlash('toast.undo.method', 'patch')
+                ->hasFlash('toast.undo.data.assigned_to', $this->qa->id)
+            );
+    }
+
+    public function test_undoing_restores_the_previous_assignee(): void
+    {
+        $developer = $this->createUserWithRole('developer');
+        $this->project->members()->attach($developer);
+        $testCase = $this->createCase('Login');
+
+        $this->actingAs($this->qa)->patch(route('test-cases.assign', $testCase), ['assigned_to' => $developer->id]);
+        $this->actingAs($this->qa)->patch(route('test-cases.assign', $testCase), ['assigned_to' => $this->qa->id])
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame($this->qa->id, $testCase->fresh()->assigned_to);
+    }
+
+    public function test_undoing_an_assignment_to_nobody_leaves_the_case_unassigned(): void
+    {
+        $developer = $this->createUserWithRole('developer');
+        $this->project->members()->attach($developer);
+        $testCase = $this->createCase('Login', ['assigned_to' => null]);
+
+        $this->actingAs($this->qa)
+            ->followingRedirects()
+            ->patch(route('test-cases.assign', $testCase), ['assigned_to' => $developer->id])
+            ->assertInertia(fn (Assert $page) => $page->hasFlash('toast.undo.data.assigned_to', null));
+    }
+
+    public function test_no_undo_is_offered_when_the_assignee_did_not_change(): void
+    {
+        $testCase = $this->createCase('Login');
+
+        $this->actingAs($this->qa)
+            ->followingRedirects()
+            ->patch(route('test-cases.assign', $testCase), ['assigned_to' => $this->qa->id])
+            ->assertInertia(fn (Assert $page) => $page->hasFlash('toast.undo', null));
+    }
+
+    public function test_undo_is_refused_when_the_previous_assignee_left_the_project(): void
+    {
+        $leaver = $this->createUserWithRole('developer');
+        $this->project->members()->attach($leaver);
+        $testCase = $this->createCase('Login', ['assigned_to' => $leaver->id]);
+
+        $this->actingAs($this->qa)->patch(route('test-cases.assign', $testCase), ['assigned_to' => $this->qa->id]);
+        $this->project->members()->detach($leaver);
+
+        $this->actingAs($this->qa)->patch(route('test-cases.assign', $testCase), ['assigned_to' => $leaver->id])
+            ->assertSessionHasErrors('assigned_to');
+
+        $this->assertSame($this->qa->id, $testCase->fresh()->assigned_to);
+    }
 }

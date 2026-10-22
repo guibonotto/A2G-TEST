@@ -337,6 +337,8 @@ class TestCaseController extends Controller
      */
     public function assign(AssignTestCaseRequest $request, TestCase $testCase): RedirectResponse
     {
+        $previousAssigneeId = $testCase->assigned_to;
+
         $testCase->update($request->safe()->only(['assigned_to']));
         $assignee = $testCase->assignee()->value('name');
 
@@ -345,6 +347,12 @@ class TestCaseController extends Controller
             'message' => $assignee !== null
                 ? __('Test case assigned to :name. It now shows up in their "Assigned to me" list.', ['name' => $assignee])
                 : __('Test case unassigned.'),
+            /** Undoing is simply assigning the previous person back through the same, fully validated route. */
+            'undo' => $testCase->wasChanged('assigned_to') ? [
+                'url' => route('test-cases.assign', $testCase, false),
+                'method' => 'patch',
+                'data' => ['assigned_to' => $previousAssigneeId],
+            ] : null,
         ]);
 
         return to_route('test-cases.show', $testCase);
