@@ -327,6 +327,87 @@ class RequirementControllerTest extends TestCase
         $this->assertDatabaseMissing('requirements', ['id' => $requirement->id]);
     }
 
+    public function test_a_requirement_without_linked_cases_is_deleted_for_good(): void
+    {
+        $qa = $this->createProjectMember('qa');
+        $requirement = $this->createRequirement();
+
+        $this->actingAs($qa)
+            ->followingRedirects()
+            ->delete(route('requirements.destroy', $requirement))
+            ->assertInertia(fn (Assert $page) => $page
+                ->hasFlash('toast.message', 'Requirement "RF001" deleted.')
+                ->missing('flash.toast.undo')
+            );
+
+        $this->assertNull(Requirement::withTrashed()->find($requirement->id));
+    }
+
+    public function test_a_requirement_with_linked_cases_is_archived_and_keeps_its_links(): void
+    {
+        $qa = $this->createProjectMember('qa');
+        $requirement = $this->createRequirement();
+        $testCase = $this->createLinkedTestCase($requirement, $qa, 'APROVADO');
+
+        $this->actingAs($qa)
+            ->from(route('requirements.index'))
+            ->followingRedirects()
+            ->delete(route('requirements.destroy', $requirement))
+            ->assertInertia(fn (Assert $page) => $page
+                ->hasFlash('toast.message', 'Requirement "RF001" archived.')
+                ->hasFlash('toast.undo.url', route('requirements.restore', $requirement, false))
+                ->hasFlash('toast.undo.method', 'patch')
+                ->has('requirements', 0)
+            );
+
+        $this->assertSoftDeleted($requirement);
+        $this->assertDatabaseHas('test_case_requirements', ['test_case_id' => $testCase->id, 'requirement_id' => $requirement->id]);
+        $this->assertCount(0, $testCase->fresh()->requirements);
+    }
+
+    public function test_restoring_brings_the_requirement_and_its_links_back(): void
+    {
+        $qa = $this->createProjectMember('qa');
+        $requirement = $this->createRequirement(['code' => 'AAAAAAA-1']);
+        $requirement->forceFill(['jira_synced_at' => now()])->save();
+        $testCase = $this->createLinkedTestCase($requirement, $qa, 'APROVADO');
+        $this->actingAs($qa)->delete(route('requirements.destroy', $requirement));
+
+        $this->actingAs($qa)
+            ->followingRedirects()
+            ->patch(route('requirements.restore', $requirement))
+            ->assertInertia(fn (Assert $page) => $page->hasFlash('toast.message', 'Requirement "AAAAAAA-1" restored.'));
+
+        $this->assertNotSoftDeleted($requirement);
+        $this->assertSame([$requirement->id], $testCase->fresh()->requirements->pluck('id')->all());
+        $this->assertDatabaseCount('jira_excluded_issues', 0);
+    }
+
+    public function test_requirements_of_another_project_cannot_be_restored(): void
+    {
+        $qa = $this->createProjectMember('qa');
+        $foreignRequirement = $this->createRequirement([], Project::factory()->create());
+        $foreignRequirement->delete();
+
+        $this->actingAs($qa)->patch(route('requirements.restore', $foreignRequirement))->assertNotFound();
+
+        $this->assertSoftDeleted($foreignRequirement);
+    }
+
+    public function test_an_archived_requirement_cannot_be_linked_to_a_test_case(): void
+    {
+        $qa = $this->createProjectMember('qa');
+        $requirement = $this->createRequirement();
+        $requirement->delete();
+
+        $this->actingAs($qa)->post(route('test-cases.store'), [
+            'title' => 'Login',
+            'tested_method' => 'AuthController@login',
+            'steps' => [['description' => 'Entrar', 'expected_result' => 'Logado']],
+            'requirement_ids' => [$requirement->id],
+        ])->assertSessionHasErrors('requirement_ids.0');
+    }
+
     public function test_requirements_of_another_project_cannot_be_changed(): void
     {
         $qa = $this->createProjectMember('qa');

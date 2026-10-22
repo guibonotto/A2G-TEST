@@ -22,7 +22,7 @@ class LinkRequirementRequest extends FormRequest
             'requirement_id' => [
                 'required',
                 'integer',
-                Rule::exists('requirements', 'id')->where('project_id', $this->route('testCase')->project_id),
+                Rule::exists('requirements', 'id')->where('project_id', $this->route('testCase')->project_id)->withoutTrashed(),
             ],
         ];
     }

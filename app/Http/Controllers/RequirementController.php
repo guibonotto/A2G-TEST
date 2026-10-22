@@ -79,7 +79,8 @@ class RequirementController extends Controller
     }
 
     /**
-     * Remove the specified requirement from storage.
+     * Archive the requirement when test cases are linked to it, so the links
+     * survive and the action can be undone; delete it for good otherwise.
      */
     public function destroy(Requirement $requirement): RedirectResponse
     {
@@ -94,11 +95,51 @@ class RequirementController extends Controller
             ]);
         }
 
+        if ($requirement->testCases()->doesntExist()) {
+            $requirement->forceDelete();
+
+            Inertia::flash('toast', [
+                'type' => 'success',
+                'message' => __('Requirement ":code" deleted.', ['code' => $code]),
+            ]);
+
+            return back();
+        }
+
         $requirement->delete();
 
         Inertia::flash('toast', [
             'type' => 'success',
-            'message' => __('Requirement ":code" deleted.', ['code' => $code]),
+            'message' => __('Requirement ":code" archived.', ['code' => $code]),
+            /** Undoing restores the requirement, and with it every link it had. */
+            'undo' => [
+                'url' => route('requirements.restore', $requirement, false),
+                'method' => 'patch',
+                'data' => [],
+            ],
+        ]);
+
+        return back();
+    }
+
+    /**
+     * Bring an archived requirement back, together with its test case links.
+     */
+    public function restore(Requirement $requirement): RedirectResponse
+    {
+        $this->ensureBelongsToCurrentProject($requirement);
+
+        $requirement->restore();
+
+        /** Archiving hid the Jira issue from imports; restoring makes it importable again. */
+        JiraExcludedIssue::query()
+            ->where('project_id', $requirement->project_id)
+            ->where('issue_key', $requirement->code)
+            ->delete();
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => __('Requirement ":code" restored.', ['code' => $requirement->code]),
         ]);
 
         return back();

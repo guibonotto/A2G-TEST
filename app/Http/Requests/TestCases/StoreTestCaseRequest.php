@@ -46,7 +46,7 @@ class StoreTestCaseRequest extends FormRequest
             'requirement_ids' => [Rule::prohibitedIf(fn () => $this->user()->hasRole('viewer')), 'array'],
             'requirement_ids.*' => [
                 'integer',
-                Rule::exists('requirements', 'id')->where('project_id', Project::current()?->id),
+                Rule::exists('requirements', 'id')->where('project_id', Project::current()?->id)->withoutTrashed(),
             ],
         ];
     }

@@ -313,11 +313,13 @@ class JiraIntegrationController extends Controller
         $code = $attributes['code'];
         unset($attributes['code']);
 
-        $requirement = Requirement::query()->firstOrNew(['project_id' => $projectId, 'code' => $code]);
+        /** An archived requirement still holds its code, so re-importing the issue restores it. */
+        $requirement = Requirement::withTrashed()->firstOrNew(['project_id' => $projectId, 'code' => $code]);
         $requirement->fill($attributes);
         $requirement->jira_synced_at = $syncedAt;
 
-        $wasCreated = ! $requirement->exists;
+        $wasCreated = ! $requirement->exists || $requirement->trashed();
+        $requirement->deleted_at = null;
 
         if ($wasCreated) {
             $requirement->created_by = $importedByUserId;

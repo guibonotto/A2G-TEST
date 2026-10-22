@@ -467,9 +467,12 @@ export default function TestCaseIndex({
                                                     )}
                                                 </div>
                                             ) : (
-                                                <span className="text-muted-foreground">
-                                                    —
-                                                </span>
+                                                <Badge
+                                                    variant="warning"
+                                                    title="No requirement is linked to this test case."
+                                                >
+                                                    No requirement
+                                                </Badge>
                                             )}
                                         </td>
                                         <td className="px-4 py-3">

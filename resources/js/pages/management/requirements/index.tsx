@@ -438,6 +438,8 @@ function RequirementRow({
     const [editOpen, setEditOpen] = useState(false);
     const projectName = usePage().props.currentProject?.name ?? 'this project';
     const [deleteOpen, setDeleteOpen] = useState(false);
+    /** Linked requirements are archived (and can be restored); the rest are deleted for good. */
+    const isArchive = requirement.test_cases_count > 0;
 
     const editForm = useForm<RequirementFormData>({
         code: requirement.code,
@@ -502,7 +504,7 @@ function RequirementRow({
                             onSelect={() => setDeleteOpen(true)}
                             className="text-destructive focus:text-destructive"
                         >
-                            Delete
+                            {isArchive ? 'Archive' : 'Delete'}
                         </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
@@ -525,12 +527,15 @@ function RequirementRow({
 
                     <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
                         <DialogContent>
-                            <DialogTitle>Delete requirement?</DialogTitle>
+                            <DialogTitle>
+                                {isArchive
+                                    ? 'Archive requirement?'
+                                    : 'Delete requirement?'}
+                            </DialogTitle>
                             <DialogDescription>
-                                This action cannot be undone.{' '}
-                                {requirement.test_cases_count > 0
-                                    ? `${requirement.test_cases_count} test case(s) linked to ${requirement.code} will lose that association and be left without a requirement.`
-                                    : `${requirement.code} has no linked test cases.`}
+                                {isArchive
+                                    ? `${requirement.test_cases_count} test case(s) are linked to ${requirement.code}. Archiving hides it and leaves those cases without this requirement, but keeps the links: use "Undo" right after archiving to bring everything back.`
+                                    : `${requirement.code} has no linked test cases, so it will be deleted for good. This action cannot be undone.`}
                             </DialogDescription>
 
                             <Form
@@ -553,7 +558,7 @@ function RequirementRow({
                                             variant="destructive"
                                             disabled={processing}
                                         >
-                                            Delete
+                                            {isArchive ? 'Archive' : 'Delete'}
                                         </Button>
                                     </DialogFooter>
                                 )}
