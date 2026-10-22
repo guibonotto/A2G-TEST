@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Project;
 use App\Models\Requirement;
+use App\Models\TestCase as TestCaseModel;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -126,6 +127,7 @@ class RequirementControllerTest extends TestCase
             'type' => 'funcional',
             'title' => 'Novo requisito',
             'description' => 'Descrição do requisito.',
+            'priority' => 'media',
         ]);
 
         $response->assertRedirect();
@@ -159,6 +161,7 @@ class RequirementControllerTest extends TestCase
             'code' => 'RF001',
             'type' => 'funcional',
             'title' => 'Mesmo código, outro projeto',
+            'priority' => 'media',
         ])->assertSessionHasNoErrors();
 
         $this->assertDatabaseCount('requirements', 2);
@@ -187,7 +190,6 @@ class RequirementControllerTest extends TestCase
             'type' => 'funcional',
             'title' => 'Cadastro de Caso de Teste',
             'priority' => 'alta',
-            'status' => 'em_andamento',
         ]);
 
         $response->assertRedirect();
@@ -195,8 +197,84 @@ class RequirementControllerTest extends TestCase
             'id' => $requirement->id,
             'title' => 'Cadastro de Caso de Teste',
             'priority' => 'alta',
-            'status' => 'em_andamento',
         ]);
+    }
+
+    public function test_a_requirement_needs_a_priority(): void
+    {
+        $qa = $this->createProjectMember('qa');
+
+        $this->actingAs($qa)->post(route('requirements.store'), [
+            'code' => 'RF040',
+            'type' => 'funcional',
+            'title' => 'Sem prioridade',
+        ])->assertSessionHasErrors('priority');
+
+        $this->actingAs($qa)->put(route('requirements.update', $this->createRequirement()), [
+            'code' => 'RF001',
+            'type' => 'funcional',
+            'title' => 'Cadastro',
+            'priority' => '',
+        ])->assertSessionHasErrors('priority');
+    }
+
+    public function test_the_status_cannot_be_typed_in(): void
+    {
+        $qa = $this->createProjectMember('qa');
+        $requirement = $this->createRequirement();
+
+        $this->actingAs($qa)->put(route('requirements.update', $requirement), [
+            'code' => 'RF001',
+            'type' => 'funcional',
+            'title' => 'Cadastro',
+            'priority' => 'media',
+            'status' => 'concluido',
+        ])->assertSessionHasNoErrors();
+
+        $this->assertNull($requirement->fresh()->status);
+    }
+
+    public function test_the_status_follows_the_coverage(): void
+    {
+        $qa = $this->createProjectMember('qa');
+        $this->createRequirement(['code' => 'RF001']);
+        $inProgress = $this->createRequirement(['code' => 'RF002']);
+        $done = $this->createRequirement(['code' => 'RF003']);
+
+        $passing = $this->createLinkedTestCase($done, $qa, 'APROVADO');
+        $this->createLinkedTestCase($inProgress, $qa, 'APROVADO');
+        $this->createLinkedTestCase($inProgress, $qa, 'REPROVADO');
+        $passing->requirements()->attach($inProgress);
+
+        $this->actingAs($qa)->get(route('requirements.index'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('requirements.0.status', 'pendente')
+                ->where('requirements.1.status', 'em_andamento')
+                ->where('requirements.2.status', 'concluido')
+            );
+    }
+
+    public function test_a_case_that_failed_and_then_passed_counts_as_passed(): void
+    {
+        $qa = $this->createProjectMember('qa');
+        $requirement = $this->createRequirement();
+        $testCase = $this->createLinkedTestCase($requirement, $qa, 'REPROVADO');
+        $testCase->executions()->create(['executed_by' => $qa->id, 'status' => 'APROVADO', 'execution_date' => now()->addMinute()]);
+
+        $this->actingAs($qa)->get(route('requirements.index'))
+            ->assertInertia(fn (Assert $page) => $page->where('requirements.0.status', 'concluido'));
+    }
+
+    /**
+     * Link a new test case to the requirement, with one run of the given result.
+     */
+    private function createLinkedTestCase(Requirement $requirement, User $user, string $result): TestCaseModel
+    {
+        $testCase = TestCaseModel::create(['title' => 'Caso', 'created_by' => $user->id, 'project_id' => $this->project->id]);
+        $testCase->requirements()->attach($requirement);
+        $testCase->executions()->create(['executed_by' => $user->id, 'status' => $result, 'execution_date' => now()]);
+
+        return $testCase;
     }
 
     public function test_qa_can_delete_a_requirement(): void
@@ -219,6 +297,7 @@ class RequirementControllerTest extends TestCase
             'code' => 'RF001',
             'type' => 'funcional',
             'title' => 'Alterado',
+            'priority' => 'media',
         ])->assertNotFound();
         $this->actingAs($qa)->delete(route('requirements.destroy', $foreignRequirement))->assertNotFound();
 

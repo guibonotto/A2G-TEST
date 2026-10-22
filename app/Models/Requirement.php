@@ -25,6 +25,25 @@ class Requirement extends Model
     use HasFactory;
 
     /**
+     * The priority a requirement gets when none is given.
+     */
+    public const string DEFAULT_PRIORITY = 'media';
+
+    /**
+     * The status follows the requirement's coverage instead of being typed in:
+     * pending while no test case covers it, done once every linked test case
+     * passed its latest run, and in progress in between.
+     */
+    public static function coverageStatus(int $linkedTestCases, int $passedTestCases): string
+    {
+        return match (true) {
+            $linkedTestCases === 0 => 'pendente',
+            $passedTestCases >= $linkedTestCases => 'concluido',
+            default => 'em_andamento',
+        };
+    }
+
+    /**
      * The table associated with the model.
      */
     protected $table = 'requirements';

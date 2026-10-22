@@ -2,13 +2,15 @@
 
 namespace App\Services\Jira;
 
+use App\Models\Requirement;
+
 class JiraIssueMapper
 {
     /**
      * Map a raw Jira issue payload to Requirement attributes.
      *
      * @param  array<string, mixed>  $issue
-     * @return array{code: string, type: string, title: string, description: ?string, priority: ?string, status: ?string}
+     * @return array{code: string, type: string, title: string, description: ?string, priority: string, status: ?string}
      */
     public static function toRequirementAttributes(array $issue): array
     {
@@ -60,13 +62,12 @@ class JiraIssueMapper
         return trim(implode(' ', array_filter($parts)));
     }
 
-    private static function mapPriority(?string $jiraPriority): ?string
+    private static function mapPriority(?string $jiraPriority): string
     {
         return match ($jiraPriority) {
             'Highest', 'High' => 'alta',
-            'Medium' => 'media',
             'Low', 'Lowest' => 'baixa',
-            default => null,
+            default => Requirement::DEFAULT_PRIORITY,
         };
     }
 

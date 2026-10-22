@@ -50,8 +50,7 @@ type RequirementFormData = {
     type: RequirementType;
     title: string;
     description: string;
-    priority: string;
-    status: string;
+    priority: RequirementPriority;
 };
 
 const typeOptions: { value: RequirementType; label: string }[] = [
@@ -65,13 +64,29 @@ const priorityOptions: { value: RequirementPriority; label: string }[] = [
     { value: 'alta', label: 'High' },
 ];
 
-const statusOptions: { value: RequirementStatus; label: string }[] = [
-    { value: 'pendente', label: 'Pending' },
-    { value: 'em_andamento', label: 'In progress' },
-    { value: 'concluido', label: 'Done' },
-];
+/** The status follows coverage: computed by the server, never typed in. */
+const statusBadges: Record<
+    RequirementStatus,
+    { label: string; variant: 'warning' | 'info' | 'success'; hint: string }
+> = {
+    pendente: {
+        label: 'Pending',
+        variant: 'warning',
+        hint: 'No test case covers this requirement yet.',
+    },
+    em_andamento: {
+        label: 'In progress',
+        variant: 'info',
+        hint: 'Some linked test cases have not passed their latest run.',
+    },
+    concluido: {
+        label: 'Done',
+        variant: 'success',
+        hint: 'Every linked test case passed its latest run.',
+    },
+};
 
-const NONE = 'none';
+const DEFAULT_PRIORITY: RequirementPriority = 'media';
 
 /**
  * Sort by the numeric tail of the code instead of lexicographically, so
@@ -110,7 +125,7 @@ function RequirementForm({
         <form onSubmit={onSubmit} className="flex flex-col gap-4">
             <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
-                    <Label htmlFor={`${idPrefix}-code`}>Code</Label>
+                    <Label htmlFor={`${idPrefix}-code`}>Code (required)</Label>
                     <Input
                         id={`${idPrefix}-code`}
                         value={form.data.code}
@@ -151,7 +166,7 @@ function RequirementForm({
             </div>
 
             <div className="grid gap-2">
-                <Label htmlFor={`${idPrefix}-title`}>Title</Label>
+                <Label htmlFor={`${idPrefix}-title`}>Title (required)</Label>
                 <Input
                     id={`${idPrefix}-title`}
                     value={form.data.title}
@@ -177,11 +192,11 @@ function RequirementForm({
                 <div className="grid gap-2">
                     <Label htmlFor={`${idPrefix}-priority`}>Priority</Label>
                     <Select
-                        value={form.data.priority || NONE}
+                        value={form.data.priority}
                         onValueChange={(value) =>
                             form.setData(
                                 'priority',
-                                value === NONE ? '' : value,
+                                value as RequirementPriority,
                             )
                         }
                     >
@@ -189,10 +204,9 @@ function RequirementForm({
                             id={`${idPrefix}-priority`}
                             className="w-full"
                         >
-                            <SelectValue placeholder="No priority" />
+                            <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value={NONE}>No priority</SelectItem>
                             {priorityOptions.map((option) => (
                                 <SelectItem
                                     key={option.value}
@@ -207,32 +221,11 @@ function RequirementForm({
                 </div>
 
                 <div className="grid gap-2">
-                    <Label htmlFor={`${idPrefix}-status`}>Status</Label>
-                    <Select
-                        value={form.data.status || NONE}
-                        onValueChange={(value) =>
-                            form.setData('status', value === NONE ? '' : value)
-                        }
-                    >
-                        <SelectTrigger
-                            id={`${idPrefix}-status`}
-                            className="w-full"
-                        >
-                            <SelectValue placeholder="No status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value={NONE}>No status</SelectItem>
-                            {statusOptions.map((option) => (
-                                <SelectItem
-                                    key={option.value}
-                                    value={option.value}
-                                >
-                                    {option.label}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                    <InputError message={form.errors.status} />
+                    <Label>Status</Label>
+                    <p className="text-sm text-muted-foreground">
+                        Set automatically from the test cases linked to this
+                        requirement.
+                    </p>
                 </div>
             </div>
 
@@ -260,8 +253,7 @@ export default function ManageRequirements({ requirements }: Props) {
         type: 'funcional',
         title: '',
         description: '',
-        priority: '',
-        status: '',
+        priority: DEFAULT_PRIORITY,
     });
 
     const uncoveredCount = requirements.filter(
@@ -409,6 +401,9 @@ export default function ManageRequirements({ requirements }: Props) {
                                     <th className="px-4 py-3 font-medium">
                                         Coverage
                                     </th>
+                                    <th className="px-4 py-3 font-medium">
+                                        Status
+                                    </th>
                                     <th className="px-4 py-3 text-right font-medium">
                                         <span className="sr-only">Actions</span>
                                     </th>
@@ -446,8 +441,7 @@ function RequirementRow({
         type: requirement.type,
         title: requirement.title,
         description: requirement.description ?? '',
-        priority: requirement.priority ?? '',
-        status: requirement.status ?? '',
+        priority: requirement.priority ?? DEFAULT_PRIORITY,
     });
 
     function submitEdit(e: FormEvent) {
@@ -475,6 +469,14 @@ function RequirementRow({
                 ) : (
                     `${requirement.test_cases_count} case(s)`
                 )}
+            </td>
+            <td className="px-4 py-3">
+                <Badge
+                    variant={statusBadges[requirement.status].variant}
+                    title={statusBadges[requirement.status].hint}
+                >
+                    {statusBadges[requirement.status].label}
+                </Badge>
             </td>
             <td className="px-4 py-3 text-right">
                 <DropdownMenu>

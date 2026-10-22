@@ -9,13 +9,14 @@ export type Requirement = {
     title: string;
     description: string | null;
     priority: RequirementPriority | null;
-    status: RequirementStatus | null;
     created_by: number | null;
 };
 
 export type RequirementListItem = Requirement & {
     creator: { id: number; name: string } | null;
     test_cases_count: number;
+    /** Derived from coverage: linked test cases and their latest runs. */
+    status: RequirementStatus;
 };
 
 export type RequirementOption = {

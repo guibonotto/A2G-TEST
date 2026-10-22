@@ -31,8 +31,7 @@ class UpdateRequirementRequest extends FormRequest
             'type' => ['required', 'string', 'in:funcional,nao_funcional'],
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:5000'],
-            'priority' => ['nullable', 'string', 'in:baixa,media,alta'],
-            'status' => ['nullable', 'string', 'in:pendente,em_andamento,concluido'],
+            'priority' => ['required', 'string', 'in:baixa,media,alta'],
         ];
     }
 }

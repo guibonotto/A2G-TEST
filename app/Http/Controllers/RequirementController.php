@@ -20,9 +20,17 @@ class RequirementController extends Controller
     {
         return Inertia::render('management/requirements/index', [
             'requirements' => Project::current()->requirements()
-                ->withCount('testCases')
+                ->withCount([
+                    'testCases',
+                    'testCases as passed_test_cases_count' => fn ($query) => $query
+                        ->whereHas('latestExecution', fn ($query) => $query->where('status', 'APROVADO')),
+                ])
                 ->with('creator:id,name')
-                ->get(['id', 'code', 'type', 'title', 'description', 'priority', 'status', 'created_by'])
+                ->get(['id', 'code', 'type', 'title', 'description', 'priority', 'created_by'])
+                ->map(fn (Requirement $requirement): array => [
+                    ...$requirement->toArray(),
+                    'status' => Requirement::coverageStatus($requirement->test_cases_count, $requirement->passed_test_cases_count),
+                ])
                 ->sortBy('code', SORT_NATURAL | SORT_FLAG_CASE)
                 ->values(),
         ]);
