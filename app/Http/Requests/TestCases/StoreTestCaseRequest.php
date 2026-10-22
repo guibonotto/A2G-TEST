@@ -31,7 +31,7 @@ class StoreTestCaseRequest extends FormRequest
             'description' => ['nullable', 'string'],
             'classification_id' => ['nullable', 'integer', 'exists:classifications,id'],
             'template_id' => ['nullable', 'integer', 'exists:test_templates,id'],
-            'status_id' => ['nullable', 'integer', 'exists:test_case_statuses,id'],
+            'status_id' => ['nullable', 'integer', Rule::exists('test_case_statuses', 'id')->where('project_id', Project::current()?->id)],
             'assigned_to' => [
                 'nullable',
                 'integer',

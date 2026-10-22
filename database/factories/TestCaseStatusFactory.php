@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\Project;
 use App\Models\TestCaseStatus;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -18,6 +19,7 @@ class TestCaseStatusFactory extends Factory
     public function definition(): array
     {
         return [
+            'project_id' => Project::factory(),
             'name' => fake()->unique()->word(),
             'color' => fake()->randomElement(['success', 'destructive', 'warning', 'secondary', 'info']),
         ];

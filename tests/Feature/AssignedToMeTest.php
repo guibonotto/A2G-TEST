@@ -108,7 +108,7 @@ class AssignedToMeTest extends TestCase
 
     public function test_obsolete_cases_are_left_out(): void
     {
-        $obsolete = TestCaseStatus::firstOrCreate(['name' => 'Obsolete'], ['color' => 'secondary']);
+        $obsolete = TestCaseStatus::firstOrCreate(['project_id' => $this->project->id, 'name' => 'Obsolete'], ['color' => 'secondary']);
         $this->createCase('Obsoleto', ['status_id' => $obsolete->id]);
 
         $this->actingAs($this->qa)->get(route('test-cases.assigned'))

@@ -26,9 +26,15 @@ class TestCaseControllerTest extends TestCase
     //     return User::factory()->create(['role_id' => $role->id]);
     // }
 
+    /**
+     * Create a status in the project selected in the session.
+     */
     private function createStatus(string $name, string $color = 'secondary'): TestCaseStatus
     {
-        return TestCaseStatus::firstOrCreate(['name' => $name], ['color' => $color]);
+        return TestCaseStatus::firstOrCreate(
+            ['project_id' => $this->sessionProject()->id, 'name' => $name],
+            ['color' => $color],
+        );
     }
 
     /**
@@ -386,7 +392,7 @@ class TestCaseControllerTest extends TestCase
 
         $response = $this->get(route('test-cases.create'));
 
-        $default = TestCaseStatus::where('name', TestCaseStatus::DEFAULT_NAME)->firstOrFail();
+        $default = TestCaseStatus::defaultFor($this->sessionProject());
 
         $response->assertInertia(fn (Assert $page) => $page
             ->component('test-cases/create')
@@ -396,14 +402,15 @@ class TestCaseControllerTest extends TestCase
 
     public function test_the_default_status_is_created_when_missing(): void
     {
-        TestCaseStatus::query()->delete();
+        $project = Project::factory()->create();
+        $project->testCaseStatuses()->delete();
 
-        $default = TestCaseStatus::default();
+        $default = TestCaseStatus::defaultFor($project);
 
         $this->assertSame(TestCaseStatus::DEFAULT_NAME, $default->name);
-        $this->assertDatabaseCount('test_case_statuses', 1);
-        $this->assertSame($default->id, TestCaseStatus::default()->id);
-        $this->assertDatabaseCount('test_case_statuses', 1);
+        $this->assertSame(1, $project->testCaseStatuses()->count());
+        $this->assertSame($default->id, TestCaseStatus::defaultFor($project)->id);
+        $this->assertSame(1, $project->testCaseStatuses()->count());
     }
 
     public function test_create_screen_offers_requirements_to_editors(): void
@@ -713,7 +720,7 @@ class TestCaseControllerTest extends TestCase
             'title' => 'Login com credenciais válidas',
             'created_by' => $user->id,
             'project_id' => $project->id,
-            'status_id' => TestCaseStatus::default()->id,
+            'status_id' => TestCaseStatus::defaultFor($project)->id,
         ]);
 
         $response = $this->post(route('test-cases.executions.store', $testCase), [
@@ -730,7 +737,7 @@ class TestCaseControllerTest extends TestCase
         $user = User::factory()->create();
         $project = $this->actingAsProjectMember($user);
         $ready = $this->createStatus('Ready');
-        $draft = TestCaseStatus::default();
+        $draft = TestCaseStatus::defaultFor($project);
         $testCase = TestCaseModel::create([
             'title' => 'Login com credenciais válidas',
             'created_by' => $user->id,
@@ -873,7 +880,7 @@ class TestCaseControllerTest extends TestCase
         $user = User::factory()->create();
         $project = $this->actingAsProjectMember($user);
         $classification = Classification::create(['name' => 'Funcional']);
-        $status = TestCaseStatus::firstOrCreate(['name' => 'Pendente'], ['color' => 'warning']);
+        $status = $this->createStatus('Pendente', 'warning');
 
         $testCase = TestCaseModel::create([
             'title' => 'Login com credenciais válidas',
@@ -1124,7 +1131,7 @@ class TestCaseControllerTest extends TestCase
         $project = $this->actingAsProjectMember($user);
         $classification = Classification::create(['name' => 'Funcional']);
         $this->createStatus('Aardvark review', 'info');
-        $expectedNames = TestCaseStatus::query()->orderBy('name')->pluck('name')->all();
+        $expectedNames = TestCaseStatus::query()->forProject($this->sessionProject())->orderBy('name')->pluck('name')->all();
 
         $testCase = TestCaseModel::create([
             'title' => 'Login com credenciais válidas',
@@ -1164,6 +1171,24 @@ class TestCaseControllerTest extends TestCase
 
         $response->assertRedirect(route('test-cases.show', $testCase));
         $this->assertDatabaseHas('test_cases', ['id' => $testCase->id, 'status_id' => $failed->id]);
+    }
+
+    public function test_a_test_case_cannot_take_a_status_from_another_project(): void
+    {
+        $user = User::factory()->create();
+        $project = $this->actingAsProjectMember($user);
+        $draft = TestCaseStatus::defaultFor($project);
+        $foreign = TestCaseStatus::create(['project_id' => Project::factory()->create()->id, 'name' => 'Elsewhere', 'color' => 'blue']);
+        $testCase = TestCaseModel::create([
+            'title' => 'Login',
+            'created_by' => $user->id,
+            'project_id' => $project->id,
+            'status_id' => $draft->id,
+        ]);
+
+        $this->patch(route('test-cases.status', $testCase), ['status_id' => $foreign->id])
+            ->assertSessionHasErrors('status_id');
+        $this->assertSame($draft->id, $testCase->fresh()->status_id);
     }
 
     public function test_status_of_a_test_case_can_be_cleared(): void

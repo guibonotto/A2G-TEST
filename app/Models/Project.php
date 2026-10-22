@@ -23,6 +23,10 @@ class Project extends Model
         static::creating(function (self $project): void {
             $project->uuid ??= (string) Str::uuid();
         });
+
+        static::created(function (self $project): void {
+            TestCaseStatus::createDefaultsFor($project);
+        });
     }
 
     /**
@@ -72,6 +76,11 @@ class Project extends Model
     public function jiraIntegration(): HasOne
     {
         return $this->hasOne(JiraIntegration::class);
+    }
+
+    public function testCaseStatuses(): HasMany
+    {
+        return $this->hasMany(TestCaseStatus::class);
     }
 
     public function testCases(): HasMany

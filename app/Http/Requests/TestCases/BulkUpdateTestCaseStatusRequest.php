@@ -2,8 +2,10 @@
 
 namespace App\Http\Requests\TestCases;
 
+use App\Models\Project;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class BulkUpdateTestCaseStatusRequest extends FormRequest
 {
@@ -25,7 +27,7 @@ class BulkUpdateTestCaseStatusRequest extends FormRequest
         return [
             'ids' => ['required', 'array', 'min:1'],
             'ids.*' => ['integer', 'distinct', 'exists:test_cases,id'],
-            'status_id' => ['required', 'integer', 'exists:test_case_statuses,id'],
+            'status_id' => ['required', 'integer', Rule::exists('test_case_statuses', 'id')->where('project_id', Project::current()?->id)],
         ];
     }
 }

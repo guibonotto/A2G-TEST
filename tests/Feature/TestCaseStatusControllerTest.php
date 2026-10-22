@@ -23,9 +23,67 @@ class TestCaseStatusControllerTest extends TestCase
     //     return User::factory()->create(['role_id' => $role->id]);
     // }
 
+    /**
+     * Create a status in the project selected in the session.
+     */
     private function createStatus(string $name, string $color = 'secondary'): TestCaseStatus
     {
-        return TestCaseStatus::firstOrCreate(['name' => $name], ['color' => $color]);
+        return TestCaseStatus::firstOrCreate(
+            ['project_id' => $this->sessionProject()->id, 'name' => $name],
+            ['color' => $color],
+        );
+    }
+
+    public function test_a_new_project_starts_with_the_default_statuses(): void
+    {
+        $project = Project::factory()->create();
+
+        $this->assertSame(
+            ['Draft', 'Obsolete', 'Ready'],
+            $project->testCaseStatuses()->orderBy('name')->pluck('name')->all(),
+        );
+    }
+
+    public function test_the_list_only_shows_the_current_project_statuses(): void
+    {
+        $qa = $this->createUserWithRole('qa');
+        $this->createStatus('Passed', 'success');
+        TestCaseStatus::create(['project_id' => Project::factory()->create()->id, 'name' => 'Elsewhere', 'color' => 'blue']);
+
+        $this->actingAs($qa)->get(route('test-case-statuses.index'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('statuses', fn ($statuses) => collect($statuses)->pluck('name')->sort()->values()->all() === ['Draft', 'Obsolete', 'Passed', 'Ready'])
+            );
+    }
+
+    public function test_a_new_status_belongs_to_the_current_project_only(): void
+    {
+        $qa = $this->createUserWithRole('qa');
+        $otherProject = Project::factory()->create();
+
+        $this->actingAs($qa)->post(route('test-case-statuses.store'), ['name' => 'Bloqueado', 'color' => 'blue']);
+
+        $this->assertDatabaseHas('test_case_statuses', ['project_id' => $this->sessionProject()->id, 'name' => 'Bloqueado']);
+        $this->assertDatabaseMissing('test_case_statuses', ['project_id' => $otherProject->id, 'name' => 'Bloqueado']);
+    }
+
+    public function test_the_same_name_and_color_can_be_used_in_different_projects(): void
+    {
+        $qa = $this->createUserWithRole('qa');
+        TestCaseStatus::create(['project_id' => Project::factory()->create()->id, 'name' => 'Bloqueado', 'color' => 'blue']);
+
+        $this->actingAs($qa)->post(route('test-case-statuses.store'), ['name' => 'Bloqueado', 'color' => 'blue'])
+            ->assertSessionHasNoErrors();
+    }
+
+    public function test_statuses_of_another_project_cannot_be_changed_or_deleted(): void
+    {
+        $qa = $this->createUserWithRole('qa');
+        $foreign = TestCaseStatus::create(['project_id' => Project::factory()->create()->id, 'name' => 'Elsewhere', 'color' => 'blue']);
+
+        $this->actingAs($qa)->put(route('test-case-statuses.update', $foreign), ['name' => 'Hijacked', 'color' => 'pink'])->assertNotFound();
+        $this->actingAs($qa)->delete(route('test-case-statuses.destroy', $foreign))->assertNotFound();
+        $this->assertDatabaseHas('test_case_statuses', ['id' => $foreign->id, 'name' => 'Elsewhere']);
     }
 
     public function test_guests_cannot_access_status_management(): void
@@ -59,7 +117,7 @@ class TestCaseStatusControllerTest extends TestCase
             'classification_id' => $classification->id,
             'created_by' => $qa->id,
             'status_id' => $status->id,
-            'project_id' => Project::factory()->create()->id,
+            'project_id' => $this->sessionProject()->id,
         ]);
 
         $response = $this->actingAs($qa)->get(route('test-case-statuses.index'));
@@ -152,7 +210,7 @@ class TestCaseStatusControllerTest extends TestCase
             'classification_id' => $classification->id,
             'created_by' => $qa->id,
             'status_id' => $status->id,
-            'project_id' => Project::factory()->create()->id,
+            'project_id' => $this->sessionProject()->id,
         ]);
 
         $response = $this->actingAs($qa)->delete(route('test-case-statuses.destroy', $status));

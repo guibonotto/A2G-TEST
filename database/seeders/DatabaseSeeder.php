@@ -6,7 +6,6 @@ use App\Enums\Permission;
 use App\Models\Classification;
 use App\Models\Project;
 use App\Models\Role;
-use App\Models\TestCaseStatus;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 
@@ -67,15 +66,7 @@ class DatabaseSeeder extends Seeder
             Classification::firstOrCreate(['name' => $classification['name']], $classification);
         }
 
-        $statuses = [
-            ['name' => 'Draft', 'color' => 'warning'],
-            ['name' => 'Ready', 'color' => 'success'],
-            ['name' => 'Obsolete', 'color' => 'secondary'],
-        ];
-        foreach ($statuses as $status) {
-            TestCaseStatus::firstOrCreate(['name' => $status['name']], $status);
-        }
-
+        /** Statuses are per project; every project (the demo one included) gets the defaults when created. */
         $this->call(RequirementSeeder::class);
     }
 }

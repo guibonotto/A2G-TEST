@@ -101,8 +101,8 @@ class DashboardTest extends TestCase
         $this->withSession(['current_project_id' => $project->id]);
         $this->actingAs($user);
 
-        $approvedStatus = TestCaseStatus::firstOrCreate(['name' => 'Aprovado'], ['color' => 'success']);
-        $pendingStatus = TestCaseStatus::firstOrCreate(['name' => 'Pendente'], ['color' => 'warning']);
+        $approvedStatus = TestCaseStatus::firstOrCreate(['project_id' => $project->id, 'name' => 'Aprovado'], ['color' => 'success']);
+        $pendingStatus = TestCaseStatus::firstOrCreate(['project_id' => $project->id, 'name' => 'Pendente'], ['color' => 'warning']);
         $classification = Classification::firstOrCreate(['name' => 'Unitário']);
 
         TestCaseModel::create([

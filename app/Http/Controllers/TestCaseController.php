@@ -88,6 +88,7 @@ class TestCaseController extends Controller
             'testCases' => $testCases,
             'classifications' => Classification::query()->orderBy('name')->get(['id', 'name']),
             'statuses' => TestCaseStatus::query()
+                ->forProject(Project::current())
                 ->orderByRaw("CASE name WHEN 'Draft' THEN 1 WHEN 'Obsolete' THEN 2 WHEN 'Ready' THEN 3 ELSE 4 END")
                 ->get(['id', 'name', 'description', 'color', 'category']),
             'executionResults' => ['PENDENTE', 'APROVADO', 'REPROVADO', 'BLOQUEADO', 'NOT_EXECUTED'],
@@ -142,7 +143,7 @@ class TestCaseController extends Controller
      */
     public function create(Request $request): Response
     {
-        $defaultStatus = TestCaseStatus::default();
+        $defaultStatus = TestCaseStatus::defaultFor(Project::current());
 
         return Inertia::render('test-cases/create', [
             'assignableUsers' => $request->user()->canManageAccess()
@@ -150,6 +151,7 @@ class TestCaseController extends Controller
                 : [],
             'defaultStatusId' => $defaultStatus->id,
             'statuses' => TestCaseStatus::query()
+                ->forProject(Project::current())
                 ->orderByRaw("CASE name WHEN 'Draft' THEN 1 WHEN 'Obsolete' THEN 2 WHEN 'Ready' THEN 3 ELSE 4 END")
                 ->orderBy('name')
                 ->get(['id', 'name', 'description', 'color', 'category']),
@@ -170,7 +172,7 @@ class TestCaseController extends Controller
         $testCase = DB::transaction(function () use ($request, $project) {
             $testCase = TestCase::create([
                 ...$request->safe()->only(['title', 'tested_method', 'description', 'template_id', 'assigned_to']),
-                'status_id' => $request->validated('status_id') ?: TestCaseStatus::default()->id,
+                'status_id' => $request->validated('status_id') ?: TestCaseStatus::defaultFor(Project::current())->id,
                 'created_by' => $request->user()->id,
                 'project_id' => $project->id,
             ]);
@@ -230,6 +232,7 @@ class TestCaseController extends Controller
                 ? $this->assignableUsers($testCase->project_id)
                 : [],
             'statuses' => TestCaseStatus::query()
+                ->forProject($testCase->project_id)
                 ->whereIn('name', ['Draft', 'Obsolete', 'Ready'])
                 ->orderByRaw("CASE name WHEN 'Draft' THEN 1 WHEN 'Obsolete' THEN 2 WHEN 'Ready' THEN 3 ELSE 4 END")
                 ->get(['id', 'name', 'description', 'color', 'category']),
@@ -282,6 +285,7 @@ class TestCaseController extends Controller
                 ? $this->assignableUsers($testCase->project_id)
                 : [],
             'statuses' => TestCaseStatus::query()
+                ->forProject($testCase->project_id)
                 ->whereIn('name', ['Draft', 'Obsolete', 'Ready'])
                 ->orderByRaw("CASE name WHEN 'Draft' THEN 1 WHEN 'Obsolete' THEN 2 WHEN 'Ready' THEN 3 ELSE 4 END")
                 ->get(['id', 'name', 'description', 'color', 'category']),

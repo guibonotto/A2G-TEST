@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\TestCaseStatuses;
 
+use App\Models\Project;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -28,14 +29,14 @@ class UpdateTestCaseStatusRequest extends FormRequest
                 'required',
                 'string',
                 'max:255',
-                Rule::unique('test_case_statuses', 'name')->ignore($this->route('testCaseStatus')),
+                Rule::unique('test_case_statuses', 'name')->where('project_id', Project::current()?->id)->ignore($this->route('testCaseStatus')),
             ],
             'description' => ['nullable', 'string', 'max:1000'],
             'color' => [
                 'required',
                 'string',
                 'in:success,destructive,warning,secondary,info,blue,purple,orange,pink',
-                Rule::unique('test_case_statuses', 'color')->ignore($this->route('testCaseStatus')),
+                Rule::unique('test_case_statuses', 'color')->where('project_id', Project::current()?->id)->ignore($this->route('testCaseStatus')),
             ],
             'category' => ['required', 'string', 'in:in_progress,approved,failed,cancelled'],
         ];
@@ -54,6 +55,6 @@ class UpdateTestCaseStatusRequest extends FormRequest
 
     private static function capitalizeName(string $name): string
     {
-        return mb_strtoupper(mb_substr(mb_strtolower($name), 0, 1)) . mb_substr(mb_strtolower($name), 1);
+        return mb_strtoupper(mb_substr(mb_strtolower($name), 0, 1)).mb_substr(mb_strtolower($name), 1);
     }
 }

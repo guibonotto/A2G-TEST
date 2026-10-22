@@ -5,6 +5,7 @@ namespace App\Http\Requests\TestCases;
 use App\Models\TestCaseStatus;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
 class UpdateTestCaseStatusRequest extends FormRequest
@@ -20,7 +21,7 @@ class UpdateTestCaseStatusRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'status_id' => ['nullable', 'integer', 'exists:test_case_statuses,id'],
+            'status_id' => ['nullable', 'integer', Rule::exists('test_case_statuses', 'id')->where('project_id', $this->route('testCase')->project_id)],
         ];
     }
 

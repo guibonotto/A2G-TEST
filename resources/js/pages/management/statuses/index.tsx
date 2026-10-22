@@ -177,7 +177,7 @@ export default function ManageTestCaseStatuses({ statuses }: Props) {
                 <div className="flex items-center justify-between">
                     <Heading
                         title="Manage statuses"
-                        description="Statuses are shared by every project in the system."
+                        description="Statuses of the current project. Each project has its own set, so changes here do not affect other projects."
                     />
 
                     <Dialog open={createOpen} onOpenChange={setCreateOpen}>

@@ -2,8 +2,10 @@
 
 namespace App\Http\Requests\TestCaseStatuses;
 
+use App\Models\Project;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreTestCaseStatusRequest extends FormRequest
 {
@@ -23,9 +25,9 @@ class StoreTestCaseStatusRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:255', 'unique:test_case_statuses,name'],
+            'name' => ['required', 'string', 'max:255', Rule::unique('test_case_statuses', 'name')->where('project_id', Project::current()?->id)],
             'description' => ['nullable', 'string', 'max:1000'],
-            'color' => ['required', 'string', 'in:success,destructive,warning,secondary,info,blue,purple,orange,pink', 'unique:test_case_statuses,color'],
+            'color' => ['required', 'string', 'in:success,destructive,warning,secondary,info,blue,purple,orange,pink', Rule::unique('test_case_statuses', 'color')->where('project_id', Project::current()?->id)],
             'category' => ['required', 'string', 'in:in_progress,approved,failed,cancelled'],
         ];
     }
@@ -43,6 +45,6 @@ class StoreTestCaseStatusRequest extends FormRequest
 
     private static function capitalizeName(string $name): string
     {
-        return mb_strtoupper(mb_substr(mb_strtolower($name), 0, 1)) . mb_substr(mb_strtolower($name), 1);
+        return mb_strtoupper(mb_substr(mb_strtolower($name), 0, 1)).mb_substr(mb_strtolower($name), 1);
     }
 }

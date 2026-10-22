@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\TestCaseStatuses\StoreTestCaseStatusRequest;
 use App\Http\Requests\TestCaseStatuses\UpdateTestCaseStatusRequest;
+use App\Models\Project;
 use App\Models\TestCaseStatus;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
@@ -12,12 +13,13 @@ use Inertia\Response;
 class TestCaseStatusController extends Controller
 {
     /**
-     * Display a listing of the test case statuses.
+     * Display the statuses of the current project.
      */
     public function index(): Response
     {
         return Inertia::render('management/statuses/index', [
             'statuses' => TestCaseStatus::query()
+                ->forProject(Project::current())
                 ->withCount('testCases')
                 ->orderBy('name')
                 ->get(['id', 'name', 'description', 'color', 'category']),
@@ -29,7 +31,7 @@ class TestCaseStatusController extends Controller
      */
     public function store(StoreTestCaseStatusRequest $request): RedirectResponse
     {
-        $status = TestCaseStatus::create($request->validated());
+        $status = TestCaseStatus::create([...$request->validated(), 'project_id' => Project::current()->id]);
 
         Inertia::flash('toast', [
             'type' => 'success',
@@ -44,6 +46,8 @@ class TestCaseStatusController extends Controller
      */
     public function update(UpdateTestCaseStatusRequest $request, TestCaseStatus $testCaseStatus): RedirectResponse
     {
+        $this->ensureBelongsToCurrentProject($testCaseStatus);
+
         $testCaseStatus->update($request->validated());
 
         Inertia::flash('toast', [
@@ -59,6 +63,8 @@ class TestCaseStatusController extends Controller
      */
     public function destroy(TestCaseStatus $testCaseStatus): RedirectResponse
     {
+        $this->ensureBelongsToCurrentProject($testCaseStatus);
+
         $name = $testCaseStatus->name;
 
         $testCaseStatus->delete();
@@ -69,5 +75,13 @@ class TestCaseStatusController extends Controller
         ]);
 
         return back();
+    }
+
+    /**
+     * Statuses of other projects are invisible from here.
+     */
+    private function ensureBelongsToCurrentProject(TestCaseStatus $testCaseStatus): void
+    {
+        abort_unless($testCaseStatus->project_id === Project::current()->id, 404);
     }
 }
