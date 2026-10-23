@@ -43,7 +43,7 @@ class Role extends Model
     /**
      * Roles whose users can be put in charge of a test case.
      */
-    public const array ASSIGNABLE_SLUGS = ['qa', 'developer'];
+    public const array ASSIGNABLE_SLUGS = ['admin', 'qa', 'developer'];
 
     public function level(): int
     {
