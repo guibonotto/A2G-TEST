@@ -4,10 +4,8 @@ namespace Tests\Feature;
 
 use App\Models\Classification;
 use App\Models\Project;
-use App\Models\Role;
 use App\Models\TestCase as TestCaseModel;
 use App\Models\TestCaseStatus;
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
@@ -15,13 +13,6 @@ use Tests\TestCase;
 class TestCaseStatusControllerTest extends TestCase
 {
     use RefreshDatabase;
-
-    // private function createUserWithRole(string $slug): User
-    // {
-    //     $role = Role::firstOrCreate(['slug' => $slug], ['name' => $slug]);
-
-    //     return User::factory()->create(['role_id' => $role->id]);
-    // }
 
     /**
      * Create a status in the project selected in the session.

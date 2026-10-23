@@ -6,7 +6,6 @@ use App\Models\Classification;
 use App\Models\Evidence;
 use App\Models\Execution;
 use App\Models\Project;
-use App\Models\Role;
 use App\Models\TestCase as TestCaseModel;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -17,13 +16,6 @@ use Tests\TestCase;
 class EvidenceTest extends TestCase
 {
     use RefreshDatabase;
-
-    // private function createUserWithRole(string $slug): User
-    // {
-    //     $role = Role::firstOrCreate(['slug' => $slug], ['name' => $slug]);
-
-    //     return User::factory()->create(['role_id' => $role->id]);
-    // }
 
     /**
      * Create a project the user belongs to, mark it as the active project in

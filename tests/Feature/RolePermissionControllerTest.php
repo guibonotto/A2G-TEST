@@ -6,7 +6,6 @@ use App\Enums\Permission;
 use App\Models\Project;
 use App\Models\ProjectRolePermission;
 use App\Models\Role;
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
@@ -14,13 +13,6 @@ use Tests\TestCase;
 class RolePermissionControllerTest extends TestCase
 {
     use RefreshDatabase;
-
-    // private function createUserWithRole(string $slug): User
-    // {
-    //     $role = Role::firstOrCreate(['slug' => $slug], ['name' => $slug]);
-
-    //     return User::factory()->create(['role_id' => $role->id]);
-    // }
 
     public function test_guests_cannot_access_permission_management(): void
     {
