@@ -363,7 +363,9 @@ class TestCaseController extends Controller
     }
 
     /**
-     * Remove the specified test case from storage.
+     * Archive the test case when it has executions, so its history, evidence
+     * and requirement links survive and the action can be undone; delete it
+     * for good otherwise.
      */
     public function deleteTestCase(Request $request, TestCase $testCase): RedirectResponse
     {
@@ -371,14 +373,48 @@ class TestCaseController extends Controller
 
         $title = $testCase->title;
 
+        if ($testCase->executions()->doesntExist()) {
+            $testCase->forceDelete();
+
+            Inertia::flash('toast', [
+                'type' => 'success',
+                'message' => __('Test case ":title" deleted.', ['title' => $title]),
+            ]);
+
+            return to_route('test-cases.index');
+        }
+
         $testCase->delete();
 
         Inertia::flash('toast', [
             'type' => 'success',
-            'message' => __('Test case ":title" deleted.', ['title' => $title]),
+            'message' => __('Test case ":title" archived.', ['title' => $title]),
+            /** Undoing restores the test case, and with it its executions and links. */
+            'undo' => [
+                'url' => route('test-cases.restore', $testCase, false),
+                'method' => 'patch',
+                'data' => [],
+            ],
         ]);
 
         return to_route('test-cases.index');
+    }
+
+    /**
+     * Bring an archived test case back, together with its history and links.
+     */
+    public function restore(Request $request, TestCase $testCase): RedirectResponse
+    {
+        abort_unless($request->user()->can('delete', $testCase), 403);
+
+        $testCase->restore();
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => __('Test case ":title" restored.', ['title' => $testCase->title]),
+        ]);
+
+        return to_route('test-cases.show', $testCase);
     }
 
     /**

@@ -46,7 +46,7 @@ class Execution extends Model
 
     public function testCase(): BelongsTo
     {
-        return $this->belongsTo(TestCase::class);
+        return $this->belongsTo(TestCase::class)->withTrashed();
     }
 
     public function executor(): BelongsTo

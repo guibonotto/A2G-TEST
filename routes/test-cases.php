@@ -18,6 +18,7 @@ Route::middleware(['auth', 'verified', 'project'])->group(function () {
     Route::patch('test-cases/{testCase}/assign', [TestCaseController::class, 'assign'])->name('test-cases.assign');
     Route::patch('test-cases/{testCase}/status', [TestCaseController::class, 'updateStatus'])->name('test-cases.status');
     Route::delete('test-cases/{testCase}', [TestCaseController::class, 'deleteTestCase'])->name('test-cases.delete');
+    Route::patch('test-cases/{testCase}/restore', [TestCaseController::class, 'restore'])->withTrashed()->name('test-cases.restore');
     Route::post('test-cases/{testCase}/requirements', [TestCaseController::class, 'linkRequirement'])->name('test-cases.requirements.link');
     Route::delete('test-cases/{testCase}/requirements', [TestCaseController::class, 'unlinkRequirement'])->name('test-cases.requirements.unlink');
     Route::post('executions/{execution}/evidences', [TestCaseController::class, 'storeEvidence'])->name('executions.evidences.store');

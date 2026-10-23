@@ -1125,6 +1125,104 @@ class TestCaseControllerTest extends TestCase
         $this->assertDatabaseMissing('test_steps', ['test_case_id' => $testCase->id]);
     }
 
+    /**
+     * Create a test case in the project with one execution and one linked requirement.
+     */
+    private function createExecutedTestCase(User $user, Project $project): TestCaseModel
+    {
+        $testCase = TestCaseModel::create([
+            'title' => 'Soma de numeros positivos',
+            'created_by' => $user->id,
+            'project_id' => $project->id,
+        ]);
+        $testCase->executions()->create([
+            'executed_by' => $user->id,
+            'status' => 'APROVADO',
+            'execution_date' => now(),
+        ]);
+        $requirement = Requirement::create(['project_id' => $project->id, 'code' => 'RF001', 'type' => 'funcional', 'title' => 'Cadastro']);
+        $testCase->requirements()->attach($requirement);
+
+        return $testCase;
+    }
+
+    public function test_a_test_case_with_executions_is_archived_and_keeps_its_history(): void
+    {
+        $user = User::factory()->create();
+        $project = $this->actingAsProjectMember($user);
+        $testCase = $this->createExecutedTestCase($user, $project);
+
+        $this->followingRedirects()
+            ->delete(route('test-cases.delete', $testCase))
+            ->assertInertia(fn (Assert $page) => $page
+                ->hasFlash('toast.message', 'Test case "Soma de numeros positivos" archived.')
+                ->hasFlash('toast.undo.url', route('test-cases.restore', $testCase, false))
+                ->hasFlash('toast.undo.method', 'patch')
+            );
+
+        $this->assertSoftDeleted($testCase);
+        $this->assertDatabaseHas('executions', ['test_case_id' => $testCase->id]);
+        $this->assertDatabaseHas('test_case_requirements', ['test_case_id' => $testCase->id]);
+        $this->get(route('test-cases.show', $testCase))->assertNotFound();
+    }
+
+    public function test_an_archived_test_case_leaves_the_list(): void
+    {
+        $user = User::factory()->create();
+        $project = $this->actingAsProjectMember($user);
+        $testCase = $this->createExecutedTestCase($user, $project);
+        $testCase->delete();
+
+        $this->get(route('test-cases.index'))
+            ->assertInertia(fn (Assert $page) => $page->has('testCases', 0));
+    }
+
+    public function test_restoring_brings_the_test_case_and_its_history_back(): void
+    {
+        $user = User::factory()->create();
+        $project = $this->actingAsProjectMember($user);
+        $testCase = $this->createExecutedTestCase($user, $project);
+        $this->delete(route('test-cases.delete', $testCase));
+
+        $this->followingRedirects()
+            ->patch(route('test-cases.restore', $testCase))
+            ->assertInertia(fn (Assert $page) => $page
+                ->hasFlash('toast.message', 'Test case "Soma de numeros positivos" restored.')
+                ->has('testCase.executions', 1)
+                ->has('testCase.requirements', 1)
+            );
+
+        $this->assertNotSoftDeleted($testCase);
+    }
+
+    public function test_viewers_cannot_restore_a_test_case(): void
+    {
+        $user = User::factory()->create();
+        $project = $this->actingAsProjectMember($user);
+        $testCase = $this->createExecutedTestCase($user, $project);
+        $testCase->delete();
+
+        $this->actingAs($this->createUserWithRole('viewer', $project))
+            ->patch(route('test-cases.restore', $testCase))
+            ->assertForbidden();
+
+        $this->assertSoftDeleted($testCase);
+    }
+
+    public function test_users_outside_the_project_cannot_restore_a_test_case(): void
+    {
+        $user = User::factory()->create();
+        $project = $this->actingAsProjectMember($user);
+        $testCase = $this->createExecutedTestCase($user, $project);
+        $testCase->delete();
+
+        $this->actingAsProjectMember(User::factory()->create());
+
+        $this->patch(route('test-cases.restore', $testCase))->assertForbidden();
+
+        $this->assertSoftDeleted($testCase);
+    }
+
     public function test_show_includes_the_available_statuses(): void
     {
         $user = User::factory()->create();

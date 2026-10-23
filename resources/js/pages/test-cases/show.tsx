@@ -32,8 +32,8 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
     Select,
     SelectContent,
@@ -95,6 +95,12 @@ export default function ShowTestCase({
     const [executionStatusFilter, setExecutionStatusFilter] = useState('all');
     const [recordingOpen, setRecordingOpen] = useState(false);
     const canRecordExecution = testCase.status?.name !== 'Draft';
+    // A case with executions is archived instead of deleted, to keep traceability.
+    const willArchive = testCase.executions.length > 0;
+    const evidenceCount = testCase.executions.reduce(
+        (total, execution) => total + execution.evidences.length,
+        0,
+    );
 
     const executionForm = useForm<ExecutionFormData>({
         status: 'PENDENTE',
@@ -290,22 +296,44 @@ export default function ShowTestCase({
                                     onSelect={() => setDeleteOpen(true)}
                                     className="text-destructive focus:text-destructive"
                                 >
-                                    Delete test case
+                                    {willArchive
+                                        ? 'Archive test case'
+                                        : 'Delete test case'}
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
 
                         <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
                             <DialogContent>
-                                <DialogTitle>Delete test case?</DialogTitle>
+                                <DialogTitle>
+                                    {willArchive
+                                        ? 'Archive test case?'
+                                        : 'Delete test case?'}
+                                </DialogTitle>
 
                                 <DialogDescription>
-                                    This action cannot be undone. This test case
-                                    will be deleted along with its{' '}
-                                    {testCase.executions.length} execution(s)
-                                    and their evidence, and{' '}
-                                    {testCase.requirements.length} requirement
-                                    link(s).
+                                    {willArchive ? (
+                                        <>
+                                            "{testCase.title}" has{' '}
+                                            {testCase.executions.length}{' '}
+                                            execution(s), {evidenceCount}{' '}
+                                            evidence file(s) and{' '}
+                                            {testCase.requirements.length}{' '}
+                                            requirement link(s). To keep
+                                            traceability it will be archived
+                                            instead of deleted: it leaves the
+                                            lists, but all of this is kept and
+                                            can be restored.
+                                        </>
+                                    ) : (
+                                        <>
+                                            This action cannot be undone. "
+                                            {testCase.title}" and its{' '}
+                                            {testCase.requirements.length}{' '}
+                                            requirement link(s) will be
+                                            permanently deleted.
+                                        </>
+                                    )}
                                 </DialogDescription>
 
                                 <Form
@@ -326,10 +354,16 @@ export default function ShowTestCase({
 
                                             <Button
                                                 type="submit"
-                                                variant="destructive"
+                                                variant={
+                                                    willArchive
+                                                        ? 'default'
+                                                        : 'destructive'
+                                                }
                                                 disabled={processing}
                                             >
-                                                Delete
+                                                {willArchive
+                                                    ? 'Archive'
+                                                    : 'Delete'}
                                             </Button>
                                         </DialogFooter>
                                     )}
