@@ -95,6 +95,18 @@ export type TestCaseDetail = {
 export type Execution = {
     id: number;
     status: string;
+    test_case_version: number;
+    test_case_snapshot: {
+        title: string;
+        tested_method: string | null;
+        description: string | null;
+        input: string | null;
+        expected_output: string | null;
+        classification?: { id: number; name: string } | null;
+        template?: { id: number; title: string } | null;
+        status?: { id: number; name: string } | null;
+        assigned_to?: { id: number; name: string } | null;
+    } | null;
     comment: string | null;
     obtained_output: string | null;
     execution_date: string;

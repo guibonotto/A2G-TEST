@@ -20,6 +20,8 @@ use Throwable;
     'obtained_output',
     'batch_id',
     'execution_date',
+    'test_case_version',
+    'test_case_snapshot',
 ])]
 class Execution extends Model
 {
@@ -41,6 +43,8 @@ class Execution extends Model
         return [
             'execution_date' => 'datetime',
             'created_at' => 'datetime',
+            'test_case_version' => 'integer',
+            'test_case_snapshot' => 'array',
         ];
     }
 

@@ -133,6 +133,9 @@ export default function ShowTestCase({
 
     const [linkRequirementOpen, setLinkRequirementOpen] = useState(false);
     const [selectedRequirementId, setSelectedRequirementId] = useState('');
+    const [unlinkRequirementId, setUnlinkRequirementId] = useState<
+        number | null
+    >(null);
     const [linkingRequirement, setLinkingRequirement] = useState(false);
 
     const linkedRequirementIds = new Set(
@@ -160,10 +163,15 @@ export default function ShowTestCase({
         );
     }
 
-    function unlinkRequirement(requirementId: number) {
+    function unlinkRequirement() {
+        if (unlinkRequirementId === null) {
+            return;
+        }
+
         router.delete(TestCaseController.unlinkRequirement.url(testCase), {
-            data: { requirement_id: requirementId },
+            data: { requirement_id: unlinkRequirementId },
             preserveScroll: true,
+            onFinish: () => setUnlinkRequirementId(null),
         });
     }
 
@@ -603,7 +611,7 @@ export default function ShowTestCase({
                                             size="sm"
                                             className="text-destructive hover:bg-destructive/10 hover:text-destructive"
                                             onClick={() =>
-                                                unlinkRequirement(
+                                                setUnlinkRequirementId(
                                                     requirement.id,
                                                 )
                                             }
@@ -617,6 +625,38 @@ export default function ShowTestCase({
                         )}
                     </CardContent>
                 </Card>
+
+                <Dialog
+                    open={unlinkRequirementId !== null}
+                    onOpenChange={(open) => {
+                        if (!open) {
+                            setUnlinkRequirementId(null);
+                        }
+                    }}
+                >
+                    <DialogContent>
+                        <DialogTitle>Unlink requirement?</DialogTitle>
+                        <DialogDescription>
+                            This removes the requirement link from the test
+                            case. The requirement itself will not be deleted.
+                            This action cannot be undone from this screen.
+                        </DialogDescription>
+                        <DialogFooter className="gap-2">
+                            <DialogClose asChild>
+                                <Button type="button" variant="secondary">
+                                    Cancel
+                                </Button>
+                            </DialogClose>
+                            <Button
+                                type="button"
+                                variant="destructive"
+                                onClick={unlinkRequirement}
+                            >
+                                Unlink requirement
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
 
                 {recordingOpen && canRecordExecution ? (
                     <Card>
@@ -887,11 +927,121 @@ export default function ShowTestCase({
                                             )}
                                         </Badge>
                                         <span className="text-xs text-muted-foreground">
+                                            Version{' '}
+                                            {execution.test_case_version}
+                                            {' · '}
                                             {new Date(
                                                 execution.execution_date,
                                             ).toLocaleString('en-US')}
                                         </span>
                                     </div>
+                                    <Dialog>
+                                        <DialogTrigger asChild>
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                className="w-fit"
+                                            >
+                                                View data at execution
+                                            </Button>
+                                        </DialogTrigger>
+                                        <DialogContent>
+                                            <DialogTitle>
+                                                Test case data · version{' '}
+                                                {execution.test_case_version}
+                                            </DialogTitle>
+                                            <DialogDescription>
+                                                Values recorded when this
+                                                execution took place.
+                                            </DialogDescription>
+                                            {execution.test_case_snapshot ? (
+                                                <div className="grid gap-3 text-sm">
+                                                    <div>
+                                                        <p className="text-muted-foreground">
+                                                            Title
+                                                        </p>
+                                                        <p>
+                                                            {
+                                                                execution
+                                                                    .test_case_snapshot
+                                                                    .title
+                                                            }
+                                                        </p>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-muted-foreground">
+                                                            Method/function
+                                                        </p>
+                                                        <p>
+                                                            {execution
+                                                                .test_case_snapshot
+                                                                .tested_method ??
+                                                                '—'}
+                                                        </p>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-muted-foreground">
+                                                            Description
+                                                        </p>
+                                                        <p className="whitespace-pre-wrap">
+                                                            {execution
+                                                                .test_case_snapshot
+                                                                .description ??
+                                                                '—'}
+                                                        </p>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-muted-foreground">
+                                                            Input
+                                                        </p>
+                                                        <p className="whitespace-pre-wrap">
+                                                            {execution
+                                                                .test_case_snapshot
+                                                                .input ?? '—'}
+                                                        </p>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-muted-foreground">
+                                                            Expected output
+                                                        </p>
+                                                        <p className="whitespace-pre-wrap">
+                                                            {execution
+                                                                .test_case_snapshot
+                                                                .expected_output ??
+                                                                '—'}
+                                                        </p>
+                                                    </div>
+                                                    <div>
+                                                        <p>
+                                                            <span className="text-muted-foreground">
+                                                                Status:{' '}
+                                                            </span>
+                                                            {execution
+                                                                .test_case_snapshot
+                                                                .status?.name ??
+                                                                '—'}
+                                                        </p>
+                                                        <p>
+                                                            <span className="text-muted-foreground">
+                                                                Assigned
+                                                                to:{' '}
+                                                            </span>
+                                                            {execution
+                                                                .test_case_snapshot
+                                                                .assigned_to
+                                                                ?.name ?? '—'}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <p className="text-sm text-muted-foreground">
+                                                    No snapshot is available for
+                                                    this execution.
+                                                </p>
+                                            )}
+                                        </DialogContent>
+                                    </Dialog>
                                     <span className="text-sm text-muted-foreground">
                                         Executed by{' '}
                                         {execution.executor?.name ??

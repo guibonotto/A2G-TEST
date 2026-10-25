@@ -16,18 +16,12 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { index, show, update } from '@/routes/test-cases';
-import type {
-    AssignableUser,
-    Classification,
-    TestCaseDetail,
-    TestCaseStatus,
-    TestTemplate,
-} from '@/types';
+import type { AssignableUser, TestCaseDetail, TestCaseStatus } from '@/types';
 
 type Props = {
     testCase: TestCaseDetail;
-    classifications: Classification[];
-    templates: TestTemplate[];
+    hasExecutions: boolean;
+    version: number;
     assignableUsers: AssignableUser[];
     statuses: TestCaseStatus[];
 };
@@ -41,8 +35,6 @@ type EditFormData = {
     title: string;
     tested_method: string;
     description: string;
-    classification_id: string;
-    template_id: string;
     status_id: string;
     assigned_to: string;
     steps: StepForm[];
@@ -52,19 +44,15 @@ const emptyStep: StepForm = { description: '', expected_result: '' };
 
 export default function EditTestCase({
     testCase,
-    classifications,
+    hasExecutions,
+    version,
     assignableUsers,
     statuses,
-    // templates, // desativado: templates fora de uso
 }: Props) {
     const { data, setData, put, processing, errors } = useForm<EditFormData>({
         title: testCase.title,
         tested_method: testCase.tested_method ?? '',
         description: testCase.description ?? '',
-        classification_id: testCase.classification
-            ? String(testCase.classification.id)
-            : '',
-        template_id: testCase.template ? String(testCase.template.id) : '',
         status_id: testCase.status ? String(testCase.status.id) : '',
         assigned_to: testCase.assignee ? String(testCase.assignee.id) : '',
         steps: (testCase.steps.length > 0
@@ -122,8 +110,16 @@ export default function EditTestCase({
             <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 p-4 pb-24">
                 <Heading
                     title="Edit test case"
-                    description="Update the information and the test data of this test case."
+                    description="Edit only the test case specification: title, method, input, and expected output."
                 />
+
+                {hasExecutions && (
+                    <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">
+                        This test case has previous executions. Saving a change
+                        will create version {version + 1}; previous results will
+                        remain linked to version {version}.
+                    </div>
+                )}
 
                 <form onSubmit={submit} className="flex flex-col gap-6">
                     <Card>
@@ -176,20 +172,15 @@ export default function EditTestCase({
 
                             <div className="grid gap-2">
                                 <Label htmlFor="status_id">Status</Label>
-
                                 <Select
                                     value={data.status_id}
                                     onValueChange={(value) =>
                                         setData('status_id', value)
                                     }
                                 >
-                                    <SelectTrigger
-                                        id="status_id"
-                                        className="w-full"
-                                    >
+                                    <SelectTrigger id="status_id">
                                         <SelectValue placeholder="Select a status" />
                                     </SelectTrigger>
-
                                     <SelectContent>
                                         {statuses.map((status) => (
                                             <SelectItem
@@ -201,14 +192,13 @@ export default function EditTestCase({
                                         ))}
                                     </SelectContent>
                                 </Select>
-
                                 <InputError message={errors.status_id} />
                             </div>
 
                             {assignableUsers.length > 0 && (
                                 <div className="grid gap-2">
                                     <Label htmlFor="assigned_to">
-                                        Assigned to (optional)
+                                        Assigned to
                                     </Label>
                                     <Select
                                         value={data.assigned_to || 'unassigned'}
@@ -221,10 +211,7 @@ export default function EditTestCase({
                                             )
                                         }
                                     >
-                                        <SelectTrigger
-                                            id="assigned_to"
-                                            className="w-full"
-                                        >
+                                        <SelectTrigger id="assigned_to">
                                             <SelectValue placeholder="Unassigned" />
                                         </SelectTrigger>
                                         <SelectContent>

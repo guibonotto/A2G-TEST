@@ -250,6 +250,8 @@ class TestCaseController extends Controller
             $execution = $testCase->executions()->create([
                 ...$request->safe()->except('evidences'),
                 'executed_by' => $request->user()->id,
+                'test_case_version' => $testCase->version,
+                'test_case_snapshot' => $testCase->specificationSnapshot(),
             ]);
 
             $execution->attachEvidences($request->file('evidences') ?? []);
@@ -279,8 +281,8 @@ class TestCaseController extends Controller
 
         return Inertia::render('test-cases/edit', [
             'testCase' => $testCase,
-            'classifications' => Classification::query()->orderBy('name')->get(['id', 'name']),
-            'templates' => TestTemplate::query()->orderBy('title')->get(['id', 'title']),
+            'hasExecutions' => $testCase->executions()->exists(),
+            'version' => $testCase->version,
             'assignableUsers' => $request->user()->canManageAccess()
                 ? $this->assignableUsers($testCase->project_id)
                 : [],
@@ -298,6 +300,22 @@ class TestCaseController extends Controller
     public function update(UpdateTestCaseRequest $request, TestCase $testCase): RedirectResponse
     {
         DB::transaction(function () use ($request, $testCase) {
+            $validated = $request->validated();
+            $nullableId = static fn (string $key): ?int => isset($validated[$key]) && $validated[$key] !== ''
+                ? (int) $validated[$key]
+                : null;
+
+            $changed = $testCase->title !== $request->validated('title')
+                || $testCase->tested_method !== ($request->validated('tested_method') ?: null)
+                || $testCase->description !== ($request->validated('description') ?: null)
+                || $this->stepsChanged($testCase, $request->validated('steps'))
+                || $testCase->status_id !== $nullableId('status_id')
+                || $testCase->assigned_to !== $nullableId('assigned_to');
+
+            if ($changed && $testCase->executions()->exists()) {
+                $testCase->increment('version');
+            }
+
             $testCase->update(
                 $request->safe()->only(['title', 'tested_method', 'description', 'classification_id', 'template_id', 'status_id', 'assigned_to'])
             );
@@ -319,6 +337,21 @@ class TestCaseController extends Controller
         ]);
 
         return to_route('test-cases.show', $testCase);
+    }
+
+    /**
+     * Compare the single active input/expected-output pair without relying on
+     * array order or on the database representation of nullable strings.
+     *
+     * @param  array<int, array{description: string, expected_result?: string|null}> $steps
+     */
+    private function stepsChanged(TestCase $testCase, array $steps): bool
+    {
+        $current = $testCase->steps()->first();
+        $incoming = $steps[0] ?? [];
+
+        return $current?->description !== ($incoming['description'] ?? null)
+            || $current?->expected_result !== ($incoming['expected_result'] ?? null);
     }
 
     /**

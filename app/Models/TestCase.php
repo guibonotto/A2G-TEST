@@ -25,6 +25,7 @@ use Illuminate\Validation\ValidationException;
     'status_id',
     'assigned_to',
     'project_id',
+    'version',
 ])]
 class TestCase extends Model
 {
@@ -66,6 +67,25 @@ class TestCase extends Model
     {
         return [
             'created_at' => 'datetime',
+            'version' => 'integer',
+        ];
+    }
+
+    public function specificationSnapshot(): array
+    {
+        $this->loadMissing(['steps', 'classification', 'template', 'status', 'assignee']);
+        $step = $this->steps->first();
+
+        return [
+            'title' => $this->title,
+            'tested_method' => $this->tested_method,
+            'description' => $this->description,
+            'input' => $step?->description,
+            'expected_output' => $step?->expected_result,
+            'classification' => $this->classification?->only(['id', 'name']),
+            'template' => $this->template?->only(['id', 'title']),
+            'status' => $this->status?->only(['id', 'name']),
+            'assigned_to' => $this->assignee?->only(['id', 'name']),
         ];
     }
 
