@@ -182,6 +182,7 @@ class ProjectController extends Controller
                 'name' => $project->name,
                 'ownerId' => $project->owner_id,
                 'isOwner' => $isOwner,
+                'myRole' => $request->user()->roleIn($project)?->only(['id', 'name', 'slug']),
                 'members' => $isOwner
                     ? $project->members()->get(['users.id', 'users.name', 'users.email'])
                     : [],

@@ -169,6 +169,13 @@ class ProjectTest extends TestCase
         $this->actingAs($user)->get(route('projects.invite', $token));
 
         $this->assertSame('qa', $user->fresh()->roleIn($project)?->slug);
+
+        $this->actingAs($user->fresh())
+            ->get(route('projects.show', $project))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('project.myRole.slug', 'qa')
+                ->where('project.myRole.name', 'Qa')
+            );
     }
 
     public function test_an_invitation_link_can_only_be_used_once(): void

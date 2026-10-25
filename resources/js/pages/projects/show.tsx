@@ -20,6 +20,7 @@ type Project = {
     name: string;
     ownerId: number;
     isOwner: boolean;
+    myRole: Role | null;
     members: Member[];
     pendingInvites: PendingInvite[];
 };
@@ -50,6 +51,21 @@ export default function ProjectsShow({
                         </p>
                     </div>
                 </div>
+
+                {!project.isOwner && project.myRole && (
+                    <Card>
+                        <CardContent className="space-y-1">
+                            <p className="text-sm font-semibold">Your role</p>
+                            <p className="text-sm text-muted-foreground">
+                                You joined this project as{' '}
+                                <span className="font-medium text-foreground">
+                                    {project.myRole.name}
+                                </span>
+                                .
+                            </p>
+                        </CardContent>
+                    </Card>
+                )}
 
                 {project.isOwner && (
                     <Card>
