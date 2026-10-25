@@ -4,11 +4,17 @@ import ProjectController from '@/actions/App/Http/Controllers/ProjectController'
 import CopyButton from '@/components/copy-button';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
 import { index as projectsIndex, show as projectsShow } from '@/routes/projects';
 import { index as testCasesIndex } from '@/routes/test-cases';
 
 type Member = { id: number; name: string; email: string };
-type PendingInvite = { id: number; created_at: string };
+type PendingInvite = {
+    id: number;
+    created_at: string;
+    role?: Pick<Role, 'name' | 'slug'>;
+};
+type Role = { id: number; name: string; slug: string };
 type Project = {
     uuid: string;
     name: string;
@@ -21,9 +27,11 @@ type Project = {
 export default function ProjectsShow({
     project,
     inviteLink,
+    roles,
 }: {
     project: Project;
     inviteLink?: string;
+    roles: Role[];
 }) {
     return (
         <>
@@ -74,10 +82,27 @@ export default function ProjectsShow({
                                 )}
                             >
                                 {({ processing }) => (
-                                    <Button type="submit" disabled={processing}>
-                                        {processing && <span className="animate-spin">...</span>}
-                                        Generate invitation link
-                                    </Button>
+                                    <div className="space-y-4">
+                                        <div className="grid gap-2 sm:max-w-xs">
+                                            <Label htmlFor="role">Role for the invitee</Label>
+                                            <select
+                                                id="role"
+                                                name="role"
+                                                defaultValue="viewer"
+                                                className="border-input bg-background focus-visible:border-ring focus-visible:ring-ring/50 h-9 rounded-md border px-3 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
+                                            >
+                                                {roles.map((role) => (
+                                                    <option key={role.id} value={role.slug}>
+                                                        {role.name}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <Button type="submit" disabled={processing}>
+                                            {processing && <span className="animate-spin">...</span>}
+                                            Generate invitation link
+                                        </Button>
+                                    </div>
                                 )}
                             </Form>
                         </CardContent>
@@ -111,7 +136,10 @@ export default function ProjectsShow({
                                     {project.pendingInvites.map((invite) => (
                                         <Form key={invite.id} {...ProjectController.revokeInvite.form([project.uuid, invite.id])}>
                                             <div className="flex items-center gap-3 text-sm">
-                                                <span className="flex-1 text-muted-foreground">Invitation link not used</span>
+                                                <span className="flex-1 text-muted-foreground">
+                                                    Invitation link not used
+                                                    {invite.role && ` (${invite.role.name})`}
+                                                </span>
                                                 <Button type="submit" variant="outline" size="sm">Revoke link</Button>
                                             </div>
                                         </Form>

@@ -155,6 +155,22 @@ class ProjectTest extends TestCase
         $this->assertSame($project->id, session('current_project_id'));
     }
 
+    public function test_an_invitation_assigns_the_selected_role(): void
+    {
+        $owner = User::factory()->create();
+        $project = Project::factory()->for($owner, 'owner')->create();
+        $user = User::factory()->create();
+
+        $this->actingAs($owner)->post(route('projects.invites.store', $project), [
+            'role' => 'qa',
+        ]);
+        $token = basename(parse_url(session('invite_link'), PHP_URL_PATH));
+
+        $this->actingAs($user)->get(route('projects.invite', $token));
+
+        $this->assertSame('qa', $user->fresh()->roleIn($project)?->slug);
+    }
+
     public function test_an_invitation_link_can_only_be_used_once(): void
     {
         $owner = User::factory()->create();

@@ -73,10 +73,13 @@ class ProjectController extends Controller
                 ->lockForUpdate()
                 ->firstOrFail();
             $project = $invitation->project;
+            $role = $invitation->role ?? Role::firstOrCreate(
+                ['slug' => Role::VIEWER],
+                ['name' => 'Viewer'],
+            );
 
-            /** Newcomers start with the least access; the project's admin raises it in Manage accounts. */
             if ($project->members()->whereKey($request->user()->id)->doesntExist()) {
-                $project->addMember($request->user(), Role::VIEWER);
+                $project->addMember($request->user(), $role->slug);
             }
 
             $invitation->forceFill([
@@ -87,8 +90,19 @@ class ProjectController extends Controller
             return $project;
         });
 
+        $role = $project->members()
+            ->whereKey($request->user()->id)
+            ->firstOrFail()
+            ->roleIn($project);
+
         session(['current_project_id' => $project->id]);
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('You joined the ":name" project.', ['name' => $project->name])]);
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => __('You joined the ":project" project as ":role".', [
+                'project' => $project->name,
+                'role' => $role?->name ?? __('Viewer'),
+            ]),
+        ]);
 
         return to_route('projects.show', $project);
     }
@@ -97,8 +111,16 @@ class ProjectController extends Controller
     {
         abort_unless($project->owner_id === $request->user()->id, 403);
 
+        $roleSlug = $request->validate([
+            'role' => ['sometimes', 'string', 'in:'.implode(',', array_keys(Role::LEVELS))],
+        ])['role'] ?? Role::VIEWER;
+        $role = Role::firstOrCreate(
+            ['slug' => $roleSlug],
+            ['name' => Str::headline($roleSlug)],
+        );
         $token = Str::random(64);
         $project->invitations()->create([
+            'role_id' => $role->id,
             'token_hash' => hash('sha256', $token),
         ]);
 
@@ -168,10 +190,19 @@ class ProjectController extends Controller
                         ->whereNull('accepted_at')
                         ->whereNull('revoked_at')
                         ->latest()
-                        ->get(['id', 'created_at'])
+                        ->with('role:id,name,slug')
+                        ->get(['id', 'role_id', 'created_at'])
+                        ->map(fn (ProjectInvitation $invitation): array => [
+                            'id' => $invitation->id,
+                            'created_at' => $invitation->created_at,
+                            'role' => $invitation->role?->only(['name', 'slug']),
+                        ])
                     : [],
             ],
             'inviteLink' => session('invite_link'),
+            'roles' => $isOwner
+                ? Role::query()->orderByDesc('id')->get(['id', 'name', 'slug'])
+                : [],
         ]);
     }
 }

@@ -1,5 +1,7 @@
-import { Form, Head, Link, usePage } from '@inertiajs/react';
+import { Form, Head, Link, router, usePage } from '@inertiajs/react';
 import { Briefcase } from 'lucide-react';
+import { useState } from 'react';
+import type { FormEvent } from 'react';
 import ProjectController from '@/actions/App/Http/Controllers/ProjectController';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
@@ -20,6 +22,38 @@ export default function ProjectsIndex({
     myProjects: ProjectSummary[];
 }) {
     const { currentProject } = usePage().props;
+    const [inviteValue, setInviteValue] = useState('');
+    const [inviteError, setInviteError] = useState<string>();
+
+    function joinProject(event: FormEvent<HTMLFormElement>) {
+        event.preventDefault();
+
+        const value = inviteValue.trim();
+
+        if (!value) {
+            setInviteError('Enter an invitation link or token.');
+
+            return;
+        }
+
+        let token = value;
+
+        try {
+            const url = new URL(value, window.location.origin);
+            const parts = url.pathname.split('/').filter(Boolean);
+
+            if (parts.at(-2) === 'invite' && parts.at(-1)) {
+                token = parts.at(-1) as string;
+            }
+        } catch {
+            setInviteError('Enter a valid invitation link or token.');
+
+            return;
+        }
+
+        setInviteError(undefined);
+        router.visit(ProjectController.invite.url(token));
+    }
 
     return (
         <>
@@ -30,6 +64,44 @@ export default function ProjectsIndex({
                     title="Projects"
                     description="Pick a project to work on, or create a new one."
                 />
+
+                <section className="space-y-4">
+                    <h2 className="text-sm font-semibold">Join a project</h2>
+                    <Card>
+                        <CardContent>
+                            <form
+                                onSubmit={joinProject}
+                                className="space-y-4"
+                            >
+                                <p className="text-sm text-muted-foreground">
+                                    Paste the invitation link or token sent by
+                                    the project owner to get access.
+                                </p>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="invitation">
+                                        Invitation link or token
+                                    </Label>
+                                    <Input
+                                        id="invitation"
+                                        value={inviteValue}
+                                        onChange={(event) =>
+                                            setInviteValue(event.target.value)
+                                        }
+                                        placeholder="https://.../projects/invite/..."
+                                        autoComplete="off"
+                                        aria-invalid={
+                                            inviteError ? 'true' : 'false'
+                                        }
+                                    />
+                                    <InputError message={inviteError} />
+                                </div>
+                                <Button type="submit">
+                                    Join project
+                                </Button>
+                            </form>
+                        </CardContent>
+                    </Card>
+                </section>
 
                 <section className="space-y-3">
                     <h2 className="text-sm font-semibold">Your projects</h2>
