@@ -5,6 +5,7 @@ import { useState } from 'react';
 import RequirementController from '@/actions/App/Http/Controllers/RequirementController';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
+import { JiraIssueTypeBadge } from '@/components/jira-issue-type-badge';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -477,7 +478,12 @@ function RequirementRow({
 
     return (
         <tr className="border-b last:border-0 hover:bg-muted/50">
-            <td className="px-4 py-3 font-medium">{requirement.code}</td>
+            <td className="px-4 py-3 font-medium">
+                <span className="flex flex-wrap items-center gap-2">
+                    {requirement.code}
+                    <JiraIssueTypeBadge type={requirement.jira_issue_type} />
+                </span>
+            </td>
             <td className="px-4 py-3">{requirement.title}</td>
             {showType && (
                 <td className="px-4 py-3">

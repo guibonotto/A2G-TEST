@@ -142,6 +142,21 @@ class RequirementControllerTest extends TestCase
             );
     }
 
+    public function test_the_requirement_list_shows_the_jira_issue_type(): void
+    {
+        $qa = $this->createProjectMember('qa');
+        $this->createRequirement(['code' => 'PROJ-1', 'jira_issue_type' => 'Story']);
+        $this->createRequirement(['code' => 'RF002']);
+
+        $this->actingAs($qa)->get(route('requirements.index'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('requirements.0.code', 'PROJ-1')
+                ->where('requirements.0.jira_issue_type', 'Story')
+                ->where('requirements.1.code', 'RF002')
+                ->where('requirements.1.jira_issue_type', null)
+            );
+    }
+
     public function test_the_requirement_list_only_shows_the_current_project(): void
     {
         $qa = $this->createProjectMember('qa');

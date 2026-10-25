@@ -510,11 +510,12 @@ class TestCaseController extends Controller
         return Requirement::query()
             ->where('project_id', $projectId)
             ->withCount('testCases')
-            ->get(['id', 'code', 'title', 'description', 'jira_synced_at'])
+            ->get(['id', 'code', 'jira_issue_type', 'title', 'description', 'jira_synced_at'])
             ->sortBy('code', SORT_NATURAL | SORT_FLAG_CASE)
             ->map(fn (Requirement $requirement): array => [
                 'id' => $requirement->id,
                 'code' => $requirement->code,
+                'jira_issue_type' => $requirement->jira_issue_type,
                 'title' => $requirement->title,
                 'description' => $requirement->description,
                 'test_cases_count' => $requirement->test_cases_count,

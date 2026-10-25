@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'project_id',
     'code',
     'type',
+    'jira_issue_type',
     'title',
     'description',
     'priority',
