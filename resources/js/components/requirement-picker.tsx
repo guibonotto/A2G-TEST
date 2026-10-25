@@ -1,7 +1,9 @@
 import { ExternalLink, Search } from 'lucide-react';
 import { useState } from 'react';
+import { JiraIssueTypeBadge } from '@/components/jira-issue-type-badge';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { issueTypeHint } from '@/lib/jira-issue-type';
 import { cn } from '@/lib/utils';
 import type { RequirementOption } from '@/types/requirements';
 
@@ -43,7 +45,7 @@ export function RequirementPicker({
     const terms = normalize(query).split(/\s+/).filter(Boolean);
     const matches = requirements.filter((requirement) => {
         const haystack = normalize(
-            `${requirement.code} ${requirement.title} ${requirement.description ?? ''}`,
+            `${requirement.code} ${requirement.jira_issue_type ?? ''} ${requirement.title} ${requirement.description ?? ''}`,
         );
 
         return terms.every((term) => haystack.includes(term));
@@ -64,7 +66,7 @@ export function RequirementPicker({
                 <Input
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
-                    placeholder="Type a key (e.g. AAAAAAA-14) or a word"
+                    placeholder="Type a key (e.g. AAAAAAA-14), a word or a type (e.g. story)"
                     aria-label="Search requirements"
                     className="pl-9"
                     autoFocus
@@ -113,6 +115,9 @@ export function RequirementPicker({
                                     </span>{' '}
                                     {requirement.title}
                                 </span>
+                                <JiraIssueTypeBadge
+                                    type={requirement.jira_issue_type}
+                                />
                                 <Badge
                                     variant={
                                         requirement.test_cases_count === 0
@@ -162,6 +167,14 @@ export function RequirementPicker({
                     <p className="line-clamp-4 text-muted-foreground">
                         {previewed.description ?? 'No description.'}
                     </p>
+
+                    {previewed.jira_issue_type && (
+                        <p className="text-xs text-muted-foreground">
+                            Jira issue type: {previewed.jira_issue_type}
+                            {issueTypeHint(previewed.jira_issue_type) &&
+                                ` — ${issueTypeHint(previewed.jira_issue_type)}`}
+                        </p>
+                    )}
 
                     <p className="text-xs text-muted-foreground">
                         {previewed.test_cases_count === 0

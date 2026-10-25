@@ -380,6 +380,46 @@ class JiraIntegrationControllerTest extends TestCase
         $this->assertDatabaseCount('requirements', 1);
     }
 
+    public function test_import_keeps_the_jira_issue_type_of_each_requirement(): void
+    {
+        $qa = $this->createProjectMember('qa');
+        $this->createIntegrationFor($qa);
+
+        Http::fake(['api.atlassian.com/*' => Http::response(['issues' => [
+            ['key' => 'PROJ-1', 'fields' => ['summary' => 'Login do usuário', 'issuetype' => ['name' => 'Story']]],
+            ['key' => 'PROJ-2', 'fields' => ['summary' => 'Criar repositório Git', 'issuetype' => ['name' => 'Task']]],
+        ]])]);
+
+        $this->actingAs($qa)->post(route('jira.import'), [
+            'project_key' => 'PROJ',
+            'issue_types' => ['Story', 'Task'],
+            'issue_keys' => ['PROJ-1', 'PROJ-2'],
+        ]);
+
+        $this->assertDatabaseHas('requirements', ['code' => 'PROJ-1', 'jira_issue_type' => 'Story']);
+        $this->assertDatabaseHas('requirements', ['code' => 'PROJ-2', 'jira_issue_type' => 'Task']);
+    }
+
+    public function test_reimporting_fills_the_issue_type_of_requirements_imported_before_it_was_kept(): void
+    {
+        $qa = $this->createProjectMember('qa');
+        $this->createIntegrationFor($qa);
+        Requirement::create(['project_id' => $this->project->id, 'code' => 'PROJ-1', 'type' => 'funcional', 'title' => 'Criar repositório Git']);
+
+        Http::fake(['api.atlassian.com/*' => Http::response(['issues' => [
+            ['key' => 'PROJ-1', 'fields' => ['summary' => 'Criar repositório Git', 'issuetype' => ['name' => 'Task']]],
+        ]])]);
+
+        $this->actingAs($qa)->post(route('jira.import'), [
+            'project_key' => 'PROJ',
+            'issue_types' => ['Task'],
+            'issue_keys' => ['PROJ-1'],
+        ]);
+
+        $this->assertDatabaseHas('requirements', ['code' => 'PROJ-1', 'jira_issue_type' => 'Task']);
+        $this->assertDatabaseCount('requirements', 1);
+    }
+
     public function test_import_requires_at_least_one_issue_type(): void
     {
         $qa = $this->createProjectMember('qa');

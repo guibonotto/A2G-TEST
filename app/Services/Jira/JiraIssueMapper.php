@@ -10,7 +10,7 @@ class JiraIssueMapper
      * Map a raw Jira issue payload to Requirement attributes.
      *
      * @param  array<string, mixed>  $issue
-     * @return array{code: string, type: string, title: string, description: ?string, priority: string, status: ?string}
+     * @return array{code: string, type: string, jira_issue_type: ?string, title: string, description: ?string, priority: string, status: ?string}
      */
     public static function toRequirementAttributes(array $issue): array
     {
@@ -19,6 +19,7 @@ class JiraIssueMapper
         return [
             'code' => $issue['key'],
             'type' => 'funcional',
+            'jira_issue_type' => $fields['issuetype']['name'] ?? null,
             'title' => $fields['summary'] ?? $issue['key'],
             'description' => self::adfToText($fields['description'] ?? null),
             'priority' => self::mapPriority($fields['priority']['name'] ?? null),

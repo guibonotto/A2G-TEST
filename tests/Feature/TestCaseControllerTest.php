@@ -275,6 +275,19 @@ class TestCaseControllerTest extends TestCase
         );
     }
 
+    public function test_linkable_requirements_tell_their_jira_issue_type(): void
+    {
+        $user = User::factory()->create();
+        $project = $this->actingAsProjectMember($user);
+        Requirement::create(['project_id' => $project->id, 'code' => 'PROJ-1', 'type' => 'funcional', 'jira_issue_type' => 'Task', 'title' => 'Criar repositório Git']);
+
+        $this->get(route('test-cases.create'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('availableRequirements.0.code', 'PROJ-1')
+                ->where('availableRequirements.0.jira_issue_type', 'Task')
+            );
+    }
+
     public function test_a_test_case_can_be_created_with_steps(): void
     {
         $user = User::factory()->create();

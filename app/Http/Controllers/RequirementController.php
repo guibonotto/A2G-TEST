@@ -29,7 +29,7 @@ class RequirementController extends Controller
                         ->whereHas('latestExecution', fn ($query) => $query->where('status', 'APROVADO')),
                 ])
                 ->with('creator:id,name')
-                ->get(['id', 'code', 'type', 'title', 'description', 'priority', 'created_by'])
+                ->get(['id', 'code', 'type', 'jira_issue_type', 'title', 'description', 'priority', 'created_by'])
                 ->map(fn (Requirement $requirement): array => [
                     ...$requirement->toArray(),
                     'status' => Requirement::coverageStatus($requirement->test_cases_count, $requirement->passed_test_cases_count),

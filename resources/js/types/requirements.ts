@@ -6,6 +6,8 @@ export type Requirement = {
     id: number;
     code: string;
     type: RequirementType;
+    /** Issue type in Jira (Story, Task...); null when created here. */
+    jira_issue_type: string | null;
     title: string;
     description: string | null;
     priority: RequirementPriority | null;
@@ -22,6 +24,8 @@ export type RequirementListItem = Requirement & {
 export type RequirementOption = {
     id: number;
     code: string;
+    /** Issue type in Jira (Story, Task...); null when created here. */
+    jira_issue_type: string | null;
     title: string;
     description: string | null;
     /** Test cases already linked to this requirement, across the project. */
