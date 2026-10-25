@@ -4,12 +4,14 @@ namespace Tests\Feature;
 
 use App\Models\Classification;
 use App\Models\Execution;
+use App\Models\JiraIntegration;
 use App\Models\Project;
 use App\Models\Requirement;
 use App\Models\TestCase as TestCaseModel;
 use App\Models\TestCaseStatus;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
@@ -226,5 +228,148 @@ class DashboardTest extends TestCase
                 ->component('dashboard')
                 ->where('stats.total', 0)
             );
+    }
+
+    /**
+     * A project with Jira connected, a member acting in it, and a test case.
+     *
+     * @return array{0: Project, 1: TestCaseModel}
+     */
+    private function projectWithJira(): array
+    {
+        $project = Project::factory()->create();
+        JiraIntegration::factory()->create([
+            'project_id' => $project->id,
+            'site_url' => 'https://example.atlassian.net',
+        ]);
+        $user = User::factory()->create();
+        $project->members()->attach($user);
+        $this->withSession(['current_project_id' => $project->id])->actingAs($user);
+
+        $testCase = TestCaseModel::factory()->create(['project_id' => $project->id, 'title' => 'Validates a password']);
+
+        return [$project, $testCase];
+    }
+
+    private function reportedDefect(TestCaseModel $testCase, string $key, array $attributes = []): Execution
+    {
+        return Execution::factory()->failed()->create([
+            'test_case_id' => $testCase->id,
+            'jira_defect_key' => $key,
+            ...$attributes,
+        ]);
+    }
+
+    public function test_open_defects_are_loaded_after_the_page(): void
+    {
+        [, $testCase] = $this->projectWithJira();
+        $this->reportedDefect($testCase, 'SHOP-12');
+        Http::fake();
+
+        $this->get(route('dashboard'))
+            ->assertInertia(fn (Assert $page) => $page->missing('openDefects'));
+
+        Http::assertNotSent(fn ($request): bool => str_contains($request->url(), 'atlassian'));
+    }
+
+    public function test_open_defects_are_grouped_by_the_requirement_they_affect(): void
+    {
+        [$project, $testCase] = $this->projectWithJira();
+        $requirement = Requirement::factory()->fromJiraIssue('SHOP-3')->create([
+            'project_id' => $project->id,
+            'title' => 'Password rules',
+            'jira_synced_at' => now(),
+        ]);
+        $testCase->requirements()->attach($requirement);
+        $this->reportedDefect($testCase, 'SHOP-12');
+
+        Http::fake(['*/rest/api/3/search/jql*' => Http::response(['issues' => [[
+            'key' => 'SHOP-12',
+            'fields' => ['status' => ['name' => 'In Progress', 'statusCategory' => ['key' => 'indeterminate']]],
+        ]]])]);
+
+        $this->get(route('dashboard'))
+            ->assertInertia(fn (Assert $page) => $page->loadDeferredProps(fn (Assert $reload) => $reload
+                ->where('openDefects.total', 1)
+                ->where('openDefects.groups.0.requirement.code', 'SHOP-3')
+                ->where('openDefects.groups.0.requirement.url', 'https://example.atlassian.net/browse/SHOP-3')
+                ->where('openDefects.groups.0.defects.0.key', 'SHOP-12')
+                ->where('openDefects.groups.0.defects.0.status', 'In Progress')
+                ->where('openDefects.groups.0.defects.0.url', 'https://example.atlassian.net/browse/SHOP-12')
+                ->where('openDefects.groups.0.defects.0.testCase.title', 'Validates a password')));
+    }
+
+    public function test_defects_resolved_in_jira_leave_the_dashboard(): void
+    {
+        [, $testCase] = $this->projectWithJira();
+        $execution = $this->reportedDefect($testCase, 'SHOP-12');
+
+        Http::fake(['*/rest/api/3/search/jql*' => Http::response(['issues' => [[
+            'key' => 'SHOP-12',
+            'fields' => ['status' => ['name' => 'Done', 'statusCategory' => ['key' => 'done']]],
+        ]]])]);
+
+        $this->get(route('dashboard'))
+            ->assertInertia(fn (Assert $page) => $page->loadDeferredProps(fn (Assert $reload) => $reload
+                ->where('openDefects.total', 0)
+                ->where('openDefects.groups', [])));
+
+        $this->assertTrue($execution->refresh()->jira_defect_resolved);
+    }
+
+    public function test_a_defect_counts_once_even_when_it_affects_several_requirements(): void
+    {
+        [$project, $testCase] = $this->projectWithJira();
+        $testCase->requirements()->attach(Requirement::factory()->count(2)->create(['project_id' => $project->id]));
+        $this->reportedDefect($testCase, 'SHOP-12');
+        Http::fake(['*' => Http::response(['issues' => []])]);
+
+        $this->get(route('dashboard'))
+            ->assertInertia(fn (Assert $page) => $page->loadDeferredProps(fn (Assert $reload) => $reload
+                ->where('openDefects.total', 1)
+                ->has('openDefects.groups', 2)));
+    }
+
+    public function test_defects_of_cases_without_requirements_are_listed_last(): void
+    {
+        [$project, $testCase] = $this->projectWithJira();
+        $testCase->requirements()->attach(Requirement::factory()->create(['project_id' => $project->id, 'code' => 'RF-001']));
+        $orphanCase = TestCaseModel::factory()->create(['project_id' => $project->id]);
+        $this->reportedDefect($orphanCase, 'SHOP-20');
+        $this->reportedDefect($testCase, 'SHOP-12');
+        Http::fake(['*' => Http::response(['issues' => []])]);
+
+        $this->get(route('dashboard'))
+            ->assertInertia(fn (Assert $page) => $page->loadDeferredProps(fn (Assert $reload) => $reload
+                ->where('openDefects.groups.0.requirement.code', 'RF-001')
+                ->where('openDefects.groups.1.requirement', null)
+                ->where('openDefects.groups.1.defects.0.key', 'SHOP-20')));
+    }
+
+    public function test_open_defects_keep_the_last_known_status_when_jira_is_unreachable(): void
+    {
+        [, $testCase] = $this->projectWithJira();
+        $this->reportedDefect($testCase, 'SHOP-12', ['jira_defect_status' => 'To Do']);
+        Http::fake(['*' => Http::response([], 503)]);
+
+        $this->get(route('dashboard'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->loadDeferredProps(fn (Assert $reload) => $reload
+                ->where('openDefects.total', 1)
+                ->where('openDefects.groups.0.defects.0.status', 'To Do')));
+    }
+
+    public function test_open_defects_ignore_other_projects_and_archived_cases(): void
+    {
+        [, $testCase] = $this->projectWithJira();
+        $this->reportedDefect(TestCaseModel::factory()->create(), 'OTHER-1');
+        $archived = TestCaseModel::factory()->create(['project_id' => $testCase->project_id]);
+        $this->reportedDefect($archived, 'SHOP-30');
+        $archived->delete();
+        Http::fake(['*' => Http::response(['issues' => []])]);
+
+        $this->get(route('dashboard'))
+            ->assertInertia(fn (Assert $page) => $page->loadDeferredProps(fn (Assert $reload) => $reload
+                ->where('openDefects.total', 0)));
     }
 }

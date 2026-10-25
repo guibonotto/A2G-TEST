@@ -33,6 +33,31 @@ export type DashboardStats = {
     statusesInUse: number;
 };
 
+export type OpenDefect = {
+    key: string;
+    /** Last status read from Jira; null until it is first read. */
+    status: string | null;
+    url: string | null;
+    testCase: { id: number; title: string };
+};
+
+export type OpenDefectGroup = {
+    /** Null groups the defects of test cases not linked to any requirement. */
+    requirement: {
+        id: number;
+        code: string;
+        title: string;
+        url: string | null;
+    } | null;
+    defects: OpenDefect[];
+};
+
+export type OpenDefects = {
+    /** Distinct open defects, counted once even when they hit several requirements. */
+    total: number;
+    groups: OpenDefectGroup[];
+};
+
 export type DashboardProps = {
     stats: DashboardStats;
     statusBreakdown: StatusBreakdownItem[];
@@ -40,4 +65,6 @@ export type DashboardProps = {
     workload: WorkloadItem[];
     creationTrend: CreationTrendPoint[];
     requirementsCount: number;
+    /** Deferred: loaded right after the page, since it asks Jira for fresh statuses. */
+    openDefects?: OpenDefects;
 };

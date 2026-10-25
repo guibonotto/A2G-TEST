@@ -20,6 +20,7 @@ use App\Models\TestCase;
 use App\Models\TestCaseStatus;
 use App\Models\User;
 use App\Services\Jira\JiraClient;
+use App\Services\Jira\JiraDefectStatusSync;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -229,7 +230,8 @@ class TestCaseController extends Controller
         $testCase->setRelation('requirements', $testCase->requirements->sortBy('code', SORT_NATURAL | SORT_FLAG_CASE)->values());
 
         $integration = JiraIntegration::query()->where('project_id', $testCase->project_id)->first();
-        $this->refreshDefectStatuses($testCase, $integration);
+        /** A re-run should show whether the bugs reported from this case are still open. */
+        app(JiraDefectStatusSync::class)->refresh($testCase->executions, $integration);
 
         return Inertia::render('test-cases/show', [
             'jiraDefects' => [
@@ -576,37 +578,6 @@ class TestCaseController extends Controller
             ])
             ->values()
             ->all();
-    }
-
-    /**
-     * Ask Jira where the defects reported from this case stand, so a re-run
-     * shows whether the bug is still open. A failure keeps the last known
-     * status: Jira being down must not break the page.
-     */
-    private function refreshDefectStatuses(TestCase $testCase, ?JiraIntegration $integration): void
-    {
-        $executionsWithDefect = $testCase->executions->whereNotNull('jira_defect_key');
-
-        if ($integration === null || $executionsWithDefect->isEmpty()) {
-            return;
-        }
-
-        try {
-            $statuses = $this->jira()->issueStatuses($integration, $executionsWithDefect->pluck('jira_defect_key')->unique()->values()->all());
-        } catch (Throwable) {
-            return;
-        }
-
-        foreach ($executionsWithDefect as $execution) {
-            $status = $statuses[$execution->jira_defect_key] ?? null;
-
-            if ($status !== null) {
-                $execution->update([
-                    'jira_defect_status' => $status['name'],
-                    'jira_defect_resolved' => $status['resolved'],
-                ]);
-            }
-        }
     }
 
     /**

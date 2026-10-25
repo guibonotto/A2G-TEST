@@ -1,4 +1,4 @@
-import { Head, Link, usePage } from '@inertiajs/react';
+import { Deferred, Head, Link, usePage } from '@inertiajs/react';
 import {
     CalendarPlus,
     Check,
@@ -10,6 +10,10 @@ import {
 import type { ReactNode } from 'react';
 import { ClassificationChart } from '@/components/dashboard/classification-chart';
 import { CreationTrendChart } from '@/components/dashboard/creation-trend-chart';
+import {
+    OpenDefectsCard,
+    OpenDefectsCardSkeleton,
+} from '@/components/dashboard/open-defects-card';
 import { StatCard } from '@/components/dashboard/stat-card';
 import { StatusDistributionChart } from '@/components/dashboard/status-distribution-chart';
 import { WorkloadChart } from '@/components/dashboard/workload-chart';
@@ -28,6 +32,7 @@ export default function Dashboard({
     workload,
     creationTrend,
     requirementsCount,
+    openDefects,
 }: DashboardProps) {
     const { currentProject } = usePage().props;
 
@@ -176,6 +181,12 @@ export default function Dashboard({
                     <CreationTrendChart data={creationTrend} />
                     <ClassificationChart data={classificationBreakdown} />
                     <WorkloadChart data={workload} />
+                    <Deferred
+                        data="openDefects"
+                        fallback={<OpenDefectsCardSkeleton />}
+                    >
+                        {openDefects && <OpenDefectsCard data={openDefects} />}
+                    </Deferred>
                 </div>
             </div>
         </>
