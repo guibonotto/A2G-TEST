@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Project;
 use App\Models\Role;
+use App\Models\TestCase as TestCaseModel;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -252,6 +253,56 @@ class ProjectTest extends TestCase
             ->has('myProjects', 1)
             ->where('myProjects.0.name', 'Alpha Project')
         );
+    }
+
+    public function test_projects_index_includes_the_members_role(): void
+    {
+        $user = User::factory()->create();
+        $project = Project::factory()->create(['name' => 'Alpha Project']);
+        $project->addMember($user, 'developer');
+        TestCaseModel::factory()->count(2)->create(['project_id' => $project->id]);
+
+        $this->actingAs($user)->get(route('projects.index'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('myProjects.0.role.slug', 'developer')
+            );
+    }
+
+    public function test_projects_index_reflects_the_selected_project_after_switching(): void
+    {
+        $user = User::factory()->create();
+        $firstProject = Project::factory()->create();
+        $secondProject = Project::factory()->create();
+        $firstProject->addMember($user, 'viewer');
+        $secondProject->addMember($user, 'developer');
+
+        $this->actingAs($user)->post(route('projects.select', $secondProject));
+
+        $this->actingAs($user)->get(route('projects.index'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('currentProject.id', $secondProject->id)
+                ->where('currentProject.uuid', $secondProject->uuid)
+            );
+    }
+
+    public function test_test_cases_use_the_project_selected_from_the_sidebar(): void
+    {
+        $user = User::factory()->create();
+        $firstProject = Project::factory()->create();
+        $secondProject = Project::factory()->create();
+        $firstProject->addMember($user, 'viewer');
+        $secondProject->addMember($user, 'developer');
+        TestCaseModel::factory()->create([
+            'project_id' => $secondProject->id,
+            'title' => 'Second project case',
+        ]);
+
+        $this->actingAs($user)->post(route('projects.select', $secondProject));
+
+        $this->actingAs($user)->get(route('test-cases.index'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('testCases.0.title', 'Second project case')
+            );
     }
 
     public function test_a_member_can_select_a_project_as_active(): void

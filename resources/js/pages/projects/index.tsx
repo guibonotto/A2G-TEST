@@ -1,4 +1,4 @@
-import { Form, Head, Link, router, usePage } from '@inertiajs/react';
+import { Form, Head, Link, router } from '@inertiajs/react';
 import { Briefcase } from 'lucide-react';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
@@ -10,7 +10,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Spinner } from '@/components/ui/spinner';
 import { cn } from '@/lib/utils';
 import { index as projectsIndex } from '@/routes/projects';
 import { show as projectsShow } from '@/routes/projects';
@@ -18,10 +17,11 @@ import type { ProjectSummary } from '@/types/projects';
 
 export default function ProjectsIndex({
     myProjects,
+    currentProject,
 }: {
     myProjects: ProjectSummary[];
+    currentProject?: { id: number } | null;
 }) {
-    const { currentProject } = usePage().props;
     const [inviteValue, setInviteValue] = useState('');
     const [inviteError, setInviteError] = useState<string>();
 
@@ -113,69 +113,66 @@ export default function ProjectsIndex({
                                     currentProject?.id === project.id;
 
                                 return (
-                                    <li key={project.id}>
+                                    <li
+                                        key={project.id}
+                                        className="flex items-center gap-2"
+                                    >
                                         <Form
                                             {...ProjectController.select.form(
                                                 project.uuid,
                                             )}
+                                            className="flex min-w-0 flex-1"
                                         >
                                             {({ processing }) => (
-                                                <div
+                                                <button
+                                                    type="submit"
+                                                    disabled={processing}
                                                     className={cn(
-                                                        'flex flex-wrap items-center gap-3 rounded-lg border px-4 py-3 transition-colors',
+                                                        'grid w-full min-w-0 gap-3 rounded-lg border px-4 py-3 text-left transition-colors sm:grid-cols-[minmax(0,1fr)_8rem] sm:items-center',
                                                         isCurrent
                                                             ? 'border-primary bg-primary/5'
                                                             : 'hover:border-primary/40',
                                                     )}
                                                 >
-                                                    <Briefcase
-                                                        className="size-4 shrink-0 text-muted-foreground"
-                                                        aria-hidden="true"
-                                                    />
-                                                    <span className="min-w-0 flex-1 truncate text-sm font-medium">
-                                                        {project.name}
-                                                    </span>
-                                                    {isCurrent && (
-                                                        <Badge variant="info">
-                                                            Open now
-                                                        </Badge>
-                                                    )}
-                                                    {project.isOwner && (
-                                                        <Button
-                                                            asChild
-                                                            type="button"
-                                                            variant="ghost"
-                                                            size="sm"
-                                                        >
-                                                            <Link
-                                                                href={projectsShow(
-                                                                    project.uuid,
-                                                                )}
-                                                            >
-                                                                Manage access
-                                                            </Link>
-                                                        </Button>
-                                                    )}
-                                                    <Button
-                                                        type="submit"
-                                                        variant={
-                                                            isCurrent
-                                                                ? 'secondary'
-                                                                : 'outline'
-                                                        }
-                                                        size="sm"
-                                                        disabled={processing}
-                                                    >
-                                                        {processing && (
-                                                            <Spinner />
+                                                    <span className="flex min-w-0 items-center gap-3">
+                                                        <Briefcase
+                                                            className="size-4 shrink-0 text-muted-foreground"
+                                                            aria-hidden="true"
+                                                        />
+                                                        <span className="min-w-0 truncate text-sm font-medium">
+                                                            {project.name}
+                                                        </span>
+                                                        {isCurrent && (
+                                                            <Badge variant="info">
+                                                                Open now
+                                                            </Badge>
                                                         )}
-                                                        {isCurrent
-                                                            ? 'Reopen'
-                                                            : 'Open'}
-                                                    </Button>
-                                                </div>
+                                                    </span>
+                                                    <span className="text-sm text-muted-foreground">
+                                                        <span className="mr-2 font-medium text-foreground sm:hidden">
+                                                            Role:
+                                                        </span>
+                                                        {project.role?.name ?? 'No role'}
+                                                    </span>
+                                                </button>
                                             )}
                                         </Form>
+                                        {project.isOwner && (
+                                            <Button
+                                                asChild
+                                                type="button"
+                                                variant="ghost"
+                                                size="sm"
+                                            >
+                                                <Link
+                                                    href={projectsShow(
+                                                        project.uuid,
+                                                    )}
+                                                >
+                                                    Manage access
+                                                </Link>
+                                            </Button>
+                                        )}
                                     </li>
                                 );
                             })}

@@ -10,4 +10,8 @@ export type ProjectSummary = {
     uuid: string;
     name: string;
     isOwner: boolean;
+    role: {
+        name: string;
+        slug: string;
+    } | null;
 };

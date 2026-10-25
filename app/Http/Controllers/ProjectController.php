@@ -21,16 +21,23 @@ class ProjectController extends Controller
      */
     public function index(Request $request): Response
     {
+        $projects = $request->user()->projects()
+            ->orderBy('name')
+            ->get(['projects.id', 'projects.uuid', 'projects.name', 'projects.owner_id']);
+        $roles = Role::query()
+            ->whereIn('id', $projects->pluck('pivot.role_id')->filter())
+            ->get(['id', 'name', 'slug'])
+            ->keyBy('id');
+
         return Inertia::render('projects/index', [
-            'myProjects' => $request->user()->projects()
-                ->orderBy('name')
-                ->get(['projects.id', 'projects.uuid', 'projects.name', 'projects.owner_id'])
-                ->map(fn (Project $project): array => [
-                    'id' => $project->id,
-                    'uuid' => $project->uuid,
-                    'name' => $project->name,
-                    'isOwner' => $project->owner_id === $request->user()->id,
-                ]),
+            'currentProject' => optional(Project::current())->only(['id', 'uuid', 'name', 'owner_id']),
+            'myProjects' => $projects->map(fn (Project $project): array => [
+                'id' => $project->id,
+                'uuid' => $project->uuid,
+                'name' => $project->name,
+                'isOwner' => $project->owner_id === $request->user()->id,
+                'role' => $roles->get($project->pivot->role_id)?->only(['name', 'slug']),
+            ]),
         ]);
     }
 
