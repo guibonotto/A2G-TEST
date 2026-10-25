@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ExecutionDefectController;
 use App\Http\Controllers\TestCaseController;
 use App\Http\Controllers\TestTemplateController;
 use Illuminate\Support\Facades\Route;
@@ -22,6 +23,7 @@ Route::middleware(['auth', 'verified', 'project'])->group(function () {
     Route::post('test-cases/{testCase}/requirements', [TestCaseController::class, 'linkRequirement'])->name('test-cases.requirements.link');
     Route::delete('test-cases/{testCase}/requirements', [TestCaseController::class, 'unlinkRequirement'])->name('test-cases.requirements.unlink');
     Route::post('executions/{execution}/evidences', [TestCaseController::class, 'storeEvidence'])->name('executions.evidences.store');
+    Route::post('executions/{execution}/defect', [ExecutionDefectController::class, 'store'])->name('executions.defect.store');
     Route::get('evidences/{evidence}', [TestCaseController::class, 'showEvidence'])->name('evidences.show');
     Route::delete('evidences/{evidence}', [TestCaseController::class, 'destroyEvidence'])->name('evidences.destroy');
 });

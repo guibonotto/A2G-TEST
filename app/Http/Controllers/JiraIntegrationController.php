@@ -15,6 +15,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -53,6 +54,7 @@ class JiraIntegrationController extends Controller
                 'connected_by' => $integration->connector?->name,
                 'connected_at' => $integration->connected_at,
                 'can_disconnect' => $integration->canBeDisconnectedBy($request->user()),
+                'can_report_defects' => $integration->canCreateIssues(),
             ],
             'can_connect' => $request->user()->hasRole(Role::ADMIN),
             'projects' => $projects,
@@ -86,12 +88,14 @@ class JiraIntegrationController extends Controller
         );
 
         if ($request->filled('error')) {
-            return $this->backToSettings(
-                $request->query('error') === 'access_denied' ? 'info' : 'error',
-                $request->query('error') === 'access_denied'
-                    ? __('Jira connection cancelled.')
-                    : __('Could not connect to Jira. Please try again.')
-            );
+            if ($request->query('error') === 'access_denied') {
+                return $this->backToSettings('info', __('Jira connection cancelled.'));
+            }
+
+            /** Atlassian says why it refused (e.g. a scope not enabled in the app), so keep that reason. */
+            Log::warning('Jira authorization failed.', $request->only(['error', 'error_description']));
+
+            return $this->backToSettings('error', trim(__('Could not connect to Jira.').' '.$request->query('error_description', $request->query('error'))));
         }
 
         $request->validate(['code' => ['required', 'string']]);
@@ -115,6 +119,7 @@ class JiraIntegrationController extends Controller
             'access_token' => $tokens['access_token'],
             'refresh_token' => $tokens['refresh_token'],
             'expires_at' => now()->addSeconds($tokens['expires_in']),
+            'scopes' => $tokens['scope'] ?? null,
             'connected_by' => $request->user()->id,
             'connected_at' => now(),
         ]);

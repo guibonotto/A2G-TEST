@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'access_token',
     'refresh_token',
     'expires_at',
+    'scopes',
     'connected_by',
     'connected_at',
 ])]
@@ -56,6 +57,20 @@ class JiraIntegration extends Model
     public function isExpired(): bool
     {
         return $this->expires_at !== null && $this->expires_at->isPast();
+    }
+
+    /**
+     * Whether Atlassian granted write access, which reporting defects needs.
+     * Connections made before that feature only hold read scopes.
+     */
+    public function canCreateIssues(): bool
+    {
+        return in_array('write:jira-work', explode(' ', (string) $this->scopes), true);
+    }
+
+    public function issueUrl(string $key): string
+    {
+        return rtrim($this->site_url, '/').'/browse/'.rawurlencode($key);
     }
 
     /**

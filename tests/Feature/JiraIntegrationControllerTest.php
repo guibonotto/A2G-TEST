@@ -94,6 +94,7 @@ class JiraIntegrationControllerTest extends TestCase
                 'access_token' => 'access-token',
                 'refresh_token' => 'refresh-token',
                 'expires_in' => 3600,
+                'scope' => 'read:jira-work write:jira-work read:jira-user offline_access',
             ]),
             'api.atlassian.com/oauth/token/accessible-resources' => Http::response([
                 ['id' => 'cloud-123', 'url' => 'https://example.atlassian.net', 'name' => 'Example'],
@@ -111,6 +112,44 @@ class JiraIntegrationControllerTest extends TestCase
             'cloud_id' => 'cloud-123',
             'connected_by' => $admin->id,
         ]);
+        $this->assertTrue(JiraIntegration::first()->canCreateIssues());
+    }
+
+    public function test_callback_shows_why_atlassian_refused_the_authorization(): void
+    {
+        $admin = $this->createProjectMember('admin');
+
+        $this->actingAs($admin)
+            ->withSession(['jira_oauth_state' => 'expected-state'])
+            ->followingRedirects()
+            ->get(route('jira.callback', [
+                'state' => 'expected-state',
+                'error' => 'invalid_scope',
+                'error_description' => 'The requested scope is not enabled for this app.',
+            ]))
+            ->assertInertia(fn (Assert $page) => $page->hasFlash(
+                'toast.message',
+                'Could not connect to Jira. The requested scope is not enabled for this app.',
+            ));
+    }
+
+    public function test_redirect_asks_atlassian_for_write_access_to_report_defects(): void
+    {
+        $admin = $this->createProjectMember('admin');
+
+        $response = $this->actingAs($admin)->get(route('jira.redirect'));
+
+        $this->assertStringContainsString('write%3Ajira-work', $response->headers->get('Location'));
+    }
+
+    public function test_the_page_asks_to_reconnect_a_read_only_connection(): void
+    {
+        $admin = $this->createProjectMember('admin');
+        $this->createIntegrationFor($admin);
+        Http::fake(['api.atlassian.com/*' => Http::response(['values' => []])]);
+
+        $this->actingAs($admin)->get(route('jira.edit'))
+            ->assertInertia(fn (Assert $page) => $page->where('integration.can_report_defects', false));
     }
 
     public function test_connecting_keeps_the_connection_of_other_projects(): void

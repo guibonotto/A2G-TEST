@@ -18,15 +18,17 @@ use App\Models\Requirement;
 use App\Models\Role;
 use App\Models\TestCase;
 use App\Models\TestCaseStatus;
-use App\Models\TestTemplate;
 use App\Models\User;
+use App\Services\Jira\JiraClient;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use Throwable;
 
 class TestCaseController extends Controller
 {
@@ -226,7 +228,23 @@ class TestCaseController extends Controller
         ]);
         $testCase->setRelation('requirements', $testCase->requirements->sortBy('code', SORT_NATURAL | SORT_FLAG_CASE)->values());
 
+        $integration = JiraIntegration::query()->where('project_id', $testCase->project_id)->first();
+        $this->refreshDefectStatuses($testCase, $integration);
+
         return Inertia::render('test-cases/show', [
+            'jiraDefects' => [
+                'canReport' => $integration?->canCreateIssues() === true && $request->user()->can('update', $testCase),
+                'connected' => $integration !== null,
+                'siteUrl' => $integration?->site_url,
+                'defaultProjectKey' => $this->defaultJiraProjectKey($testCase),
+            ],
+            'jiraProjects' => Inertia::optional(function () use ($integration): array {
+                try {
+                    return $integration === null ? [] : $this->jira()->projects($integration);
+                } catch (Throwable) {
+                    return [];
+                }
+            }),
             'testCase' => $testCase,
             'assignableUsers' => $request->user()->canManageAccess()
                 ? $this->assignableUsers($testCase->project_id)
@@ -343,7 +361,7 @@ class TestCaseController extends Controller
      * Compare the single active input/expected-output pair without relying on
      * array order or on the database representation of nullable strings.
      *
-     * @param  array<int, array{description: string, expected_result?: string|null}> $steps
+     * @param  array<int, array{description: string, expected_result?: string|null}>  $steps
      */
     private function stepsChanged(TestCase $testCase, array $steps): bool
     {
@@ -558,6 +576,53 @@ class TestCaseController extends Controller
             ])
             ->values()
             ->all();
+    }
+
+    /**
+     * Ask Jira where the defects reported from this case stand, so a re-run
+     * shows whether the bug is still open. A failure keeps the last known
+     * status: Jira being down must not break the page.
+     */
+    private function refreshDefectStatuses(TestCase $testCase, ?JiraIntegration $integration): void
+    {
+        $executionsWithDefect = $testCase->executions->whereNotNull('jira_defect_key');
+
+        if ($integration === null || $executionsWithDefect->isEmpty()) {
+            return;
+        }
+
+        try {
+            $statuses = $this->jira()->issueStatuses($integration, $executionsWithDefect->pluck('jira_defect_key')->unique()->values()->all());
+        } catch (Throwable) {
+            return;
+        }
+
+        foreach ($executionsWithDefect as $execution) {
+            $status = $statuses[$execution->jira_defect_key] ?? null;
+
+            if ($status !== null) {
+                $execution->update([
+                    'jira_defect_status' => $status['name'],
+                    'jira_defect_resolved' => $status['resolved'],
+                ]);
+            }
+        }
+    }
+
+    /**
+     * Suggest the Jira project of the first linked requirement that came from
+     * Jira: a key like "SHOP-12" belongs to the "SHOP" project.
+     */
+    private function defaultJiraProjectKey(TestCase $testCase): ?string
+    {
+        $code = $testCase->requirements->firstWhere('jira_synced_at', '!=', null)?->code;
+
+        return $code !== null && str_contains($code, '-') ? Str::beforeLast($code, '-') : null;
+    }
+
+    private function jira(): JiraClient
+    {
+        return app(JiraClient::class);
     }
 
     /**

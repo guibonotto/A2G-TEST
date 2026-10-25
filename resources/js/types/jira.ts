@@ -3,6 +3,8 @@ export type JiraIntegration = {
     connected_by: string | null;
     connected_at: string | null;
     can_disconnect: boolean;
+    /** False for connections made before defect reporting, which only have read access. */
+    can_report_defects: boolean;
 };
 
 export type JiraProject = {

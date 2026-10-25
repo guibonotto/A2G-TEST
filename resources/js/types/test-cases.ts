@@ -109,9 +109,22 @@ export type Execution = {
     } | null;
     comment: string | null;
     obtained_output: string | null;
+    jira_defect_key: string | null;
+    /** Last status read from Jira (e.g. "To Do"); null until it is first read. */
+    jira_defect_status: string | null;
+    jira_defect_resolved: boolean;
     execution_date: string;
     executor: { id: number; name: string } | null;
     evidences: Evidence[];
+};
+
+export type JiraDefectSettings = {
+    /** Jira is connected with write access and the user may report. */
+    canReport: boolean;
+    connected: boolean;
+    siteUrl: string | null;
+    /** Jira project of the first linked requirement imported from Jira. */
+    defaultProjectKey: string | null;
 };
 
 export type LinkedRequirement = {

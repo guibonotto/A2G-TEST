@@ -32,6 +32,16 @@ class JiraIntegrationFactory extends Factory
     }
 
     /**
+     * A connection that granted write access, so defects can be reported.
+     */
+    public function withWriteAccess(): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'scopes' => 'read:jira-work write:jira-work read:jira-user offline_access',
+        ]);
+    }
+
+    /**
      * Indicate that the access token has already expired, so the next API call
      * has to refresh it before talking to Jira.
      */

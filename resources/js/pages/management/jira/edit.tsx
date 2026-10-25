@@ -301,6 +301,33 @@ export default function JiraIntegrationEdit({
                                     : 'Nothing imported yet.'}
                             </p>
 
+                            {!integration.can_report_defects && (
+                                <Alert className="mt-2">
+                                    <AlertTitle>
+                                        Reconnect to report defects
+                                    </AlertTitle>
+                                    <AlertDescription>
+                                        This connection only has read access, so
+                                        failed executions cannot be sent to Jira
+                                        as Bugs.{' '}
+                                        {can_connect
+                                            ? 'Connect again to grant write access; imported requirements are kept.'
+                                            : 'Ask a project administrator to connect it again.'}
+                                    </AlertDescription>
+                                    {can_connect && (
+                                        <Button
+                                            asChild
+                                            size="sm"
+                                            className="mt-3 w-fit"
+                                        >
+                                            <a href={jiraOauthRedirect.url()}>
+                                                <Plug /> Reconnect Jira
+                                            </a>
+                                        </Button>
+                                    )}
+                                </Alert>
+                            )}
+
                             {integration.can_disconnect ? (
                                 <Dialog>
                                     <DialogTrigger asChild>

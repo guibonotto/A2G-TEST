@@ -13,6 +13,7 @@ import { useState } from 'react';
 import TestCaseController from '@/actions/App/Http/Controllers/TestCaseController';
 import EvidenceFilePicker from '@/components/evidence-file-picker';
 import Heading from '@/components/heading';
+import { ReportDefectDialog } from '@/components/report-defect-dialog';
 import { RequirementPicker } from '@/components/requirement-picker';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -50,6 +51,9 @@ import { index as requirementsIndex } from '@/routes/requirements';
 import { assign, edit, index, show } from '@/routes/test-cases';
 import type {
     AssignableUser,
+    Execution,
+    JiraDefectSettings,
+    JiraProject,
     RequirementOption,
     TestCaseDetail,
 } from '@/types';
@@ -59,7 +63,40 @@ type Props = {
     assignableUsers: AssignableUser[];
     executionStatuses: string[];
     availableRequirements: RequirementOption[];
+    jiraDefects: JiraDefectSettings;
+    jiraProjects?: JiraProject[];
 };
+
+function DefectLink({
+    execution,
+    siteUrl,
+}: {
+    execution: Execution;
+    siteUrl: string | null;
+}) {
+    const key = execution.jira_defect_key as string;
+    const label = `${key}${execution.jira_defect_status ? ` · ${execution.jira_defect_status}` : ''}`;
+
+    return (
+        <Badge
+            asChild
+            variant={execution.jira_defect_resolved ? 'success' : 'destructive'}
+        >
+            {siteUrl ? (
+                <a
+                    href={`${siteUrl.replace(/\/$/, '')}/browse/${encodeURIComponent(key)}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="underline-offset-4 hover:underline"
+                >
+                    {label}
+                </a>
+            ) : (
+                <span>{label}</span>
+            )}
+        </Badge>
+    );
+}
 
 const UNASSIGNED = 'unassigned';
 
@@ -85,8 +122,16 @@ export default function ShowTestCase({
     assignableUsers,
     executionStatuses,
     availableRequirements,
+    jiraDefects,
+    jiraProjects,
 }: Props) {
     const { auth } = usePage().props;
+    /** Bugs still open in Jira: re-running before they are fixed will fail again. */
+    const openDefects = testCase.executions.filter(
+        (execution) =>
+            execution.jira_defect_key !== null &&
+            !execution.jira_defect_resolved,
+    );
     const [selectedAssignee, setSelectedAssignee] = useState(
         testCase.assignee ? String(testCase.assignee.id) : UNASSIGNED,
     );
@@ -658,6 +703,28 @@ export default function ShowTestCase({
                     </DialogContent>
                 </Dialog>
 
+                {openDefects.length > 0 && (
+                    <div className="flex flex-col gap-2 rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm">
+                        <p className="font-medium text-destructive">
+                            {openDefects.length === 1
+                                ? 'A defect reported from this test case is still open in Jira.'
+                                : `${openDefects.length} defects reported from this test case are still open in Jira.`}
+                        </p>
+                        <p className="text-muted-foreground">
+                            Re-run the test after the fix to confirm it.
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                            {openDefects.map((execution) => (
+                                <DefectLink
+                                    key={execution.id}
+                                    execution={execution}
+                                    siteUrl={jiraDefects.siteUrl}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 {recordingOpen && canRecordExecution ? (
                     <Card>
                         <CardHeader>
@@ -1063,6 +1130,36 @@ export default function ShowTestCase({
                                                 </p>
                                             </div>
                                         )}
+                                    {execution.jira_defect_key ? (
+                                        <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                                            Defect:
+                                            <DefectLink
+                                                execution={execution}
+                                                siteUrl={jiraDefects.siteUrl}
+                                            />
+                                        </div>
+                                    ) : (
+                                        execution.status === 'REPROVADO' &&
+                                        (jiraDefects.canReport ? (
+                                            <ReportDefectDialog
+                                                execution={execution}
+                                                testCaseTitle={testCase.title}
+                                                defaultProjectKey={
+                                                    jiraDefects.defaultProjectKey
+                                                }
+                                                jiraProjects={jiraProjects}
+                                            />
+                                        ) : (
+                                            auth.user.role?.slug !==
+                                                'viewer' && (
+                                                <p className="text-xs text-muted-foreground">
+                                                    {jiraDefects.connected
+                                                        ? 'To report this failure as a Jira Bug, a project administrator must reconnect Jira to grant write access.'
+                                                        : 'Connect Jira to report this failure as a Bug.'}
+                                                </p>
+                                            )
+                                        ))
+                                    )}
                                     {execution.evidences.length > 0 && (
                                         <div className="flex flex-wrap gap-3 pt-1">
                                             {execution.evidences.map(

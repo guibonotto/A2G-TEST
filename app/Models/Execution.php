@@ -18,6 +18,11 @@ use Throwable;
     'status',
     'comment',
     'obtained_output',
+    'jira_defect_key',
+    'jira_defect_status',
+    'jira_defect_resolved',
+    'jira_defect_reported_by',
+    'jira_defect_reported_at',
     'batch_id',
     'execution_date',
     'test_case_version',
@@ -45,7 +50,17 @@ class Execution extends Model
             'created_at' => 'datetime',
             'test_case_version' => 'integer',
             'test_case_snapshot' => 'array',
+            'jira_defect_resolved' => 'boolean',
+            'jira_defect_reported_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Only a failed run describes a defect, and each run reports at most one.
+     */
+    public function canReportDefect(): bool
+    {
+        return $this->status === 'REPROVADO' && $this->jira_defect_key === null;
     }
 
     public function testCase(): BelongsTo

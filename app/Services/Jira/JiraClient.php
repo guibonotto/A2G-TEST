@@ -30,7 +30,7 @@ class JiraClient
         return self::AUTHORIZE_URL.'?'.http_build_query([
             'audience' => 'api.atlassian.com',
             'client_id' => $this->clientId,
-            'scope' => 'read:jira-work read:jira-user offline_access',
+            'scope' => 'read:jira-work write:jira-work read:jira-user offline_access',
             'redirect_uri' => $this->redirectUri,
             'state' => $state,
             'response_type' => 'code',
@@ -167,6 +167,67 @@ class JiraClient
             'issues' => $response['issues'] ?? [],
             'nextPageToken' => $response['nextPageToken'] ?? null,
         ];
+    }
+
+    /**
+     * Create an issue and return its key.
+     *
+     * @param  array<string, mixed>  $fields
+     */
+    public function createIssue(JiraIntegration $integration, array $fields): string
+    {
+        return $this->api($integration)
+            ->post('issue', ['fields' => $fields])
+            ->throw()
+            ->json('key');
+    }
+
+    /**
+     * Upload a file to an existing issue. Jira rejects uploads without the
+     * no-check token header as a CSRF protection.
+     *
+     * @param  resource|string  $contents
+     */
+    public function addAttachment(JiraIntegration $integration, string $issueKey, mixed $contents, string $fileName): void
+    {
+        $this->api($integration)
+            ->withHeaders(['X-Atlassian-Token' => 'no-check'])
+            ->attach('file', $contents, $fileName)
+            ->post('issue/'.rawurlencode($issueKey).'/attachments')
+            ->throw();
+    }
+
+    /**
+     * Current status of the given issues, keyed by issue key. Issues that no
+     * longer exist (or are not visible) are simply missing from the result.
+     *
+     * @param  array<int, string>  $issueKeys
+     * @return array<string, array{name: string, resolved: bool}>
+     */
+    public function issueStatuses(JiraIntegration $integration, array $issueKeys): array
+    {
+        if ($issueKeys === []) {
+            return [];
+        }
+
+        $quotedKeys = implode(',', array_map(fn (string $key): string => '"'.$key.'"', $issueKeys));
+
+        $issues = $this->api($integration)->get('search/jql', [
+            'jql' => "key in ({$quotedKeys})",
+            'fields' => 'status',
+            'maxResults' => count($issueKeys),
+        ])->throw()->json('issues') ?? [];
+
+        $statuses = [];
+
+        foreach ($issues as $issue) {
+            $statuses[$issue['key']] = [
+                'name' => $issue['fields']['status']['name'] ?? '',
+                'resolved' => ($issue['fields']['status']['statusCategory']['key'] ?? null) === 'done',
+            ];
+        }
+
+        return $statuses;
     }
 
     private function api(JiraIntegration $integration): PendingRequest

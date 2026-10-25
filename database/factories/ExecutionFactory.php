@@ -28,4 +28,15 @@ class ExecutionFactory extends Factory
             'execution_date' => now(),
         ];
     }
+
+    /**
+     * A failed run, with the output the tested method actually returned.
+     */
+    public function failed(): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'status' => 'REPROVADO',
+            'obtained_output' => 'Returned false',
+        ]);
+    }
 }
