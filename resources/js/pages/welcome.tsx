@@ -2,7 +2,7 @@ import { Head, Link, usePage } from '@inertiajs/react';
 import { ChartColumn, ClipboardList, Play } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 // import { dashboard, login } from '@/routes';
-import { dashboard, login, register } from '@/routes';
+import { login, register, start } from '@/routes';
 
 /**
  * Support address shown in the footer. Replace with the team's real inbox.
@@ -34,10 +34,10 @@ export default function Welcome() {
                         <nav className="flex items-center gap-3">
                             {auth.user ? (
                                 <Link
-                                    href={dashboard()}
+                                    href={start()}
                                     className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:opacity-90"
                                 >
-                                    Dashboard
+                                    Open app
                                 </Link>
                             ) : (
                                 <>
@@ -86,10 +86,10 @@ export default function Welcome() {
                                 <div className="mt-10 flex flex-col items-center justify-center gap-4">
                                     {auth.user ? (
                                         <Link
-                                            href={dashboard()}
+                                            href={start()}
                                             className="w-full rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-sm transition hover:opacity-90 sm:w-auto"
                                         >
-                                            Go to dashboard
+                                            Go to your project
                                         </Link>
                                     ) : (
                                         <>
@@ -169,10 +169,10 @@ export default function Welcome() {
                                 <div className="mt-8">
                                     {auth.user ? (
                                         <Link
-                                            href={dashboard()}
+                                            href={start()}
                                             className="inline-flex rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
                                         >
-                                            Go to dashboard
+                                            Go to your project
                                         </Link>
                                     ) : (
                                         <>

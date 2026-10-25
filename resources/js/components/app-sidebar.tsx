@@ -31,7 +31,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { dashboard } from '@/routes';
+import { dashboard, start } from '@/routes';
 import ProjectController from '@/actions/App/Http/Controllers/ProjectController';
 import { index as accountsIndex } from '@/routes/accounts';
 import { edit as jiraEdit } from '@/routes/jira';
@@ -111,7 +111,7 @@ export function AppSidebar() {
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <SidebarMenuButton size="lg" asChild>
-                            <Link href={dashboard()} prefetch>
+                            <Link href={start()}>
                                 <AppLogo />
                             </Link>
                         </SidebarMenuButton>
@@ -171,9 +171,12 @@ export function AppSidebar() {
                                     >
                                         Manage projects
                                     </Link>
-                                    {currentProject.owner_id === auth.user.id && (
+                                    {currentProject.owner_id ===
+                                        auth.user.id && (
                                         <Link
-                                            href={projectsShow(currentProject.uuid)}
+                                            href={projectsShow(
+                                                currentProject.uuid,
+                                            )}
                                             className="block rounded-sm px-2 py-2 text-sm hover:bg-accent"
                                         >
                                             Manage access

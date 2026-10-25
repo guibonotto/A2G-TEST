@@ -59,7 +59,7 @@ class ProjectController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Project created successfully.')]);
 
-        return to_route('projects.show', $project);
+        return to_route('start');
     }
 
     public function invite(Request $request, string $token): RedirectResponse
@@ -139,7 +139,7 @@ class ProjectController extends Controller
 
         session(['current_project_id' => $project->id]);
 
-        return to_route('dashboard');
+        return to_route('start');
     }
 
     /**

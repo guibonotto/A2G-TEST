@@ -40,7 +40,7 @@ class ProjectTest extends TestCase
         $project = Project::whereName('Alpha Project')->first();
 
         $response->assertSessionHasNoErrors();
-        $response->assertRedirect(route('projects.show', $project));
+        $response->assertRedirect(route('start'));
 
         $this->assertNotNull($project);
         $this->assertSame($user->id, $project->owner_id);
@@ -239,7 +239,7 @@ class ProjectTest extends TestCase
 
         $response = $this->actingAs($user)->post(route('projects.select', $project));
 
-        $response->assertRedirect(route('dashboard'));
+        $response->assertRedirect(route('start'));
         $this->assertSame($project->id, session('current_project_id'));
     }
 
