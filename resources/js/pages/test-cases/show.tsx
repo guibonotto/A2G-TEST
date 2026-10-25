@@ -46,6 +46,7 @@ import { UserPicker } from '@/components/user-picker';
 import { executionStatusLabel } from '@/lib/execution-status';
 import { testCaseStatusLabel } from '@/lib/test-case-status';
 import { show as evidenceShow } from '@/routes/evidences';
+import { index as requirementsIndex } from '@/routes/requirements';
 import { assign, edit, index, show } from '@/routes/test-cases';
 import type {
     AssignableUser,
@@ -568,6 +569,20 @@ export default function ShowTestCase({
                         {testCase.requirements.length === 0 ? (
                             <p className="text-sm text-muted-foreground">
                                 No requirements linked.
+                                {auth.user.role?.slug !== 'viewer' &&
+                                    availableRequirements.length === 0 && (
+                                        <>
+                                            {' '}
+                                            This project has none yet:{' '}
+                                            <Link
+                                                href={requirementsIndex()}
+                                                className="font-medium text-primary underline-offset-4 hover:underline"
+                                            >
+                                                register them first
+                                            </Link>
+                                            .
+                                        </>
+                                    )}
                             </p>
                         ) : (
                             testCase.requirements.map((requirement) => (

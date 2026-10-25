@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Classification;
 use App\Models\Execution;
 use App\Models\Project;
+use App\Models\Requirement;
 use App\Models\TestCase as TestCaseModel;
 use App\Models\TestCaseStatus;
 use App\Models\User;
@@ -41,6 +42,41 @@ class DashboardTest extends TestCase
 
         $response = $this->get(route('dashboard'));
         $response->assertOk();
+    }
+
+    public function test_dashboard_counts_only_the_active_project_requirements(): void
+    {
+        $user = User::factory()->create();
+        $project = Project::factory()->create();
+        $project->members()->attach($user);
+        $otherProject = Project::factory()->create();
+
+        Requirement::create(['project_id' => $project->id, 'code' => 'RF001', 'type' => 'funcional', 'title' => 'Cadastro']);
+        Requirement::create(['project_id' => $project->id, 'code' => 'RF002', 'type' => 'funcional', 'title' => 'Login']);
+        Requirement::create(['project_id' => $otherProject->id, 'code' => 'RF001', 'type' => 'funcional', 'title' => 'De outro projeto']);
+        $archived = Requirement::create(['project_id' => $project->id, 'code' => 'RF003', 'type' => 'funcional', 'title' => 'Arquivado']);
+        $archived->delete();
+
+        $this->withSession(['current_project_id' => $project->id])
+            ->actingAs($user)
+            ->get(route('dashboard'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('dashboard')
+                ->where('stats.total', 0)
+                ->where('requirementsCount', 2)
+            );
+    }
+
+    public function test_an_empty_project_reports_no_requirements(): void
+    {
+        $user = User::factory()->create();
+        $project = Project::factory()->create();
+        $project->members()->attach($user);
+
+        $this->withSession(['current_project_id' => $project->id])
+            ->actingAs($user)
+            ->get(route('dashboard'))
+            ->assertInertia(fn (Assert $page) => $page->where('requirementsCount', 0));
     }
 
     public function test_classification_breakdown_counts_unclassified_test_cases(): void

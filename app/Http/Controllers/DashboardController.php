@@ -25,6 +25,7 @@ class DashboardController extends Controller
             'classificationBreakdown' => $this->buildClassificationBreakdown($project),
             'workload' => $this->buildWorkload($project),
             'creationTrend' => $this->buildCreationTrend($project),
+            'requirementsCount' => $project->requirements()->count(),
         ]);
     }
 

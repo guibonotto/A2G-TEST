@@ -8,6 +8,7 @@ use App\Models\TestCase as TestCaseModel;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class RequirementControllerTest extends TestCase
@@ -72,15 +73,50 @@ class RequirementControllerTest extends TestCase
         $this->delete(route('requirements.destroy', $requirement))->assertRedirect(route('login'));
     }
 
-    public function test_non_qa_users_cannot_access_requirement_management(): void
+    public function test_non_qa_users_cannot_change_requirements(): void
     {
         $developer = $this->createProjectMember('developer');
         $requirement = $this->createRequirement();
 
-        $this->actingAs($developer)->get(route('requirements.index'))->assertForbidden();
         $this->actingAs($developer)->post(route('requirements.store'))->assertForbidden();
         $this->actingAs($developer)->put(route('requirements.update', $requirement))->assertForbidden();
         $this->actingAs($developer)->delete(route('requirements.destroy', $requirement))->assertForbidden();
+        $this->actingAs($developer)->patch(route('requirements.restore', $requirement))->assertForbidden();
+    }
+
+    /**
+     * @return array<string, array{0: string}>
+     */
+    public static function readOnlyRoles(): array
+    {
+        return [
+            'developer' => ['developer'],
+            'viewer' => ['viewer'],
+        ];
+    }
+
+    #[DataProvider('readOnlyRoles')]
+    public function test_every_project_member_can_read_the_requirement_list(string $role): void
+    {
+        $member = $this->createProjectMember($role);
+        $this->createRequirement();
+
+        $this->actingAs($member)->get(route('requirements.index'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('requirements/index')
+                ->has('requirements', 1)
+                ->where('canManage', false)
+            );
+    }
+
+    public function test_users_outside_the_project_cannot_read_its_requirements(): void
+    {
+        $this->createRequirement();
+        $outsider = User::factory()->create();
+
+        $this->actingAs($outsider)->get(route('requirements.index'))
+            ->assertRedirect(route('projects.index'));
     }
 
     public function test_requirement_management_needs_a_selected_project(): void
@@ -98,7 +134,8 @@ class RequirementControllerTest extends TestCase
 
         $this->actingAs($qa)->get(route('requirements.index'))
             ->assertInertia(fn (Assert $page) => $page
-                ->component('management/requirements/index')
+                ->component('requirements/index')
+                ->where('canManage', true)
                 ->has('requirements', 1)
                 ->where('requirements.0.code', 'RF001')
                 ->where('requirements.0.test_cases_count', 0)

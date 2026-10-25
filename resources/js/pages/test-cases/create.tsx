@@ -27,6 +27,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { testCaseStatusLabel } from '@/lib/test-case-status';
+import { index as requirementsIndex } from '@/routes/requirements';
 import { index, store } from '@/routes/test-cases';
 import type {
     AssignableUser,
@@ -54,7 +55,9 @@ export default function CreateTestCase({
     defaultStatusId,
     availableRequirements,
 }: Props) {
-    const { currentProject } = usePage().props;
+    const { auth, currentProject } = usePage().props;
+    /** Viewers cannot link requirements, so the card would only be noise for them. */
+    const canLinkRequirements = auth.user.role?.slug !== 'viewer';
 
     const { data, setData, post, processing, errors } = useForm({
         title: '',
@@ -428,7 +431,7 @@ export default function CreateTestCase({
                         </CardContent>
                     </Card>
 
-                    {availableRequirements.length > 0 && (
+                    {canLinkRequirements && (
                         <Card className="order-first">
                             <CardHeader className="flex flex-row items-center justify-between">
                                 <CardTitle>
@@ -502,7 +505,20 @@ export default function CreateTestCase({
                             <CardContent className="flex flex-col gap-2">
                                 <InputError message={errors.requirement_ids} />
 
-                                {linkedRequirements.length === 0 ? (
+                                {/* Hiding the card in a project without requirements
+                                    left no hint that they come first. */}
+                                {availableRequirements.length === 0 ? (
+                                    <p className="text-sm text-muted-foreground">
+                                        No requirements in this project yet.{' '}
+                                        <Link
+                                            href={requirementsIndex()}
+                                            className="font-medium text-primary underline-offset-4 hover:underline"
+                                        >
+                                            Register them first
+                                        </Link>{' '}
+                                        to track what this test case covers.
+                                    </p>
+                                ) : linkedRequirements.length === 0 ? (
                                     <p className="text-sm text-muted-foreground">
                                         No requirements linked.
                                     </p>

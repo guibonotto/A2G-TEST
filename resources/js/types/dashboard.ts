@@ -39,4 +39,5 @@ export type DashboardProps = {
     classificationBreakdown: ClassificationBreakdownItem[];
     workload: WorkloadItem[];
     creationTrend: CreationTrendPoint[];
+    requirementsCount: number;
 };

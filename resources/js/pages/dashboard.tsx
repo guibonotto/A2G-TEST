@@ -1,11 +1,13 @@
 import { Head, Link, usePage } from '@inertiajs/react';
 import {
     CalendarPlus,
+    Check,
     FileCheck2,
     ListTodo,
     Rocket,
     UserX,
 } from 'lucide-react';
+import type { ReactNode } from 'react';
 import { ClassificationChart } from '@/components/dashboard/classification-chart';
 import { CreationTrendChart } from '@/components/dashboard/creation-trend-chart';
 import { StatCard } from '@/components/dashboard/stat-card';
@@ -15,10 +17,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { dashboard } from '@/routes';
 import { index as projectsIndex } from '@/routes/projects';
-import {
-    create as createTestCase,
-    index as testCasesIndex,
-} from '@/routes/test-cases';
+import { index as requirementsIndex } from '@/routes/requirements';
+import { create as createTestCase } from '@/routes/test-cases';
 import type { DashboardProps } from '@/types/dashboard';
 
 export default function Dashboard({
@@ -27,54 +27,103 @@ export default function Dashboard({
     classificationBreakdown,
     workload,
     creationTrend,
+    requirementsCount,
 }: DashboardProps) {
     const { currentProject } = usePage().props;
 
     /**
      * The dashboard is a tracking screen; with nothing to track it was four
      * zeroes and four blank panels with no way forward. An empty project
-     * gets a starting point instead.
+     * gets the work in its order instead: requirements first, then the test
+     * cases that cover them.
      */
     if (stats.total === 0) {
+        const hasRequirements = requirementsCount > 0;
+
         return (
             <>
                 <Head title="Dashboard" />
 
                 <div className="flex h-full flex-1 flex-col p-4">
                     <Card className="mx-auto w-full max-w-2xl">
-                        <CardContent className="flex flex-col items-center gap-4 py-12 text-center">
-                            <div className="flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary">
-                                <Rocket className="size-6" aria-hidden="true" />
+                        <CardContent className="flex flex-col gap-6 py-10">
+                            <div className="flex flex-col items-center gap-4 text-center">
+                                <div className="flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+                                    <Rocket
+                                        className="size-6"
+                                        aria-hidden="true"
+                                    />
+                                </div>
+
+                                <div>
+                                    <h2 className="text-xl font-semibold">
+                                        Your project is ready
+                                    </h2>
+
+                                    <p className="mt-2 max-w-md text-sm text-muted-foreground">
+                                        Follow these steps to get started.
+                                        Charts and indicators show up here once
+                                        there is something to track.
+                                    </p>
+                                </div>
                             </div>
 
-                            <div>
-                                <h2 className="text-xl font-semibold">
-                                    Your project is ready
-                                </h2>
+                            <ol className="flex flex-col gap-3">
+                                <OnboardingStep
+                                    number={1}
+                                    done={hasRequirements}
+                                    title="Register the project's requirements"
+                                    description={
+                                        hasRequirements
+                                            ? `${requirementsCount} requirement(s) registered.`
+                                            : 'Import them from Jira or create them manually.'
+                                    }
+                                    action={
+                                        <Button
+                                            asChild
+                                            size="sm"
+                                            variant={
+                                                hasRequirements
+                                                    ? 'outline'
+                                                    : 'default'
+                                            }
+                                        >
+                                            <Link href={requirementsIndex()}>
+                                                {hasRequirements
+                                                    ? 'View requirements'
+                                                    : 'Add requirements'}
+                                            </Link>
+                                        </Button>
+                                    }
+                                />
 
-                                <p className="mt-2 max-w-md text-sm text-muted-foreground">
-                                    Start by creating the first test case.
-                                    Charts and indicators show up here once
-                                    there is something to track.
-                                </p>
-                            </div>
+                                <OnboardingStep
+                                    number={2}
+                                    done={false}
+                                    title="Create test cases linked to them"
+                                    description="Each test case can cover one or more requirements."
+                                    action={
+                                        <Button
+                                            asChild
+                                            size="sm"
+                                            variant={
+                                                hasRequirements
+                                                    ? 'default'
+                                                    : 'outline'
+                                            }
+                                        >
+                                            <Link href={createTestCase()}>
+                                                Create test case
+                                            </Link>
+                                        </Button>
+                                    }
+                                />
+                            </ol>
 
-                            <div className="flex flex-wrap justify-center gap-2">
-                                <Button asChild>
-                                    <Link href={createTestCase()}>
-                                        Create test case
-                                    </Link>
-                                </Button>
-
-                                <Button asChild variant="outline">
+                            <div className="flex justify-center">
+                                <Button asChild variant="ghost" size="sm">
                                     <Link href={projectsIndex()}>
                                         Invite your team
-                                    </Link>
-                                </Button>
-
-                                <Button asChild variant="ghost">
-                                    <Link href={testCasesIndex()}>
-                                        View test cases
                                     </Link>
                                 </Button>
                             </div>
@@ -130,6 +179,45 @@ export default function Dashboard({
                 </div>
             </div>
         </>
+    );
+}
+
+/**
+ * One step of the empty project's checklist: a number until it is done,
+ * then a check, so the user sees where they are in the flow.
+ */
+function OnboardingStep({
+    number,
+    done,
+    title,
+    description,
+    action,
+}: {
+    number: number;
+    done: boolean;
+    title: string;
+    description: string;
+    action: ReactNode;
+}) {
+    return (
+        <li className="flex items-center gap-4 rounded-lg border p-4">
+            <span
+                className={
+                    done
+                        ? 'flex size-8 shrink-0 items-center justify-center rounded-full bg-success/15 text-success'
+                        : 'flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-medium text-muted-foreground'
+                }
+            >
+                {done ? <Check className="size-4" aria-label="Done" /> : number}
+            </span>
+
+            <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium">{title}</p>
+                <p className="text-sm text-muted-foreground">{description}</p>
+            </div>
+
+            {action}
+        </li>
     );
 }
 

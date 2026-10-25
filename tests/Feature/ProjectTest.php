@@ -87,9 +87,9 @@ class ProjectTest extends TestCase
         $viewerProject->addMember($user, 'viewer');
 
         $this->actingAs($user)->withSession(['current_project_id' => $qaProject->id])
-            ->get(route('requirements.index'))->assertOk();
+            ->get(route('requirements.index'))->assertInertia(fn (Assert $page) => $page->where('canManage', true));
         $this->actingAs($user->fresh())->withSession(['current_project_id' => $viewerProject->id])
-            ->get(route('requirements.index'))->assertForbidden();
+            ->get(route('requirements.index'))->assertInertia(fn (Assert $page) => $page->where('canManage', false));
     }
 
     public function test_the_shared_user_role_is_the_one_held_in_the_selected_project(): void

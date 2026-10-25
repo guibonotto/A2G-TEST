@@ -8,6 +8,7 @@ use App\Models\JiraExcludedIssue;
 use App\Models\Project;
 use App\Models\Requirement;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -16,9 +17,11 @@ class RequirementController extends Controller
     /**
      * Display a listing of the current project's requirements.
      */
-    public function index(): Response
+    public function index(Request $request): Response
     {
-        return Inertia::render('management/requirements/index', [
+        return Inertia::render('requirements/index', [
+            /** Every member reads the list; only QA and admins change it. */
+            'canManage' => $request->user()->canManageAccess(),
             'requirements' => Project::current()->requirements()
                 ->withCount([
                     'testCases',

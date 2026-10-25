@@ -90,11 +90,6 @@ const managementNavItems: NavItem[] = [
     //     icon: LayoutTemplate,
     // },
     {
-        title: 'Manage requirements',
-        href: requirementsIndex(),
-        icon: FileText,
-    },
-    {
         title: 'Jira integration',
         href: jiraEdit(),
         icon: Plug,
@@ -200,6 +195,11 @@ export function AppSidebar() {
                             href: testCasesAssigned(),
                             icon: UserCheck,
                             badge: assignedToMeCount,
+                        },
+                        {
+                            title: 'Manage requirements',
+                            href: requirementsIndex(),
+                            icon: FileText,
                         },
                     ]}
                 />

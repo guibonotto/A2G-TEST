@@ -1,7 +1,6 @@
 <?php
 
 use App\Http\Controllers\AccountController;
-use App\Http\Controllers\RequirementController;
 use App\Http\Controllers\RolePermissionController;
 use App\Http\Controllers\TestCaseStatusController;
 use App\Http\Controllers\TestTemplateController;
@@ -24,12 +23,6 @@ Route::middleware(['auth', 'verified', 'project', 'role:qa,admin'])->group(funct
         Route::get('management/permissions', [RolePermissionController::class, 'index'])->name('role-permissions.index');
         Route::put('management/permissions/{role}', [RolePermissionController::class, 'update'])->name('role-permissions.update');
     });
-
-    Route::get('management/requirements', [RequirementController::class, 'index'])->name('requirements.index');
-    Route::post('management/requirements', [RequirementController::class, 'store'])->name('requirements.store');
-    Route::put('management/requirements/{requirement}', [RequirementController::class, 'update'])->name('requirements.update');
-    Route::delete('management/requirements/{requirement}', [RequirementController::class, 'destroy'])->name('requirements.destroy');
-    Route::patch('management/requirements/{requirement}/restore', [RequirementController::class, 'restore'])->withTrashed()->name('requirements.restore');
 
     Route::get('management/templates', [TestTemplateController::class, 'index'])->name('test-templates.index');
     Route::post('management/templates', [TestTemplateController::class, 'store'])->name('test-templates.store');
