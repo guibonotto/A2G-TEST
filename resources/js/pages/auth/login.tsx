@@ -15,7 +15,7 @@ import { store } from '@/routes/login';
 import { request } from '@/routes/password';
 
 const demoAccounts = [
-    { role: 'Administrator', email: 'admin@a2gtest.com' },
+    { role: 'Test Manager', email: 'admin@a2gtest.com' },
     { role: 'QA', email: 'qa@a2gtest.com' },
     { role: 'Viewer', email: 'viewer@a2gtest.com' },
 ];

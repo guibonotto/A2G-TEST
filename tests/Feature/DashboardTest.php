@@ -372,4 +372,68 @@ class DashboardTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page->loadDeferredProps(fn (Assert $reload) => $reload
                 ->where('openDefects.total', 0)));
     }
+
+    public function test_guests_cannot_open_the_report(): void
+    {
+        $this->get(route('dashboard.report'))->assertRedirect(route('login'));
+    }
+
+    public function test_users_outside_the_project_cannot_open_its_report(): void
+    {
+        $project = Project::factory()->create();
+        TestCaseModel::factory()->create(['project_id' => $project->id, 'title' => 'Secret case']);
+
+        $this->withSession(['current_project_id' => $project->id])
+            ->actingAs(User::factory()->create())
+            ->get(route('dashboard.report'))
+            ->assertRedirect(route('projects.index'));
+    }
+
+    public function test_the_report_shows_the_summary_and_one_row_per_test_case(): void
+    {
+        [$project] = $this->projectWithFailedRunAndDefect();
+        TestCaseModel::factory()->create(['project_id' => $project->id, 'title' => 'Never executed', 'assigned_to' => null]);
+
+        $this->get(route('dashboard.report'))
+            ->assertOk()
+            ->assertViewIs('reports.test-report')
+            ->assertViewHas('summary', fn (array $summary): bool => $summary['Test cases'] === 2
+                && $summary['Failed'] === 1
+                && $summary['Passed'] === 0
+                && $summary['Not executed'] === 1
+                && $summary['Open Jira defects'] === 1)
+            ->assertSee($project->name)
+            ->assertSeeInOrder(['Test cases', 'Passed', 'Failed', 'Blocked', 'Pending', 'Not executed', 'Unassigned', 'Open Jira defects'])
+            ->assertSeeInOrder(['Validates a password', 'RF-001', 'Failed', 'Ana Tester', 'SHOP-9', 'To Do'])
+            ->assertSeeInOrder(['Never executed', 'Unassigned', 'Not executed'])
+            ->assertSee('https://example.atlassian.net/browse/SHOP-9', false);
+    }
+
+    public function test_the_report_leaves_out_other_projects_and_archived_cases(): void
+    {
+        [$project] = $this->projectWithJira();
+        TestCaseModel::factory()->create(['title' => 'From another project']);
+        TestCaseModel::factory()->create(['project_id' => $project->id, 'title' => 'Archived case'])->delete();
+
+        $this->get(route('dashboard.report'))
+            ->assertSee('Validates a password')
+            ->assertDontSee('From another project')
+            ->assertDontSee('Archived case');
+    }
+
+    /**
+     * A project whose case failed on its latest run, with an open Bug in Jira.
+     *
+     * @return array{0: Project, 1: TestCaseModel}
+     */
+    private function projectWithFailedRunAndDefect(): array
+    {
+        [$project, $testCase] = $this->projectWithJira();
+        $testCase->requirements()->attach(Requirement::factory()->create(['project_id' => $project->id, 'code' => 'RF-001']));
+        Execution::factory()->create(['test_case_id' => $testCase->id, 'status' => 'APROVADO', 'execution_date' => now()->subDay()]);
+        $executor = User::factory()->create(['name' => 'Ana Tester']);
+        $this->reportedDefect($testCase, 'SHOP-9', ['executed_by' => $executor->id, 'jira_defect_status' => 'To Do', 'execution_date' => now()]);
+
+        return [$project, $testCase];
+    }
 }

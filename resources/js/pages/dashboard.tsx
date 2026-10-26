@@ -3,6 +3,7 @@ import {
     CalendarPlus,
     Check,
     FileCheck2,
+    FileText,
     ListTodo,
     Rocket,
     UserX,
@@ -20,6 +21,7 @@ import { WorkloadChart } from '@/components/dashboard/workload-chart';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { dashboard } from '@/routes';
+import { report as dashboardReport } from '@/routes/dashboard';
 import { index as projectsIndex } from '@/routes/projects';
 import { index as requirementsIndex } from '@/routes/requirements';
 import { create as createTestCase } from '@/routes/test-cases';
@@ -144,14 +146,28 @@ export default function Dashboard({
             <Head title="Dashboard" />
 
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
-                {currentProject && (
-                    <p className="text-sm text-muted-foreground">
-                        Showing data for{' '}
-                        <span className="font-medium text-foreground">
-                            {currentProject.name}
-                        </span>
-                    </p>
-                )}
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                    {currentProject && (
+                        <p className="text-sm text-muted-foreground">
+                            Showing data for{' '}
+                            <span className="font-medium text-foreground">
+                                {currentProject.name}
+                            </span>
+                        </p>
+                    )}
+
+                    {/* A plain link: the report is a printable page, not an Inertia visit. */}
+                    <Button variant="outline" size="sm" asChild>
+                        <a
+                            href={dashboardReport().url}
+                            target="_blank"
+                            rel="noreferrer"
+                        >
+                            <FileText aria-hidden="true" />
+                            Export report (PDF)
+                        </a>
+                    </Button>
+                </div>
 
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                     <StatCard
