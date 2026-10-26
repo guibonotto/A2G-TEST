@@ -6,6 +6,7 @@ use App\Enums\Permission;
 use App\Models\Project;
 use App\Models\ProjectRolePermission;
 use App\Models\Role;
+use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
@@ -30,11 +31,18 @@ class RolePermissionControllerTest extends TestCase
         $this->actingAs($developer)->put(route('role-permissions.update', $this->roleOf($developer)))->assertForbidden();
     }
 
-    public function test_qa_can_view_the_role_permission_list(): void
+    public function test_a_tester_cannot_reach_the_role_permission_screen(): void
     {
         $qa = $this->createUserWithRole('qa');
 
-        $response = $this->actingAs($qa)->get(route('role-permissions.index'));
+        $this->actingAs($qa)->get(route('role-permissions.index'))->assertForbidden();
+    }
+
+    public function test_an_administrator_can_view_the_role_permission_list(): void
+    {
+        $admin = $this->createUserWithRole('admin');
+
+        $response = $this->actingAs($admin)->get(route('role-permissions.index'));
 
         $response->assertInertia(fn (Assert $page) => $page
             ->component('management/permissions/index')
@@ -43,12 +51,12 @@ class RolePermissionControllerTest extends TestCase
         );
     }
 
-    public function test_qa_can_update_a_roles_permissions(): void
+    public function test_an_administrator_can_update_a_roles_permissions(): void
     {
-        $qa = $this->createUserWithRole('qa');
+        $admin = $this->createUserWithRole('admin');
         $developerRole = Role::firstOrCreate(['slug' => 'developer'], ['name' => 'developer']);
 
-        $response = $this->actingAs($qa)->put(route('role-permissions.update', $developerRole), [
+        $response = $this->actingAs($admin)->put(route('role-permissions.update', $developerRole), [
             'permissions' => [Permission::AssignTestCases->value],
         ]);
 
@@ -61,11 +69,11 @@ class RolePermissionControllerTest extends TestCase
 
     public function test_changing_permissions_only_affects_the_current_project(): void
     {
-        $qa = $this->createUserWithRole('qa');
+        $admin = $this->createUserWithRole('admin');
         $developerRole = Role::firstOrCreate(['slug' => 'developer'], ['name' => 'developer', 'permissions' => []]);
         $otherProject = Project::factory()->create();
 
-        $this->actingAs($qa)->put(route('role-permissions.update', $developerRole), [
+        $this->actingAs($admin)->put(route('role-permissions.update', $developerRole), [
             'permissions' => [Permission::AssignTestCases->value],
         ]);
 
@@ -76,14 +84,14 @@ class RolePermissionControllerTest extends TestCase
 
     public function test_a_permission_granted_in_one_project_is_only_enforced_there(): void
     {
-        $qa = $this->createUserWithRole('qa');
+        $admin = $this->createUserWithRole('admin');
         $developer = $this->createUserWithRole('developer');
         $project = $this->sessionProject();
         $otherProject = Project::factory()->create();
         $otherProject->addMember($developer, 'developer');
         $developerRole = Role::where('slug', 'developer')->firstOrFail();
 
-        $this->actingAs($qa)->put(route('role-permissions.update', $developerRole), [
+        $this->actingAs($admin)->put(route('role-permissions.update', $developerRole), [
             'permissions' => [Permission::AssignTestCases->value],
         ]);
 
@@ -93,7 +101,7 @@ class RolePermissionControllerTest extends TestCase
 
     public function test_the_permission_list_shows_the_current_project_set(): void
     {
-        $qa = $this->createUserWithRole('qa');
+        $admin = $this->createUserWithRole('admin');
         $developerRole = Role::firstOrCreate(['slug' => 'developer'], ['name' => 'developer', 'permissions' => []]);
         ProjectRolePermission::create([
             'project_id' => Project::factory()->create()->id,
@@ -106,7 +114,7 @@ class RolePermissionControllerTest extends TestCase
             'permissions' => [Permission::AssignTestCases->value],
         ]);
 
-        $this->actingAs($qa)->get(route('role-permissions.index'))
+        $this->actingAs($admin)->get(route('role-permissions.index'))
             ->assertInertia(fn (Assert $page) => $page->where(
                 'roles',
                 fn ($roles) => collect($roles)->firstWhere('slug', 'developer')['effective_permissions'] === [Permission::AssignTestCases->value],
@@ -115,10 +123,10 @@ class RolePermissionControllerTest extends TestCase
 
     public function test_permission_update_fails_with_an_unknown_permission(): void
     {
-        $qa = $this->createUserWithRole('qa');
+        $admin = $this->createUserWithRole('admin');
         $developerRole = Role::firstOrCreate(['slug' => 'developer'], ['name' => 'developer']);
 
-        $response = $this->actingAs($qa)->put(route('role-permissions.update', $developerRole), [
+        $response = $this->actingAs($admin)->put(route('role-permissions.update', $developerRole), [
             'permissions' => ['not-a-real-permission'],
         ]);
 
@@ -198,38 +206,74 @@ class RolePermissionControllerTest extends TestCase
 
     public function test_the_permission_list_exposes_the_enforced_permission_set(): void
     {
-        $qa = $this->createUserWithRole('qa');
+        $admin = $this->createUserWithRole('admin');
         $developer = $this->createUserWithRole('developer');
         $this->roleOf($developer)->update(['permissions' => null]);
 
-        $response = $this->actingAs($qa)->get(route('role-permissions.index'));
+        $response = $this->actingAs($admin)->get(route('role-permissions.index'));
 
         $response->assertInertia(fn (Assert $page) => $page
             ->component('management/permissions/index')
-            ->where('roles', fn ($roles) => collect($roles)
-                ->pluck('effective_permissions', 'slug')
-                ->all() === [
+            ->where('roles', function ($roles) {
+                $actual = collect($roles)->pluck('effective_permissions', 'slug')->all();
+                ksort($actual);
+
+                $expected = [
+                    'admin' => Permission::values(),
                     'developer' => [],
-                    'qa' => array_column(Permission::cases(), 'value'),
-                ])
+                ];
+                ksort($expected);
+
+                return $actual === $expected;
+            })
         );
     }
 
     public function test_the_permission_list_tells_the_viewer_which_roles_they_can_edit(): void
     {
-        $qa = $this->createUserWithRole('qa');
-        $this->createUserWithRole('admin');
+        $admin = $this->createUserWithRole('admin');
+        $this->createUserWithRole('qa');
         $this->createUserWithRole('developer');
 
-        $response = $this->actingAs($qa)->get(route('role-permissions.index'));
+        $response = $this->actingAs($admin)->get(route('role-permissions.index'));
 
         $response->assertInertia(fn (Assert $page) => $page
             ->component('management/permissions/index')
-            ->where('roles', fn ($roles) => collect($roles)->pluck('can_edit', 'slug')->all() === [
-                'admin' => false,
-                'developer' => true,
-                'qa' => false,
-            ])
+            ->where('roles', function ($roles) {
+                $actual = collect($roles)->pluck('can_edit', 'slug')->all();
+                ksort($actual);
+
+                /** The administrator outranks everyone but itself. */
+                return $actual === [
+                    'admin' => false,
+                    'developer' => true,
+                    'qa' => true,
+                ];
+            })
+        );
+    }
+
+    public function test_the_seeded_tester_role_holds_no_administrative_permission(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $permissions = Role::query()->where('slug', 'qa')->value('permissions');
+
+        $this->assertNotContains(Permission::ManageAccounts->value, $permissions);
+        $this->assertNotContains(Permission::ManageRoles->value, $permissions);
+        /** Requirement scope belongs to whoever owns the product, not to the tester. */
+        $this->assertNotContains(Permission::ManageRequirements->value, $permissions);
+        $this->assertContains(Permission::ManageTestCases->value, $permissions);
+        $this->assertContains(Permission::RecordExecutions->value, $permissions);
+    }
+
+    public function test_the_seeded_administrator_role_holds_every_permission(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $this->assertEqualsCanonicalizing(
+            Permission::values(),
+            Role::query()->where('slug', Role::ADMIN)->value('permissions'),
         );
     }
 }

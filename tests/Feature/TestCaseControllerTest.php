@@ -37,7 +37,11 @@ class TestCaseControllerTest extends TestCase
     private function actingAsProjectMember(User $user): Project
     {
         $project = $user->projects()->first() ?? Project::factory()->create();
-        $project->members()->syncWithoutDetaching($user);
+
+        /** Memberships always carry a role in the product, so they do here too. */
+        if ($project->members()->whereKey($user->id)->doesntExist()) {
+            $project->addMember($user, 'qa');
+        }
         $this->withSession(['current_project_id' => $project->id]);
         $this->actingAs($user);
 
@@ -553,8 +557,8 @@ class TestCaseControllerTest extends TestCase
 
     public function test_editors_can_link_requirements_while_creating_a_test_case(): void
     {
-        $developer = $this->createUserWithRole('developer');
-        $project = $this->actingAsProjectMember($developer);
+        $editor = $this->createUserWithRole('qa');
+        $project = $this->actingAsProjectMember($editor);
         $classification = Classification::create(['name' => 'Funcional']);
         $requirement = Requirement::create(['project_id' => $project->id, 'code' => 'RF001', 'type' => 'funcional', 'title' => 'Cadastro']);
 

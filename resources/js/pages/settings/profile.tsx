@@ -99,9 +99,7 @@ export default function Profile() {
                                     disabled={processing}
                                     data-test="update-profile-button"
                                 >
-                                    {processing
-                                        ? 'Saving...'
-                                        : 'Save changes'}
+                                    {processing ? 'Saving...' : 'Save changes'}
                                 </Button>
 
                                 {!processing && (

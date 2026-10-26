@@ -3,10 +3,18 @@ import type { Role } from './auth';
 export type AvailablePermission = {
     value: string;
     label: string;
+    /** Product area, used to group the list instead of one flat column. */
+    area: string;
+    /** True when the permission hands out control of the project itself. */
+    administrative: boolean;
+    /** Permissions that must be granted alongside this one. */
+    requires: string[];
 };
 
 /** A role as listed on the permissions screen, with whether the viewer may edit it. */
 export type EditableRole = Role & {
+    /** A read-only role holds no permissions; its checkboxes are inert. */
+    read_only: boolean;
     can_edit: boolean;
 };
 

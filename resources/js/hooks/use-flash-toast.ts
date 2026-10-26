@@ -32,18 +32,16 @@ export function useFlashToast(): void {
             }
 
             const request = data.undo;
+            const link = data.link;
 
-            toast[data.type](
-                data.message,
-                request
-                    ? {
-                          action: {
-                              label: 'Undo',
-                              onClick: () => undo(request),
-                          },
-                      }
-                    : undefined,
-            );
+            /* Undo takes priority: it is time-sensitive, a follow-up link is not. */
+            const action = request
+                ? { label: 'Undo', onClick: () => undo(request) }
+                : link
+                  ? { label: link.label, onClick: () => router.visit(link.url) }
+                  : undefined;
+
+            toast[data.type](data.message, action ? { action } : undefined);
         });
     }, []);
 }

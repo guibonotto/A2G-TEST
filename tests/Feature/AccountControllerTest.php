@@ -93,12 +93,12 @@ class AccountControllerTest extends TestCase
         $this->actingAs($developer)->put(route('accounts.update', $account))->assertForbidden();
     }
 
-    public function test_qa_can_view_the_account_list(): void
+    public function test_an_administrator_can_view_the_account_list(): void
     {
-        $qa = $this->memberWithRole('qa');
+        $admin = $this->memberWithRole('admin');
         $developer = $this->memberWithRole('developer');
 
-        $response = $this->actingAs($qa)->get(route('accounts.index'));
+        $response = $this->actingAs($admin)->get(route('accounts.index'));
 
         $response->assertInertia(fn (Assert $page) => $page
             ->component('management/accounts/index')
@@ -107,13 +107,13 @@ class AccountControllerTest extends TestCase
         );
     }
 
-    public function test_qa_can_change_a_users_role(): void
+    public function test_an_administrator_can_change_a_users_role(): void
     {
-        $qa = $this->memberWithRole('qa');
+        $admin = $this->memberWithRole('admin');
         $developer = $this->memberWithRole('developer');
         $viewerRole = Role::firstOrCreate(['slug' => 'viewer'], ['name' => 'viewer']);
 
-        $response = $this->actingAs($qa)->put(route('accounts.update', $developer), [
+        $response = $this->actingAs($admin)->put(route('accounts.update', $developer), [
             'role_id' => $viewerRole->id,
         ]);
 
@@ -121,12 +121,12 @@ class AccountControllerTest extends TestCase
         $this->assertDatabaseHas('project_user', ['project_id' => $this->project->id, 'user_id' => $developer->id, 'role_id' => $viewerRole->id]);
     }
 
-    public function test_qa_can_unset_a_users_role(): void
+    public function test_an_administrator_can_unset_a_users_role(): void
     {
-        $qa = $this->memberWithRole('qa');
+        $admin = $this->memberWithRole('admin');
         $developer = $this->memberWithRole('developer');
 
-        $response = $this->actingAs($qa)->put(route('accounts.update', $developer), [
+        $response = $this->actingAs($admin)->put(route('accounts.update', $developer), [
             'role_id' => null,
         ]);
 
@@ -136,10 +136,10 @@ class AccountControllerTest extends TestCase
 
     public function test_role_update_fails_with_an_unknown_role(): void
     {
-        $qa = $this->memberWithRole('qa');
+        $admin = $this->memberWithRole('admin');
         $developer = $this->memberWithRole('developer');
 
-        $response = $this->actingAs($qa)->put(route('accounts.update', $developer), [
+        $response = $this->actingAs($admin)->put(route('accounts.update', $developer), [
             'role_id' => 9999,
         ]);
 
@@ -206,24 +206,28 @@ class AccountControllerTest extends TestCase
 
     public function test_the_account_list_tells_the_viewer_who_they_can_change_and_which_roles_they_can_assign(): void
     {
-        $qa = $this->memberWithRole('qa');
         $admin = $this->memberWithRole('admin');
+        $otherAdmin = $this->memberWithRole('admin');
+        $qa = $this->memberWithRole('qa');
         $developer = $this->memberWithRole('developer');
         Role::firstOrCreate(['slug' => 'viewer'], ['name' => 'viewer']);
 
-        $response = $this->actingAs($qa)->get(route('accounts.index'));
+        $response = $this->actingAs($admin)->get(route('accounts.index'));
 
         $response->assertInertia(fn (Assert $page) => $page
             ->component('management/accounts/index')
             ->where('accounts', fn ($accounts) => collect($accounts)->pluck('can_change_role', 'id')->sortKeys()->all() === [
-                $qa->id => false,
+                /** Nobody edits themselves, nor a peer at the same level. */
                 $admin->id => false,
+                $otherAdmin->id => false,
+                $qa->id => true,
                 $developer->id => true,
             ])
             ->where('roles', fn ($roles) => collect($roles)->pluck('assignable', 'slug')->all() === [
-                'admin' => false,
+                /** The administrator may hand out any role, including its own. */
+                'admin' => true,
                 'developer' => true,
-                'qa' => false,
+                'qa' => true,
                 'viewer' => true,
             ])
         );

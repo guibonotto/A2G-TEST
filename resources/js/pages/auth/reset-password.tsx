@@ -16,18 +16,14 @@ type Props = {
 const labelClassName =
     'font-mono text-xs tracking-wide text-muted-foreground uppercase';
 
-export default function ResetPassword({
-    token,
-    email,
-    passwordRules,
-}: Props) {
+export default function ResetPassword({ token, email, passwordRules }: Props) {
     return (
         <>
             <Head title="Reset password" />
 
             <div className="bg-grid" />
 
-            <div className="fade-in mx-auto flex min-h-screen w-full max-w-md flex-col justify-center gap-8 px-6 py-12">
+            <div className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center gap-8 px-6 py-12 fade-in">
                 {/* Logo */}
                 <div className="flex items-center justify-center gap-2 font-mono text-lg font-bold tracking-wide">
                     <span className="size-1.5 animate-pulse rounded-full bg-info" />
@@ -84,9 +80,7 @@ export default function ResetPassword({
                                             readOnly
                                         />
 
-                                        <InputError
-                                            message={errors.email}
-                                        />
+                                        <InputError message={errors.email} />
                                     </div>
 
                                     {/* New password */}
@@ -108,15 +102,13 @@ export default function ResetPassword({
                                             passwordrules={passwordRules}
                                         />
 
-                                        <InputError
-                                            message={errors.password}
-                                        />
+                                        <InputError message={errors.password} />
 
                                         {passwordRules && (
                                             <p className="font-mono text-[10px] leading-relaxed text-muted-foreground">
                                                 The password must meet the
-                                                security requirements defined
-                                                by the system.
+                                                security requirements defined by
+                                                the system.
                                             </p>
                                         )}
                                     </div>

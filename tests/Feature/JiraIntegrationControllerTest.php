@@ -178,10 +178,10 @@ class JiraIntegrationControllerTest extends TestCase
 
     public function test_the_page_ignores_the_jira_connection_of_other_projects(): void
     {
-        $qa = $this->createProjectMember('qa');
+        $admin = $this->createProjectMember('admin');
         JiraIntegration::factory()->create();
 
-        $this->actingAs($qa)->get(route('jira.edit'))
+        $this->actingAs($admin)->get(route('jira.edit'))
             ->assertInertia(fn (Assert $page) => $page->where('integration', null));
     }
 
@@ -199,8 +199,8 @@ class JiraIntegrationControllerTest extends TestCase
 
     public function test_import_treats_requirements_of_other_projects_as_new(): void
     {
-        $qa = $this->createProjectMember('qa');
-        $this->createIntegrationFor($qa);
+        $admin = $this->createProjectMember('admin');
+        $this->createIntegrationFor($admin);
         $otherProject = Project::factory()->create();
         Requirement::create(['project_id' => $otherProject->id, 'code' => 'PROJ-1', 'type' => 'funcional', 'title' => 'De outro projeto']);
         JiraExcludedIssue::create(['project_id' => $otherProject->id, 'issue_key' => 'PROJ-2']);
@@ -210,12 +210,12 @@ class JiraIntegrationControllerTest extends TestCase
             ['key' => 'PROJ-2', 'fields' => ['summary' => 'Dois']],
         ]])]);
 
-        $this->actingAs($qa)
+        $this->actingAs($admin)
             ->getJson(route('jira.preview', ['projectKey' => 'PROJ', 'issue_types' => ['Story']]))
             ->assertJsonPath('issues.0.state', 'new')
             ->assertJsonPath('issues.1.state', 'new');
 
-        $this->actingAs($qa)->post(route('jira.import'), [
+        $this->actingAs($admin)->post(route('jira.import'), [
             'project_key' => 'PROJ',
             'issue_types' => ['Story'],
             'issue_keys' => ['PROJ-1', 'PROJ-2'],
@@ -226,9 +226,9 @@ class JiraIntegrationControllerTest extends TestCase
         $this->assertDatabaseHas('jira_excluded_issues', ['project_id' => $otherProject->id, 'issue_key' => 'PROJ-2']);
     }
 
-    public function test_qa_can_view_the_integration_page_when_connected(): void
+    public function test_an_administrator_can_view_the_integration_page_when_connected(): void
     {
-        $qa = $this->createProjectMember('qa');
+        $admin = $this->createProjectMember('admin');
         JiraIntegration::create([
             'project_id' => $this->project->id,
             'site_url' => 'https://example.atlassian.net',
@@ -236,7 +236,7 @@ class JiraIntegrationControllerTest extends TestCase
             'access_token' => 'token',
             'refresh_token' => 'refresh',
             'expires_at' => now()->addHour(),
-            'connected_by' => $qa->id,
+            'connected_by' => $admin->id,
             'connected_at' => now(),
         ]);
 
@@ -246,7 +246,7 @@ class JiraIntegrationControllerTest extends TestCase
             ]),
         ]);
 
-        $this->actingAs($qa)->get(route('jira.edit'))
+        $this->actingAs($admin)->get(route('jira.edit'))
             ->assertInertia(fn (Assert $page) => $page
                 ->component('management/jira/edit')
                 ->where('integration.site_url', 'https://example.atlassian.net')
@@ -275,13 +275,17 @@ class JiraIntegrationControllerTest extends TestCase
         $this->assertDatabaseCount('jira_integrations', 1);
     }
 
-    public function test_the_page_tells_whether_the_user_can_connect(): void
+    public function test_the_integration_page_is_out_of_reach_without_the_jira_permission(): void
     {
         $qa = $this->createProjectMember('qa');
+
+        $this->actingAs($qa)->get(route('jira.edit'))->assertForbidden();
+    }
+
+    public function test_the_page_tells_whether_the_user_can_connect(): void
+    {
         $admin = $this->createProjectMember('admin');
 
-        $this->actingAs($qa)->get(route('jira.edit'))
-            ->assertInertia(fn (Assert $page) => $page->where('can_connect', false));
         $this->actingAs($admin)->get(route('jira.edit'))
             ->assertInertia(fn (Assert $page) => $page->where('can_connect', true));
     }
@@ -311,21 +315,19 @@ class JiraIntegrationControllerTest extends TestCase
 
     public function test_integration_page_tells_whether_the_user_can_disconnect(): void
     {
-        $connector = $this->createProjectMember('qa');
+        $connector = $this->createProjectMember('admin');
         $this->createIntegrationFor($connector);
 
         Http::fake(['api.atlassian.com/*' => Http::response(['values' => []])]);
 
+        /** Whoever connected can always disconnect. */
         $this->actingAs($connector)->get(route('jira.edit'))
-            ->assertInertia(fn (Assert $page) => $page->where('integration.can_disconnect', false));
-
-        $this->actingAs($this->createProjectMember('admin'))->get(route('jira.edit'))
             ->assertInertia(fn (Assert $page) => $page->where('integration.can_disconnect', true));
     }
 
     public function test_import_creates_requirements_from_jira_issues(): void
     {
-        $qa = $this->createProjectMember('qa');
+        $admin = $this->createProjectMember('admin');
         JiraIntegration::create([
             'project_id' => $this->project->id,
             'site_url' => 'https://example.atlassian.net',
@@ -333,7 +335,7 @@ class JiraIntegrationControllerTest extends TestCase
             'access_token' => 'token',
             'refresh_token' => 'refresh',
             'expires_at' => now()->addHour(),
-            'connected_by' => $qa->id,
+            'connected_by' => $admin->id,
             'connected_at' => now(),
         ]);
 
@@ -357,7 +359,7 @@ class JiraIntegrationControllerTest extends TestCase
             ]),
         ]);
 
-        $response = $this->actingAs($qa)->post(route('jira.import'), [
+        $response = $this->actingAs($admin)->post(route('jira.import'), [
             'project_key' => 'PROJ',
             'issue_types' => ['Task', 'Story'],
             'issue_keys' => ['PROJ-1'],
@@ -370,13 +372,13 @@ class JiraIntegrationControllerTest extends TestCase
             'description' => 'Deve permitir login com email e senha.',
             'priority' => 'alta',
             'status' => 'em_andamento',
-            'created_by' => $qa->id,
+            'created_by' => $admin->id,
         ]);
     }
 
     public function test_import_updates_an_existing_requirement_without_changing_its_creator(): void
     {
-        $qa = $this->createProjectMember('qa');
+        $admin = $this->createProjectMember('admin');
         $originalCreator = $this->createProjectMember('developer');
         Requirement::create([
             'project_id' => $this->project->id,
@@ -393,7 +395,7 @@ class JiraIntegrationControllerTest extends TestCase
             'access_token' => 'token',
             'refresh_token' => 'refresh',
             'expires_at' => now()->addHour(),
-            'connected_by' => $qa->id,
+            'connected_by' => $admin->id,
             'connected_at' => now(),
         ]);
 
@@ -405,7 +407,7 @@ class JiraIntegrationControllerTest extends TestCase
             ]),
         ]);
 
-        $this->actingAs($qa)->post(route('jira.import'), [
+        $this->actingAs($admin)->post(route('jira.import'), [
             'project_key' => 'PROJ',
             'issue_types' => ['Task'],
             'issue_keys' => ['PROJ-1'],
@@ -421,15 +423,15 @@ class JiraIntegrationControllerTest extends TestCase
 
     public function test_import_keeps_the_jira_issue_type_of_each_requirement(): void
     {
-        $qa = $this->createProjectMember('qa');
-        $this->createIntegrationFor($qa);
+        $admin = $this->createProjectMember('admin');
+        $this->createIntegrationFor($admin);
 
         Http::fake(['api.atlassian.com/*' => Http::response(['issues' => [
             ['key' => 'PROJ-1', 'fields' => ['summary' => 'Login do usuário', 'issuetype' => ['name' => 'Story']]],
             ['key' => 'PROJ-2', 'fields' => ['summary' => 'Criar repositório Git', 'issuetype' => ['name' => 'Task']]],
         ]])]);
 
-        $this->actingAs($qa)->post(route('jira.import'), [
+        $this->actingAs($admin)->post(route('jira.import'), [
             'project_key' => 'PROJ',
             'issue_types' => ['Story', 'Task'],
             'issue_keys' => ['PROJ-1', 'PROJ-2'],
@@ -441,15 +443,15 @@ class JiraIntegrationControllerTest extends TestCase
 
     public function test_reimporting_fills_the_issue_type_of_requirements_imported_before_it_was_kept(): void
     {
-        $qa = $this->createProjectMember('qa');
-        $this->createIntegrationFor($qa);
+        $admin = $this->createProjectMember('admin');
+        $this->createIntegrationFor($admin);
         Requirement::create(['project_id' => $this->project->id, 'code' => 'PROJ-1', 'type' => 'funcional', 'title' => 'Criar repositório Git']);
 
         Http::fake(['api.atlassian.com/*' => Http::response(['issues' => [
             ['key' => 'PROJ-1', 'fields' => ['summary' => 'Criar repositório Git', 'issuetype' => ['name' => 'Task']]],
         ]])]);
 
-        $this->actingAs($qa)->post(route('jira.import'), [
+        $this->actingAs($admin)->post(route('jira.import'), [
             'project_key' => 'PROJ',
             'issue_types' => ['Task'],
             'issue_keys' => ['PROJ-1'],
@@ -461,10 +463,10 @@ class JiraIntegrationControllerTest extends TestCase
 
     public function test_import_requires_at_least_one_issue_type(): void
     {
-        $qa = $this->createProjectMember('qa');
-        $this->createIntegrationFor($qa);
+        $admin = $this->createProjectMember('admin');
+        $this->createIntegrationFor($admin);
 
-        $response = $this->actingAs($qa)->post(route('jira.import'), [
+        $response = $this->actingAs($admin)->post(route('jira.import'), [
             'project_key' => 'PROJ',
             'issue_types' => [],
         ]);
@@ -475,14 +477,14 @@ class JiraIntegrationControllerTest extends TestCase
 
     public function test_import_only_asks_jira_for_the_selected_issue_types(): void
     {
-        $qa = $this->createProjectMember('qa');
-        $this->createIntegrationFor($qa);
+        $admin = $this->createProjectMember('admin');
+        $this->createIntegrationFor($admin);
 
         Http::fake([
             'api.atlassian.com/*' => Http::response(['issues' => []]),
         ]);
 
-        $this->actingAs($qa)->post(route('jira.import'), [
+        $this->actingAs($admin)->post(route('jira.import'), [
             'project_key' => 'PROJ',
             'issue_types' => ['Epic', 'Story'],
             'issue_keys' => ['PROJ-1'],
@@ -496,8 +498,8 @@ class JiraIntegrationControllerTest extends TestCase
 
     public function test_preview_classifies_issues_as_new_existing_or_deleted_here(): void
     {
-        $qa = $this->createProjectMember('qa');
-        $this->createIntegrationFor($qa);
+        $admin = $this->createProjectMember('admin');
+        $this->createIntegrationFor($admin);
         Requirement::create(['project_id' => $this->project->id, 'code' => 'PROJ-1', 'type' => 'funcional', 'title' => 'Já importado']);
         JiraExcludedIssue::create(['project_id' => $this->project->id, 'issue_key' => 'PROJ-3']);
 
@@ -507,7 +509,7 @@ class JiraIntegrationControllerTest extends TestCase
             ['key' => 'PROJ-3', 'fields' => ['summary' => 'Três', 'issuetype' => ['name' => 'Story']]],
         ]])]);
 
-        $this->actingAs($qa)
+        $this->actingAs($admin)
             ->getJson(route('jira.preview', ['projectKey' => 'PROJ', 'issue_types' => ['Story']]))
             ->assertOk()
             ->assertJsonPath('issues.0.state', 'existing')
@@ -521,10 +523,10 @@ class JiraIntegrationControllerTest extends TestCase
 
     public function test_preview_requires_issue_types(): void
     {
-        $qa = $this->createProjectMember('qa');
-        $this->createIntegrationFor($qa);
+        $admin = $this->createProjectMember('admin');
+        $this->createIntegrationFor($admin);
 
-        $this->actingAs($qa)
+        $this->actingAs($admin)
             ->get(route('jira.preview', ['projectKey' => 'PROJ']))
             ->assertSessionHasErrors('issue_types');
     }
@@ -540,15 +542,15 @@ class JiraIntegrationControllerTest extends TestCase
 
     public function test_import_only_brings_the_selected_issues_and_records_the_sync_date(): void
     {
-        $qa = $this->createProjectMember('qa');
-        $this->createIntegrationFor($qa);
+        $admin = $this->createProjectMember('admin');
+        $this->createIntegrationFor($admin);
 
         Http::fake(['api.atlassian.com/*' => Http::response(['issues' => [
             ['key' => 'PROJ-1', 'fields' => ['summary' => 'Um']],
             ['key' => 'PROJ-2', 'fields' => ['summary' => 'Dois']],
         ]])]);
 
-        $this->actingAs($qa)->post(route('jira.import'), [
+        $this->actingAs($admin)->post(route('jira.import'), [
             'project_key' => 'PROJ',
             'issue_types' => ['Story'],
             'issue_keys' => ['PROJ-2'],
@@ -560,10 +562,10 @@ class JiraIntegrationControllerTest extends TestCase
 
     public function test_import_requires_at_least_one_selected_issue(): void
     {
-        $qa = $this->createProjectMember('qa');
-        $this->createIntegrationFor($qa);
+        $admin = $this->createProjectMember('admin');
+        $this->createIntegrationFor($admin);
 
-        $this->actingAs($qa)->post(route('jira.import'), [
+        $this->actingAs($admin)->post(route('jira.import'), [
             'project_key' => 'PROJ',
             'issue_types' => ['Story'],
             'issue_keys' => [],
@@ -572,15 +574,15 @@ class JiraIntegrationControllerTest extends TestCase
 
     public function test_ticking_an_issue_deleted_here_brings_it_back(): void
     {
-        $qa = $this->createProjectMember('qa');
-        $this->createIntegrationFor($qa);
+        $admin = $this->createProjectMember('admin');
+        $this->createIntegrationFor($admin);
         JiraExcludedIssue::create(['project_id' => $this->project->id, 'issue_key' => 'PROJ-3']);
 
         Http::fake(['api.atlassian.com/*' => Http::response(['issues' => [
             ['key' => 'PROJ-3', 'fields' => ['summary' => 'Três']],
         ]])]);
 
-        $this->actingAs($qa)->post(route('jira.import'), [
+        $this->actingAs($admin)->post(route('jira.import'), [
             'project_key' => 'PROJ',
             'issue_types' => ['Story'],
             'issue_keys' => ['PROJ-3'],
@@ -592,21 +594,21 @@ class JiraIntegrationControllerTest extends TestCase
 
     public function test_integration_page_shows_the_last_import_date(): void
     {
-        $qa = $this->createProjectMember('qa');
-        $this->createIntegrationFor($qa);
+        $admin = $this->createProjectMember('admin');
+        $this->createIntegrationFor($admin);
         Requirement::create(['project_id' => $this->project->id, 'code' => 'PROJ-1', 'type' => 'funcional', 'title' => 'Um'])
             ->forceFill(['jira_synced_at' => now()])->save();
 
         Http::fake(['api.atlassian.com/*' => Http::response(['values' => []])]);
 
-        $this->actingAs($qa)->get(route('jira.edit'))
+        $this->actingAs($admin)->get(route('jira.edit'))
             ->assertInertia(fn (Assert $page) => $page->whereNot('last_synced_at', null));
     }
 
-    public function test_qa_can_fetch_issue_types_for_a_project(): void
+    public function test_an_administrator_can_fetch_issue_types_for_a_project(): void
     {
-        $qa = $this->createProjectMember('qa');
-        $this->createIntegrationFor($qa);
+        $admin = $this->createProjectMember('admin');
+        $this->createIntegrationFor($admin);
 
         Http::fake([
             'api.atlassian.com/*/project/PROJ' => Http::response(['id' => '10000', 'key' => 'PROJ']),
@@ -618,7 +620,7 @@ class JiraIntegrationControllerTest extends TestCase
             ]),
         ]);
 
-        $response = $this->actingAs($qa)->get(route('jira.issue-types', ['projectKey' => 'PROJ']));
+        $response = $this->actingAs($admin)->get(route('jira.issue-types', ['projectKey' => 'PROJ']));
 
         $response->assertOk();
         $response->assertExactJson([

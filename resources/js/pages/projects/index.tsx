@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Spinner } from '@/components/ui/spinner';
 import { cn } from '@/lib/utils';
 import { index as projectsIndex } from '@/routes/projects';
 import { show as projectsShow } from '@/routes/projects';
@@ -69,10 +70,7 @@ export default function ProjectsIndex({
                     <h2 className="text-sm font-semibold">Join a project</h2>
                     <Card>
                         <CardContent>
-                            <form
-                                onSubmit={joinProject}
-                                className="space-y-4"
-                            >
+                            <form onSubmit={joinProject} className="space-y-4">
                                 <p className="text-sm text-muted-foreground">
                                     Paste the invitation link or token sent by
                                     the project owner to get access.
@@ -95,9 +93,7 @@ export default function ProjectsIndex({
                                     />
                                     <InputError message={inviteError} />
                                 </div>
-                                <Button type="submit">
-                                    Join project
-                                </Button>
+                                <Button type="submit">Join project</Button>
                             </form>
                         </CardContent>
                     </Card>
@@ -128,7 +124,7 @@ export default function ProjectsIndex({
                                                     type="submit"
                                                     disabled={processing}
                                                     className={cn(
-                                                        'grid w-full min-w-0 gap-3 rounded-lg border px-4 py-3 text-left transition-colors sm:grid-cols-[minmax(0,1fr)_8rem] sm:items-center',
+                                                        'grid w-full min-w-0 gap-3 rounded-lg border px-4 py-3 text-left transition-colors sm:grid-cols-[minmax(0,1fr)_11rem] sm:items-center',
                                                         isCurrent
                                                             ? 'border-primary bg-primary/5'
                                                             : 'hover:border-primary/40',
@@ -148,11 +144,26 @@ export default function ProjectsIndex({
                                                             </Badge>
                                                         )}
                                                     </span>
-                                                    <span className="text-sm text-muted-foreground">
-                                                        <span className="mr-2 font-medium text-foreground sm:hidden">
-                                                            Role:
+                                                    <span className="flex flex-col text-sm text-muted-foreground">
+                                                        <span>
+                                                            <span className="mr-2 font-medium text-foreground sm:hidden">
+                                                                Role:
+                                                            </span>
+                                                            {project.role
+                                                                ?.name ??
+                                                                'No role'}
                                                         </span>
-                                                        {project.role?.name ?? 'No role'}
+
+                                                        <span className="text-xs">
+                                                            {
+                                                                project.test_cases_count
+                                                            }{' '}
+                                                            case(s)
+                                                            {project.last_activity_at &&
+                                                                ` · updated ${new Date(
+                                                                    project.last_activity_at,
+                                                                ).toLocaleDateString()}`}
+                                                        </span>
                                                     </span>
                                                 </button>
                                             )}
@@ -189,8 +200,7 @@ export default function ProjectsIndex({
                                 </p>
                                 <p className="max-w-sm text-sm text-muted-foreground">
                                     Ask a project owner to send you an
-                                    invitation link, or create your own
-                                    project.
+                                    invitation link, or create your own project.
                                 </p>
                             </CardContent>
                         </Card>
@@ -206,9 +216,9 @@ export default function ProjectsIndex({
                         {({ processing, errors }) => (
                             <>
                                 <p className="text-sm text-muted-foreground">
-                                    After creating, you can generate a
-                                    revocable invitation link for each person
-                                    on the project page.
+                                    After creating, you can generate a revocable
+                                    invitation link for each person on the
+                                    project page.
                                 </p>
                                 <div className="grid gap-2">
                                     <Label htmlFor="name">Project name</Label>

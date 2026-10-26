@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\Permission;
 use App\Http\Requests\Requirements\StoreRequirementRequest;
 use App\Http\Requests\Requirements\UpdateRequirementRequest;
 use App\Models\JiraExcludedIssue;
@@ -19,20 +20,41 @@ class RequirementController extends Controller
      */
     public function index(Request $request): Response
     {
+        $project = Project::current();
+
+        /**
+         * Requirements that came from Jira keep a link back to their issue,
+         * and stop being refreshed once the site is disconnected. The list
+         * says both things so nobody edits an imported requirement expecting
+         * it to travel back to Jira.
+         */
+        $integration = $project->jiraIntegration;
+
         return Inertia::render('requirements/index', [
-            /** Every member reads the list; only QA and admins change it. */
-            'canManage' => $request->user()->canManageAccess(),
-            'requirements' => Project::current()->requirements()
+            /** Every member reads the list; changing it needs the permission. */
+            'canManage' => $request->user()->hasPermission(Permission::ManageRequirements),
+            'jiraConnected' => $integration !== null,
+            'requirements' => $project->requirements()
                 ->withCount([
                     'testCases',
                     'testCases as passed_test_cases_count' => fn ($query) => $query
                         ->whereHas('latestExecution', fn ($query) => $query->where('status', 'APROVADO')),
                 ])
-                ->with('creator:id,name')
-                ->get(['id', 'code', 'type', 'jira_issue_type', 'title', 'description', 'priority', 'created_by'])
+                ->with([
+                    'creator:id,name',
+                    /** Named in the edit modal so the impact of a change is concrete. */
+                    'testCases' => fn ($query) => $query
+                        ->whereNull('test_cases.deleted_at')
+                        ->orderBy('title')
+                        ->select(['test_cases.id', 'test_cases.title']),
+                ])
+                ->get(['id', 'code', 'type', 'jira_issue_type', 'jira_synced_at', 'title', 'description', 'priority', 'created_by'])
                 ->map(fn (Requirement $requirement): array => [
                     ...$requirement->toArray(),
                     'status' => Requirement::coverageStatus($requirement->test_cases_count, $requirement->passed_test_cases_count),
+                    'jira_url' => $requirement->jira_synced_at !== null
+                        ? $integration?->issueUrl($requirement->code)
+                        : null,
                 ])
                 ->sortBy('code', SORT_NATURAL | SORT_FLAG_CASE)
                 ->values(),
@@ -90,8 +112,18 @@ class RequirementController extends Controller
         $this->ensureBelongsToCurrentProject($requirement);
 
         $code = $requirement->code;
+        $fromJira = $requirement->jira_synced_at !== null;
 
-        if ($requirement->jira_synced_at !== null) {
+        /**
+         * Removing an imported requirement only removes it here. The issue
+         * stays in Jira, and it is recorded as excluded so the next import
+         * does not bring it back.
+         */
+        $jiraNote = $fromJira
+            ? ' '.__('The Jira issue is untouched, and it will not be imported again.')
+            : '';
+
+        if ($fromJira) {
             JiraExcludedIssue::query()->firstOrCreate([
                 'project_id' => $requirement->project_id,
                 'issue_key' => $code,
@@ -103,7 +135,7 @@ class RequirementController extends Controller
 
             Inertia::flash('toast', [
                 'type' => 'success',
-                'message' => __('Requirement ":code" deleted.', ['code' => $code]),
+                'message' => __('Requirement ":code" deleted.', ['code' => $code]).$jiraNote,
             ]);
 
             return back();
@@ -113,7 +145,7 @@ class RequirementController extends Controller
 
         Inertia::flash('toast', [
             'type' => 'success',
-            'message' => __('Requirement ":code" archived.', ['code' => $code]),
+            'message' => __('Requirement ":code" archived.', ['code' => $code]).$jiraNote,
             /** Undoing restores the requirement, and with it every link it had. */
             'undo' => [
                 'url' => route('requirements.restore', $requirement, false),

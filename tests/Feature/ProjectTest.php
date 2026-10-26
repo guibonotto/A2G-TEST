@@ -82,12 +82,12 @@ class ProjectTest extends TestCase
 
     public function test_the_same_user_can_hold_different_roles_in_different_projects(): void
     {
-        $qaProject = Project::factory()->create();
+        $adminProject = Project::factory()->create();
         $viewerProject = Project::factory()->create();
-        $user = $this->createUserWithRole('qa', $qaProject);
+        $user = $this->createUserWithRole('admin', $adminProject);
         $viewerProject->addMember($user, 'viewer');
 
-        $this->actingAs($user)->withSession(['current_project_id' => $qaProject->id])
+        $this->actingAs($user)->withSession(['current_project_id' => $adminProject->id])
             ->get(route('requirements.index'))->assertInertia(fn (Assert $page) => $page->where('canManage', true));
         $this->actingAs($user->fresh())->withSession(['current_project_id' => $viewerProject->id])
             ->get(route('requirements.index'))->assertInertia(fn (Assert $page) => $page->where('canManage', false));

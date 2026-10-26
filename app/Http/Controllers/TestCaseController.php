@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\Permission;
 use App\Http\Requests\TestCases\AssignTestCaseRequest;
 use App\Http\Requests\TestCases\LinkRequirementRequest;
 use App\Http\Requests\TestCases\StoreEvidenceRequest;
@@ -46,6 +47,7 @@ class TestCaseController extends Controller
         $situationId = $request->integer('situation_id') ?: null;
         $executionResult = $request->string('execution_result')->trim()->toString() ?: null;
         $assignedToMe = $request->boolean('assigned_to_me');
+        $requirementId = $request->integer('requirement_id') ?: null;
 
         $testCases = TestCase::query()
             ->where('project_id', $project->id)
@@ -84,6 +86,10 @@ class TestCaseController extends Controller
                 $query->whereHas('latestExecution', fn ($query) => $query->where('status', $executionResult));
             })
             ->when($assignedToMe, fn ($query) => $query->where('assigned_to', $request->user()->id))
+            ->when($requirementId, fn ($query) => $query->whereHas(
+                'requirements',
+                fn ($query) => $query->where('requirements.id', $requirementId),
+            ))
             ->latest()
             ->get(['id', 'title', 'tested_method', 'classification_id', 'status_id', 'assigned_to', 'created_by', 'created_at']);
 
@@ -101,7 +107,12 @@ class TestCaseController extends Controller
                 'situation_id' => $situationId,
                 'execution_result' => $executionResult,
                 'assigned_to_me' => $assignedToMe,
+                'requirement_id' => $requirementId,
             ],
+            /** Lets the list assign straight from a row instead of opening the case. */
+            'assignableUsers' => $request->user()->canManageAccess()
+                ? $this->assignableUsers($project->id)
+                : [],
         ]);
     }
 
@@ -171,6 +182,7 @@ class TestCaseController extends Controller
     {
         $project = Project::current();
         abort_unless($project, 404);
+        abort_unless($request->user()->hasPermission(Permission::ManageTestCases, $project), 403);
 
         $testCase = DB::transaction(function () use ($request, $project) {
             $testCase = TestCase::create([
@@ -193,9 +205,18 @@ class TestCaseController extends Controller
             return $testCase;
         });
 
+        /**
+         * Landing on the case covers "see it" and puts "record execution"
+         * one click away; whoever is writing a batch of cases needs the way
+         * back to a blank form, which is what the toast offers.
+         */
         Inertia::flash('toast', [
             'type' => 'success',
             'message' => __('Test case ":title" created.', ['title' => $testCase->title]),
+            'link' => [
+                'url' => route('test-cases.create', absolute: false),
+                'label' => __('Create another'),
+            ],
         ]);
 
         return to_route('test-cases.show', $testCase);
@@ -266,6 +287,9 @@ class TestCaseController extends Controller
      */
     public function storeExecution(StoreExecutionRequest $request, TestCase $testCase): RedirectResponse
     {
+        /** Recording a result is a permission of its own, not a side effect of membership. */
+        abort_unless($request->user()->can('execute', $testCase), 403);
+
         DB::transaction(function () use ($request, $testCase): void {
             $execution = $testCase->executions()->create([
                 ...$request->safe()->except('evidences'),
@@ -301,6 +325,14 @@ class TestCaseController extends Controller
 
         return Inertia::render('test-cases/edit', [
             'testCase' => $testCase,
+            /**
+             * Read-only here: requirements are linked and unlinked on the
+             * detail screen, but hiding them entirely left the user unsure
+             * whether saving would drop them.
+             */
+            'linkedRequirements' => $testCase->requirements()
+                ->orderBy('code')
+                ->get(['requirements.id', 'requirements.code', 'requirements.title']),
             'hasExecutions' => $testCase->executions()->exists(),
             'version' => $testCase->version,
             'assignableUsers' => $request->user()->canManageAccess()

@@ -44,11 +44,38 @@ class AccountController extends Controller
      */
     public function update(UpdateAccountRoleRequest $request, User $account): RedirectResponse
     {
-        Project::current()->members()->updateExistingPivot($account->id, ['role_id' => $request->validated('role_id')]);
+        $project = Project::current();
+
+        /**
+         * Naming both ends makes the change auditable at a glance, and lets
+         * the reader spot a wrong pick before it matters.
+         */
+        $previousRoleId = $account->roleIn($project)?->id;
+        $previousRole = $previousRoleId !== null
+            ? Role::query()->find($previousRoleId)?->name
+            : null;
+
+        $newRoleId = $request->validated('role_id');
+
+        $project->members()->updateExistingPivot($account->id, ['role_id' => $newRoleId]);
+
+        $newRole = $newRoleId !== null
+            ? Role::query()->find($newRoleId)?->name
+            : null;
 
         Inertia::flash('toast', [
             'type' => 'success',
-            'message' => __('Role of ":name" updated.', ['name' => $account->name]),
+            'message' => __(':name: :from to :to.', [
+                'name' => $account->name,
+                'from' => $previousRole ?? __('No role'),
+                'to' => $newRole ?? __('No role'),
+            ]),
+            /** Putting the previous role back is one click, not a re-pick. */
+            'undo' => $previousRoleId !== $newRoleId ? [
+                'url' => route('accounts.update', $account, false),
+                'method' => 'put',
+                'data' => ['role_id' => $previousRoleId],
+            ] : null,
         ]);
 
         return back();

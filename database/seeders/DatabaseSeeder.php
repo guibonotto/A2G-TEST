@@ -19,12 +19,16 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        $allPermissions = array_map(fn (Permission $permission) => $permission->value, Permission::cases());
-
+        /**
+         * Only the administrator gets the administrative permissions. QA keeps
+         * the testing ones: handing a tester the ability to manage accounts
+         * and roles made the two roles identical in everything but the label.
+         */
         $roles = [
-            ['name' => 'QA / Tester',   'slug' => 'qa', 'permissions' => $allPermissions],
-            ['name' => 'Developer',  'slug' => 'developer', 'permissions' => []],
-            ['name' => 'Administrator',  'slug' => 'admin', 'permissions' => $allPermissions],
+            ['name' => 'QA / Tester',   'slug' => 'qa', 'permissions' => Permission::forTesters()],
+            ['name' => 'Developer',  'slug' => 'developer', 'permissions' => Permission::forDevelopers()],
+            ['name' => 'Administrator',  'slug' => 'admin', 'permissions' => Permission::values()],
+            /** Read-only by definition: the viewer holds no permission at all. */
             ['name' => 'Viewer',   'slug' => 'viewer', 'permissions' => []],
         ];
 

@@ -127,12 +127,12 @@ class RequirementControllerTest extends TestCase
             ->get(route('requirements.index'))->assertRedirect(route('projects.index'));
     }
 
-    public function test_qa_can_view_the_requirement_list(): void
+    public function test_an_administrator_can_view_the_requirement_list(): void
     {
-        $qa = $this->createProjectMember('qa');
+        $admin = $this->createProjectMember('admin');
         $this->createRequirement(['title' => 'Cadastro de Caso de Teste']);
 
-        $this->actingAs($qa)->get(route('requirements.index'))
+        $this->actingAs($admin)->get(route('requirements.index'))
             ->assertInertia(fn (Assert $page) => $page
                 ->component('requirements/index')
                 ->where('canManage', true)
@@ -170,11 +170,11 @@ class RequirementControllerTest extends TestCase
             );
     }
 
-    public function test_qa_can_create_a_requirement(): void
+    public function test_an_administrator_can_create_a_requirement(): void
     {
-        $qa = $this->createProjectMember('qa');
+        $admin = $this->createProjectMember('admin');
 
-        $response = $this->actingAs($qa)->post(route('requirements.store'), [
+        $response = $this->actingAs($admin)->post(route('requirements.store'), [
             'code' => 'RF032',
             'type' => 'funcional',
             'title' => 'Novo requisito',
@@ -185,17 +185,17 @@ class RequirementControllerTest extends TestCase
         $response->assertRedirect();
         $this->assertDatabaseHas('requirements', [
             'code' => 'RF032',
-            'created_by' => $qa->id,
+            'created_by' => $admin->id,
             'project_id' => $this->project->id,
         ]);
     }
 
     public function test_requirement_creation_fails_with_duplicate_code(): void
     {
-        $qa = $this->createProjectMember('qa');
+        $admin = $this->createProjectMember('admin');
         $this->createRequirement();
 
-        $response = $this->actingAs($qa)->post(route('requirements.store'), [
+        $response = $this->actingAs($admin)->post(route('requirements.store'), [
             'code' => 'RF001',
             'type' => 'funcional',
             'title' => 'Duplicado',
@@ -206,10 +206,10 @@ class RequirementControllerTest extends TestCase
 
     public function test_the_same_code_can_exist_in_different_projects(): void
     {
-        $qa = $this->createProjectMember('qa');
+        $admin = $this->createProjectMember('admin');
         $this->createRequirement([], Project::factory()->create());
 
-        $this->actingAs($qa)->post(route('requirements.store'), [
+        $this->actingAs($admin)->post(route('requirements.store'), [
             'code' => 'RF001',
             'type' => 'funcional',
             'title' => 'Mesmo código, outro projeto',
@@ -221,9 +221,9 @@ class RequirementControllerTest extends TestCase
 
     public function test_requirement_creation_fails_with_invalid_type(): void
     {
-        $qa = $this->createProjectMember('qa');
+        $admin = $this->createProjectMember('admin');
 
-        $response = $this->actingAs($qa)->post(route('requirements.store'), [
+        $response = $this->actingAs($admin)->post(route('requirements.store'), [
             'code' => 'RF033',
             'type' => 'inexistente',
             'title' => 'Requisito inválido',
@@ -232,12 +232,12 @@ class RequirementControllerTest extends TestCase
         $response->assertSessionHasErrors('type');
     }
 
-    public function test_qa_can_update_a_requirement(): void
+    public function test_an_administrator_can_update_a_requirement(): void
     {
-        $qa = $this->createProjectMember('qa');
+        $admin = $this->createProjectMember('admin');
         $requirement = $this->createRequirement();
 
-        $response = $this->actingAs($qa)->put(route('requirements.update', $requirement), [
+        $response = $this->actingAs($admin)->put(route('requirements.update', $requirement), [
             'code' => 'RF001',
             'type' => 'funcional',
             'title' => 'Cadastro de Caso de Teste',
@@ -254,10 +254,10 @@ class RequirementControllerTest extends TestCase
 
     public function test_the_creation_toast_names_the_project(): void
     {
-        $qa = $this->createProjectMember('qa');
+        $admin = $this->createProjectMember('admin');
         $this->project->update(['name' => 'Projeto 2']);
 
-        $this->actingAs($qa)
+        $this->actingAs($admin)
             ->followingRedirects()
             ->post(route('requirements.store'), [
                 'code' => 'RF050',
@@ -273,11 +273,11 @@ class RequirementControllerTest extends TestCase
 
     public function test_the_update_toast_names_the_project(): void
     {
-        $qa = $this->createProjectMember('qa');
+        $admin = $this->createProjectMember('admin');
         $this->project->update(['name' => 'Projeto 2']);
         $requirement = $this->createRequirement();
 
-        $this->actingAs($qa)
+        $this->actingAs($admin)
             ->followingRedirects()
             ->put(route('requirements.update', $requirement), [
                 'code' => 'RF001',
@@ -293,15 +293,15 @@ class RequirementControllerTest extends TestCase
 
     public function test_a_requirement_needs_a_priority(): void
     {
-        $qa = $this->createProjectMember('qa');
+        $admin = $this->createProjectMember('admin');
 
-        $this->actingAs($qa)->post(route('requirements.store'), [
+        $this->actingAs($admin)->post(route('requirements.store'), [
             'code' => 'RF040',
             'type' => 'funcional',
             'title' => 'Sem prioridade',
         ])->assertSessionHasErrors('priority');
 
-        $this->actingAs($qa)->put(route('requirements.update', $this->createRequirement()), [
+        $this->actingAs($admin)->put(route('requirements.update', $this->createRequirement()), [
             'code' => 'RF001',
             'type' => 'funcional',
             'title' => 'Cadastro',
@@ -368,12 +368,12 @@ class RequirementControllerTest extends TestCase
         return $testCase;
     }
 
-    public function test_qa_can_delete_a_requirement(): void
+    public function test_an_administrator_can_delete_a_requirement(): void
     {
-        $qa = $this->createProjectMember('qa');
+        $admin = $this->createProjectMember('admin');
         $requirement = $this->createRequirement();
 
-        $response = $this->actingAs($qa)->delete(route('requirements.destroy', $requirement));
+        $response = $this->actingAs($admin)->delete(route('requirements.destroy', $requirement));
 
         $response->assertRedirect();
         $this->assertDatabaseMissing('requirements', ['id' => $requirement->id]);
@@ -381,10 +381,10 @@ class RequirementControllerTest extends TestCase
 
     public function test_a_requirement_without_linked_cases_is_deleted_for_good(): void
     {
-        $qa = $this->createProjectMember('qa');
+        $admin = $this->createProjectMember('admin');
         $requirement = $this->createRequirement();
 
-        $this->actingAs($qa)
+        $this->actingAs($admin)
             ->followingRedirects()
             ->delete(route('requirements.destroy', $requirement))
             ->assertInertia(fn (Assert $page) => $page
@@ -397,11 +397,11 @@ class RequirementControllerTest extends TestCase
 
     public function test_a_requirement_with_linked_cases_is_archived_and_keeps_its_links(): void
     {
-        $qa = $this->createProjectMember('qa');
+        $admin = $this->createProjectMember('admin');
         $requirement = $this->createRequirement();
-        $testCase = $this->createLinkedTestCase($requirement, $qa, 'APROVADO');
+        $testCase = $this->createLinkedTestCase($requirement, $admin, 'APROVADO');
 
-        $this->actingAs($qa)
+        $this->actingAs($admin)
             ->from(route('requirements.index'))
             ->followingRedirects()
             ->delete(route('requirements.destroy', $requirement))
@@ -419,13 +419,13 @@ class RequirementControllerTest extends TestCase
 
     public function test_restoring_brings_the_requirement_and_its_links_back(): void
     {
-        $qa = $this->createProjectMember('qa');
+        $admin = $this->createProjectMember('admin');
         $requirement = $this->createRequirement(['code' => 'AAAAAAA-1']);
         $requirement->forceFill(['jira_synced_at' => now()])->save();
-        $testCase = $this->createLinkedTestCase($requirement, $qa, 'APROVADO');
-        $this->actingAs($qa)->delete(route('requirements.destroy', $requirement));
+        $testCase = $this->createLinkedTestCase($requirement, $admin, 'APROVADO');
+        $this->actingAs($admin)->delete(route('requirements.destroy', $requirement));
 
-        $this->actingAs($qa)
+        $this->actingAs($admin)
             ->followingRedirects()
             ->patch(route('requirements.restore', $requirement))
             ->assertInertia(fn (Assert $page) => $page->hasFlash('toast.message', 'Requirement "AAAAAAA-1" restored.'));
@@ -437,11 +437,11 @@ class RequirementControllerTest extends TestCase
 
     public function test_requirements_of_another_project_cannot_be_restored(): void
     {
-        $qa = $this->createProjectMember('qa');
+        $admin = $this->createProjectMember('admin');
         $foreignRequirement = $this->createRequirement([], Project::factory()->create());
         $foreignRequirement->delete();
 
-        $this->actingAs($qa)->patch(route('requirements.restore', $foreignRequirement))->assertNotFound();
+        $this->actingAs($admin)->patch(route('requirements.restore', $foreignRequirement))->assertNotFound();
 
         $this->assertSoftDeleted($foreignRequirement);
     }
@@ -462,27 +462,27 @@ class RequirementControllerTest extends TestCase
 
     public function test_requirements_of_another_project_cannot_be_changed(): void
     {
-        $qa = $this->createProjectMember('qa');
+        $admin = $this->createProjectMember('admin');
         $foreignRequirement = $this->createRequirement([], Project::factory()->create());
 
-        $this->actingAs($qa)->put(route('requirements.update', $foreignRequirement), [
+        $this->actingAs($admin)->put(route('requirements.update', $foreignRequirement), [
             'code' => 'RF001',
             'type' => 'funcional',
             'title' => 'Alterado',
             'priority' => 'media',
         ])->assertNotFound();
-        $this->actingAs($qa)->delete(route('requirements.destroy', $foreignRequirement))->assertNotFound();
+        $this->actingAs($admin)->delete(route('requirements.destroy', $foreignRequirement))->assertNotFound();
 
         $this->assertDatabaseHas('requirements', ['id' => $foreignRequirement->id, 'title' => 'Cadastro']);
     }
 
     public function test_deleting_a_requirement_imported_from_jira_remembers_the_issue(): void
     {
-        $qa = $this->createProjectMember('qa');
+        $admin = $this->createProjectMember('admin');
         $requirement = $this->createRequirement(['code' => 'AAAAAAA-1', 'title' => 'Do Jira']);
         $requirement->forceFill(['jira_synced_at' => now()])->save();
 
-        $this->actingAs($qa)->delete(route('requirements.destroy', $requirement));
+        $this->actingAs($admin)->delete(route('requirements.destroy', $requirement));
 
         $this->assertDatabaseHas('jira_excluded_issues', [
             'project_id' => $this->project->id,

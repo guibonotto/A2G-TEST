@@ -5,7 +5,10 @@ import CopyButton from '@/components/copy-button';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { index as projectsIndex, show as projectsShow } from '@/routes/projects';
+import {
+    index as projectsIndex,
+    show as projectsShow,
+} from '@/routes/projects';
 import { index as testCasesIndex } from '@/routes/test-cases';
 
 type Member = { id: number; name: string; email: string };
@@ -18,6 +21,8 @@ type Role = { id: number; name: string; slug: string };
 type Project = {
     uuid: string;
     name: string;
+    /** Live test cases; drives whether this reads as onboarding or as a summary. */
+    testCaseCount: number;
     ownerId: number;
     isOwner: boolean;
     myRole: Role | null;
@@ -39,10 +44,15 @@ export default function ProjectsShow({
             <Head title={project.name} />
             <div className="mx-auto w-full max-w-2xl space-y-6">
                 <div className="flex items-start gap-3">
-                    <CheckCircle2 className="mt-1 size-6 shrink-0 text-success" aria-hidden="true" />
+                    <CheckCircle2
+                        className="mt-1 size-6 shrink-0 text-success"
+                        aria-hidden="true"
+                    />
                     <div>
                         <h1 className="text-2xl font-semibold tracking-tight">
-                            Project &ldquo;{project.name}&rdquo; is ready
+                            {project.testCaseCount === 0
+                                ? `Project “${project.name}” is ready`
+                                : project.name}
                         </h1>
                         <p className="mt-1 text-sm text-muted-foreground">
                             {project.isOwner
@@ -81,7 +91,7 @@ export default function ProjectsShow({
                             </div>
                             {inviteLink && (
                                 <div className="flex flex-wrap items-center gap-3 rounded-lg bg-muted px-4 py-3">
-                                    <code className="min-w-0 flex-1 break-all text-sm">
+                                    <code className="min-w-0 flex-1 text-sm break-all">
                                         {inviteLink}
                                     </code>
                                     <CopyButton
@@ -100,22 +110,34 @@ export default function ProjectsShow({
                                 {({ processing }) => (
                                     <div className="space-y-4">
                                         <div className="grid gap-2 sm:max-w-xs">
-                                            <Label htmlFor="role">Role for the invitee</Label>
+                                            <Label htmlFor="role">
+                                                Role for the invitee
+                                            </Label>
                                             <select
                                                 id="role"
                                                 name="role"
                                                 defaultValue="viewer"
-                                                className="border-input bg-background focus-visible:border-ring focus-visible:ring-ring/50 h-9 rounded-md border px-3 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
+                                                className="h-9 rounded-md border border-input bg-background px-3 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
                                             >
                                                 {roles.map((role) => (
-                                                    <option key={role.id} value={role.slug}>
+                                                    <option
+                                                        key={role.id}
+                                                        value={role.slug}
+                                                    >
                                                         {role.name}
                                                     </option>
                                                 ))}
                                             </select>
                                         </div>
-                                        <Button type="submit" disabled={processing}>
-                                            {processing && <span className="animate-spin">...</span>}
+                                        <Button
+                                            type="submit"
+                                            disabled={processing}
+                                        >
+                                            {processing && (
+                                                <span className="animate-spin">
+                                                    ...
+                                                </span>
+                                            )}
                                             Generate invitation link
                                         </Button>
                                     </div>
@@ -128,17 +150,33 @@ export default function ProjectsShow({
                 {project.isOwner && (
                     <Card>
                         <CardContent className="space-y-4">
-                            <p className="text-sm font-semibold">Project access</p>
+                            <p className="text-sm font-semibold">
+                                Project access
+                            </p>
                             <ul className="space-y-2">
                                 {project.members.map((member) => (
-                                    <li key={member.id} className="flex items-center gap-3 rounded-lg border px-3 py-2">
-                                        <UserRound className="size-4 text-muted-foreground" aria-hidden="true" />
+                                    <li
+                                        key={member.id}
+                                        className="flex items-center gap-3 rounded-lg border px-3 py-2"
+                                    >
+                                        <UserRound
+                                            className="size-4 text-muted-foreground"
+                                            aria-hidden="true"
+                                        />
                                         <span className="min-w-0 flex-1 truncate text-sm">
                                             {member.name} ({member.email})
                                         </span>
                                         {member.id !== project.ownerId && (
-                                            <Form {...ProjectController.removeMember.form([project.uuid, member.id])}>
-                                                <Button type="submit" variant="destructive" size="sm">
+                                            <Form
+                                                {...ProjectController.removeMember.form(
+                                                    [project.uuid, member.id],
+                                                )}
+                                            >
+                                                <Button
+                                                    type="submit"
+                                                    variant="destructive"
+                                                    size="sm"
+                                                >
                                                     Revoke access
                                                 </Button>
                                             </Form>
@@ -148,15 +186,29 @@ export default function ProjectsShow({
                             </ul>
                             {project.pendingInvites.length > 0 && (
                                 <div className="space-y-2 border-t pt-4">
-                                    <p className="text-sm font-medium">Pending invitations</p>
+                                    <p className="text-sm font-medium">
+                                        Pending invitations
+                                    </p>
                                     {project.pendingInvites.map((invite) => (
-                                        <Form key={invite.id} {...ProjectController.revokeInvite.form([project.uuid, invite.id])}>
+                                        <Form
+                                            key={invite.id}
+                                            {...ProjectController.revokeInvite.form(
+                                                [project.uuid, invite.id],
+                                            )}
+                                        >
                                             <div className="flex items-center gap-3 text-sm">
                                                 <span className="flex-1 text-muted-foreground">
                                                     Invitation link not used
-                                                    {invite.role && ` (${invite.role.name})`}
+                                                    {invite.role &&
+                                                        ` (${invite.role.name})`}
                                                 </span>
-                                                <Button type="submit" variant="outline" size="sm">Revoke link</Button>
+                                                <Button
+                                                    type="submit"
+                                                    variant="outline"
+                                                    size="sm"
+                                                >
+                                                    Revoke link
+                                                </Button>
                                             </div>
                                         </Form>
                                     ))}
@@ -168,11 +220,23 @@ export default function ProjectsShow({
 
                 <Card>
                     <CardContent className="space-y-4">
-                        <p className="text-sm font-semibold">Start working</p>
-                        <p className="text-sm text-muted-foreground">
-                            Your project is empty. Create the first test case to get going.
+                        <p className="text-sm font-semibold">
+                            {project.testCaseCount === 0
+                                ? 'Start working'
+                                : 'Test cases'}
                         </p>
-                        <Button asChild><Link href={testCasesIndex()}>Go to test cases</Link></Button>
+                        <p className="text-sm text-muted-foreground">
+                            {project.testCaseCount === 0
+                                ? 'Your project is empty. Create the first test case to get going.'
+                                : `${project.testCaseCount} test case(s) in this project.`}
+                        </p>
+                        <Button asChild>
+                            <Link href={testCasesIndex()}>
+                                {project.testCaseCount === 0
+                                    ? 'Create the first test case'
+                                    : 'Go to test cases'}
+                            </Link>
+                        </Button>
                     </CardContent>
                 </Card>
             </div>

@@ -19,6 +19,12 @@ export type RequirementListItem = Requirement & {
     test_cases_count: number;
     /** Derived from coverage: linked test cases and their latest runs. */
     status: RequirementStatus;
+    /** When the requirement last came in from Jira; null when created here. */
+    jira_synced_at: string | null;
+    /** Link to the Jira issue; null when created here or once disconnected. */
+    jira_url: string | null;
+    /** The cases this requirement covers, named in the edit modal. */
+    test_cases: { id: number; title: string }[];
 };
 
 export type RequirementOption = {

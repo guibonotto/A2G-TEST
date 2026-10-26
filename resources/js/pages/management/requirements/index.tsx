@@ -1,11 +1,18 @@
 // import { Form, Head, Link, useForm, usePage } from '@inertiajs/react';
 import { Form, Head, Link, useForm, usePage } from '@inertiajs/react';
-import { ChevronDown, FileText, MoreHorizontal, Plus } from 'lucide-react';
+import {
+    ChevronDown,
+    ExternalLink,
+    FileText,
+    MoreHorizontal,
+    Plus,
+} from 'lucide-react';
 import type { FormEvent } from 'react';
 import { useState } from 'react';
 import RequirementController from '@/actions/App/Http/Controllers/RequirementController';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -35,6 +42,10 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { edit as jiraEdit } from '@/routes/jira';
 import { index } from '@/routes/requirements';
+import {
+    index as testCasesIndex,
+    show as testCaseShow,
+} from '@/routes/test-cases';
 import type {
     RequirementListItem,
     RequirementPriority,
@@ -43,6 +54,8 @@ import type {
 } from '@/types';
 
 type Props = {
+    /** False once the Jira site is disconnected: imported items stop syncing. */
+    jiraConnected: boolean;
     requirements: RequirementListItem[];
 };
 
@@ -93,6 +106,11 @@ const DEFAULT_PRIORITY: RequirementPriority = 'media';
  * Sort by the numeric tail of the code instead of lexicographically, so
  * PROJ-2 comes before PROJ-19.
  */
+/** Date of the last import from Jira, in the viewer's locale. */
+function formatSyncedAt(value: string): string {
+    return new Date(value).toLocaleDateString();
+}
+
 function compareCodes(a: string, b: string): number {
     const parse = (code: string): [string, number] => {
         const match = /^(.*?)(\d+)$/.exec(code.trim());
@@ -117,13 +135,64 @@ function RequirementForm({
     form,
     idPrefix,
     onSubmit,
+    requirement,
 }: {
     form: ReturnType<typeof useForm<RequirementFormData>>;
     idPrefix: string;
     onSubmit: (e: FormEvent) => void;
+    /** Present when editing; absent when creating a new requirement. */
+    requirement?: RequirementListItem;
 }) {
+    const fromJira = requirement?.jira_synced_at != null;
+
     return (
         <form onSubmit={onSubmit} className="flex flex-col gap-4">
+            {requirement && fromJira && (
+                <Alert>
+                    <AlertDescription>
+                        Imported from Jira on{' '}
+                        {formatSyncedAt(requirement.jira_synced_at as string)}.
+                        Changes made here are not sent back to Jira.
+                        {requirement.jira_url && (
+                            <>
+                                {' '}
+                                <a
+                                    href={requirement.jira_url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="font-medium text-primary underline-offset-4 hover:underline"
+                                >
+                                    Open in Jira
+                                </a>
+                            </>
+                        )}
+                    </AlertDescription>
+                </Alert>
+            )}
+
+            {requirement && requirement.test_cases_count > 0 && (
+                <div className="rounded-lg bg-muted px-4 py-3 text-sm">
+                    <p className="text-muted-foreground">
+                        Editing the title or description changes what these{' '}
+                        {requirement.test_cases_count} test case(s) are said to
+                        cover:
+                    </p>
+
+                    <ul className="mt-2 flex flex-col gap-1">
+                        {requirement.test_cases.map((testCase) => (
+                            <li key={testCase.id}>
+                                <Link
+                                    href={testCaseShow(testCase.id)}
+                                    className="font-medium text-primary underline-offset-4 hover:underline"
+                                >
+                                    {testCase.title}
+                                </Link>
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            )}
+
             <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
                     <Label htmlFor={`${idPrefix}-code`}>Code (required)</Label>
@@ -132,8 +201,24 @@ function RequirementForm({
                         value={form.data.code}
                         onChange={(e) => form.setData('code', e.target.value)}
                         placeholder="e.g. RF-001"
-                        autoFocus
+                        autoFocus={!fromJira}
+                        readOnly={fromJira}
+                        aria-describedby={
+                            fromJira ? `${idPrefix}-code-hint` : undefined
+                        }
+                        className={fromJira ? 'bg-muted' : undefined}
                     />
+                    {/* The code is the Jira issue key: editing it would point
+                        the requirement at a different issue, or at none. */}
+                    {fromJira && (
+                        <p
+                            id={`${idPrefix}-code-hint`}
+                            className="text-sm text-muted-foreground"
+                        >
+                            This is the Jira issue key and cannot be changed
+                            here.
+                        </p>
+                    )}
                     <InputError message={form.errors.code} />
                 </div>
 
@@ -401,6 +486,9 @@ export default function ManageRequirements({ requirements }: Props) {
                                         </th>
                                     )}
                                     <th className="px-4 py-3 font-medium">
+                                        Origin
+                                    </th>
+                                    <th className="px-4 py-3 font-medium">
                                         Coverage
                                     </th>
                                     <th className="px-4 py-3 font-medium">
@@ -469,10 +557,42 @@ function RequirementRow({
                 </td>
             )}
             <td className="px-4 py-3">
+                {requirement.jira_synced_at === null ? (
+                    <span className="text-muted-foreground">Created here</span>
+                ) : requirement.jira_url ? (
+                    <a
+                        href={requirement.jira_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1 font-medium text-primary underline-offset-4 hover:underline"
+                        title={`Imported from Jira on ${formatSyncedAt(requirement.jira_synced_at)}`}
+                    >
+                        Jira
+                        <ExternalLink className="size-3" aria-hidden="true" />
+                    </a>
+                ) : (
+                    <Badge
+                        variant="secondary"
+                        title="The Jira site is disconnected, so this requirement is no longer updated."
+                    >
+                        Jira (disconnected)
+                    </Badge>
+                )}
+            </td>
+            <td className="px-4 py-3">
                 {requirement.test_cases_count === 0 ? (
                     <Badge variant="warning">No coverage</Badge>
                 ) : (
-                    `${requirement.test_cases_count} case(s)`
+                    /* The number is the fastest route to the cases that
+                       actually cover this requirement. */
+                    <Link
+                        href={testCasesIndex({
+                            query: { requirement_id: requirement.id },
+                        })}
+                        className="font-medium text-primary underline-offset-4 hover:underline"
+                    >
+                        {requirement.test_cases_count} case(s)
+                    </Link>
                 )}
             </td>
             <td className="px-4 py-3">
@@ -521,6 +641,7 @@ function RequirementRow({
                                 form={editForm}
                                 idPrefix={`edit-${requirement.id}`}
                                 onSubmit={submitEdit}
+                                requirement={requirement}
                             />
                         </DialogContent>
                     </Dialog>

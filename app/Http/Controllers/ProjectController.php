@@ -21,7 +21,13 @@ class ProjectController extends Controller
      */
     public function index(Request $request): Response
     {
+        /**
+         * The list showed names only, so two projects looked identical. The
+         * count and the last activity are what tell them apart at a glance.
+         */
         $projects = $request->user()->projects()
+            ->withCount(['testCases' => fn ($query) => $query->whereNull('test_cases.deleted_at')])
+            ->withMax(['testCases as last_activity_at' => fn ($query) => $query->whereNull('test_cases.deleted_at')], 'updated_at')
             ->orderBy('name')
             ->get(['projects.id', 'projects.uuid', 'projects.name', 'projects.owner_id']);
         $roles = Role::query()
@@ -37,6 +43,8 @@ class ProjectController extends Controller
                 'name' => $project->name,
                 'isOwner' => $project->owner_id === $request->user()->id,
                 'role' => $roles->get($project->pivot->role_id)?->only(['name', 'slug']),
+                'test_cases_count' => $project->test_cases_count,
+                'last_activity_at' => $project->last_activity_at,
             ]),
         ]);
     }
@@ -76,6 +84,10 @@ class ProjectController extends Controller
                 ->where('token_hash', hash('sha256', $token))
                 ->whereNull('revoked_at')
                 ->whereNull('accepted_at')
+                /** An expired link is as good as revoked. */
+                ->where(fn ($query) => $query
+                    ->whereNull('expires_at')
+                    ->orWhere('expires_at', '>', now()))
                 ->with('project')
                 ->lockForUpdate()
                 ->firstOrFail();
@@ -129,6 +141,7 @@ class ProjectController extends Controller
         $project->invitations()->create([
             'role_id' => $role->id,
             'token_hash' => hash('sha256', $token),
+            'expires_at' => now()->addDays(ProjectInvitation::LIFETIME_IN_DAYS),
         ]);
 
         session()->flash('invite_link', route('projects.invite', $token));
@@ -183,10 +196,14 @@ class ProjectController extends Controller
 
         $isOwner = $project->owner_id === $request->user()->id;
 
+        /** Drives the onboarding card: a project with cases is not "ready to start". */
+        $testCaseCount = $project->testCases()->count();
+
         return Inertia::render('projects/show', [
             'project' => [
                 'uuid' => $project->uuid,
                 'name' => $project->name,
+                'testCaseCount' => $testCaseCount,
                 'ownerId' => $project->owner_id,
                 'isOwner' => $isOwner,
                 'myRole' => $request->user()->roleIn($project)?->only(['id', 'name', 'slug']),

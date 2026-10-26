@@ -28,9 +28,12 @@ abstract class TestCase extends BaseTestCase
     {
         Role::firstOrCreate(['slug' => $slug], [
             'name' => $slug,
-            'permissions' => in_array($slug, ['qa', 'admin'], true)
-                ? array_column(Permission::cases(), 'value')
-                : [],
+            'permissions' => match ($slug) {
+                'admin' => Permission::values(),
+                'qa' => Permission::forTesters(),
+                'developer' => Permission::forDevelopers(),
+                default => [],
+            },
         ]);
 
         $user = User::factory()->create();

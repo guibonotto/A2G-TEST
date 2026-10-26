@@ -17,6 +17,11 @@ export type FlashToast = {
         method: 'post' | 'put' | 'patch' | 'delete';
         data: Record<string, unknown>;
     } | null;
+    /** A follow-up the toast offers as a button, such as "Create another". */
+    link?: {
+        url: string;
+        label: string;
+    } | null;
 };
 
 export type AuthLayoutProps = {

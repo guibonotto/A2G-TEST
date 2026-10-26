@@ -1,4 +1,5 @@
 import { Head, router, usePage } from '@inertiajs/react';
+import { Lock } from 'lucide-react';
 import { useState } from 'react';
 import Heading from '@/components/heading';
 import { Badge } from '@/components/ui/badge';
@@ -167,10 +168,28 @@ export default function ManageAccounts({ accounts, roles }: Props) {
                                                             </SelectContent>
                                                         </Select>
                                                     ) : (
-                                                        <span className="inline-flex h-9 w-48 items-center text-muted-foreground">
+                                                        /* A plain grey name
+                                                           looked like a
+                                                           rendering glitch;
+                                                           the lock says the
+                                                           row is governed by
+                                                           the hierarchy. */
+                                                        <span
+                                                            className="inline-flex h-9 w-48 items-center gap-1.5 text-muted-foreground"
+                                                            title="Only someone whose role outranks this one can change it."
+                                                        >
+                                                            <Lock
+                                                                className="size-3.5 shrink-0"
+                                                                aria-hidden="true"
+                                                            />
                                                             {account.role
                                                                 ?.name ??
                                                                 'No role'}
+                                                            <span className="sr-only">
+                                                                (you cannot
+                                                                change this
+                                                                role)
+                                                            </span>
                                                         </span>
                                                     )}
                                                 </div>

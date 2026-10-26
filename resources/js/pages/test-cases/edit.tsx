@@ -20,6 +20,8 @@ import type { AssignableUser, TestCaseDetail, TestCaseStatus } from '@/types';
 
 type Props = {
     testCase: TestCaseDetail;
+    /** Shown read-only: linking happens on the detail screen. */
+    linkedRequirements: { id: number; code: string; title: string }[];
     hasExecutions: boolean;
     version: number;
     assignableUsers: AssignableUser[];
@@ -44,6 +46,7 @@ const emptyStep: StepForm = { description: '', expected_result: '' };
 
 export default function EditTestCase({
     testCase,
+    linkedRequirements,
     hasExecutions,
     version,
     assignableUsers,
@@ -392,6 +395,55 @@ export default function EditTestCase({
                                 </div>
                             ))}
                             */}
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardContent className="flex flex-col gap-3">
+                            <div>
+                                <h2 className="text-sm font-semibold">
+                                    Linked requirements (
+                                    {linkedRequirements.length})
+                                </h2>
+
+                                <p className="mt-1 text-sm text-muted-foreground">
+                                    Linking and unlinking happen on the test
+                                    case page, so they stay in one place.
+                                </p>
+                            </div>
+
+                            {linkedRequirements.length > 0 ? (
+                                <ul className="flex flex-col gap-1">
+                                    {linkedRequirements.map((requirement) => (
+                                        <li
+                                            key={requirement.id}
+                                            className="text-sm"
+                                        >
+                                            <span className="font-medium">
+                                                {requirement.code}
+                                            </span>{' '}
+                                            <span className="text-muted-foreground">
+                                                {requirement.title}
+                                            </span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            ) : (
+                                <p className="text-sm text-muted-foreground">
+                                    No requirements linked.
+                                </p>
+                            )}
+
+                            <Button
+                                type="button"
+                                variant="link"
+                                asChild
+                                className="w-fit px-0"
+                            >
+                                <Link href={show(testCase.id)}>
+                                    Manage on the test case page
+                                </Link>
+                            </Button>
                         </CardContent>
                     </Card>
 

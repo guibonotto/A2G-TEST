@@ -51,6 +51,36 @@ class Role extends Model
     }
 
     /**
+     * Sort key that puts the most powerful role first. Unknown slugs land at
+     * the end rather than silently tying with the viewer.
+     */
+    public static function rankOf(string $slug): int
+    {
+        return -(self::LEVELS[$slug] ?? -1);
+    }
+
+    /**
+     * The hierarchy, strongest first, so the screens can show the rule that
+     * decides who may edit whom instead of leaving it to be inferred.
+     *
+     * @return array<int, string>
+     */
+    public static function hierarchy(): array
+    {
+        $levels = self::LEVELS;
+        arsort($levels);
+
+        return array_values(
+            self::query()
+                ->whereIn('slug', array_keys($levels))
+                ->pluck('name', 'slug')
+                ->sortBy(fn (string $name, string $slug): int => self::rankOf($slug))
+                ->values()
+                ->all()
+        );
+    }
+
+    /**
      * Permission sets already looked up in this request, keyed by project id.
      *
      * @var array<int, array<int, string>|null>

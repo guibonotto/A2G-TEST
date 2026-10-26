@@ -26,7 +26,9 @@ class EvidenceTest extends TestCase
         $classification = Classification::firstOrCreate(['name' => 'Integration']);
 
         $project = Project::factory()->create();
-        $project->members()->syncWithoutDetaching($user);
+
+        /** Memberships always carry a role in the product, so they do here too. */
+        $project->addMember($user, 'qa');
         $this->withSession(['current_project_id' => $project->id]);
 
         return TestCaseModel::create([

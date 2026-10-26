@@ -22,13 +22,14 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { statusColorVar } from '@/lib/status-color';
 import { executionStatusLabel } from '@/lib/execution-status';
+import { statusColorVar } from '@/lib/status-color';
 import { testCaseStatusLabel } from '@/lib/test-case-status';
-import { create, index, show } from '@/routes/test-cases';
+import { assign as assign_, create, index, show } from '@/routes/test-cases';
 import type {
     Classification,
     TestCaseFilters,
+    AssignableUser,
     TestCaseListItem,
     TestCaseStatus,
 } from '@/types';
@@ -39,7 +40,79 @@ type Props = {
     statuses: TestCaseStatus[];
     executionResults: string[];
     filters: TestCaseFilters;
+    /** Empty for members who cannot assign; the cell stays read-only then. */
+    assignableUsers: AssignableUser[];
 };
+
+const UNASSIGNED = 'unassigned';
+
+/**
+ * Assigning from the row: the list is where you notice a case has nobody on
+ * it, and opening the case just to pick a name was the only way to fix that.
+ */
+function AssigneeCell({
+    testCase,
+    assignableUsers,
+}: {
+    testCase: TestCaseListItem;
+    assignableUsers: AssignableUser[];
+}) {
+    const [saving, setSaving] = useState(false);
+
+    if (assignableUsers.length === 0) {
+        return testCase.assignee ? (
+            <span>{testCase.assignee.name}</span>
+        ) : (
+            <span className="text-muted-foreground">Unassigned</span>
+        );
+    }
+
+    function assign(value: string) {
+        setSaving(true);
+
+        router.patch(
+            assign_.url(testCase.id),
+            {
+                assigned_to: value === UNASSIGNED ? null : Number(value),
+            },
+            {
+                preserveScroll: true,
+                preserveState: true,
+                onFinish: () => setSaving(false),
+            },
+        );
+    }
+
+    return (
+        <Select
+            value={
+                testCase.assignee ? String(testCase.assignee.id) : UNASSIGNED
+            }
+            onValueChange={assign}
+            disabled={saving}
+        >
+            <SelectTrigger
+                size="sm"
+                className="w-40"
+                aria-label={`Assignee for ${testCase.title}`}
+            >
+                <SelectValue />
+            </SelectTrigger>
+
+            <SelectContent>
+                <SelectItem value={UNASSIGNED}>
+                    <span className="text-muted-foreground">Unassigned</span>
+                </SelectItem>
+
+                {assignableUsers.map((user) => (
+                    <SelectItem key={user.id} value={String(user.id)}>
+                        {user.name}
+                    </SelectItem>
+                ))}
+            </SelectContent>
+        </Select>
+    );
+}
 
 export default function TestCaseIndex({
     testCases,
@@ -47,6 +120,7 @@ export default function TestCaseIndex({
     statuses,
     executionResults,
     filters,
+    assignableUsers,
 }: Props) {
     const { currentProject } = usePage().props;
     const [search, setSearch] = useState(filters.search);
@@ -345,6 +419,9 @@ export default function TestCaseIndex({
                                         Requirements
                                     </th>
                                     <th className="px-4 py-3 font-medium">
+                                        Tested method
+                                    </th>
+                                    <th className="px-4 py-3 font-medium">
                                         Assignee
                                     </th>
                                     <th className="px-4 py-3 font-medium">
@@ -475,12 +552,16 @@ export default function TestCaseIndex({
                                                 </Badge>
                                             )}
                                         </td>
+                                        <td className="px-4 py-3 text-muted-foreground">
+                                            {testCase.tested_method ?? '—'}
+                                        </td>
                                         <td className="px-4 py-3">
-                                            {testCase.assignee?.name ?? (
-                                                <span className="text-muted-foreground">
-                                                    Unassigned
-                                                </span>
-                                            )}
+                                            <AssigneeCell
+                                                testCase={testCase}
+                                                assignableUsers={
+                                                    assignableUsers
+                                                }
+                                            />
                                         </td>
                                         <td className="px-4 py-3">
                                             {testCase.creator?.name ?? '—'}

@@ -25,8 +25,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { cn } from '@/lib/utils';
 import { testCaseStatusLabel } from '@/lib/test-case-status';
+import { cn } from '@/lib/utils';
 import { index, store, update } from '@/routes/test-case-statuses';
 import type {
     TestCaseStatus,
@@ -142,8 +142,9 @@ export default function ManageTestCaseStatuses({ statuses }: Props) {
     }, {});
 
     /** Default to a colour nobody is using, so a new status is not born looking like "Cancelled". */
-    const firstFreeColor =
-        colorOptions.find((option) => !usedBy[option.value])?.value;
+    const firstFreeColor = colorOptions.find(
+        (option) => !usedBy[option.value],
+    )?.value;
 
     const createForm = useForm({
         name: '',
@@ -260,18 +261,24 @@ export default function ManageTestCaseStatuses({ statuses }: Props) {
                                         onChange={(e) =>
                                             createForm.setData(
                                                 'category',
-                                                e.target.value as TestCaseStatusCategory,
+                                                e.target
+                                                    .value as TestCaseStatusCategory,
                                             )
                                         }
                                         className="h-10 rounded-md border border-input bg-background px-3 text-sm"
                                     >
                                         {categoryOptions.map((option) => (
-                                            <option key={option.value} value={option.value}>
+                                            <option
+                                                key={option.value}
+                                                value={option.value}
+                                            >
                                                 {option.label}
                                             </option>
                                         ))}
                                     </select>
-                                    <InputError message={createForm.errors.category} />
+                                    <InputError
+                                        message={createForm.errors.category}
+                                    />
                                 </div>
 
                                 <div className="grid gap-2">
@@ -286,7 +293,9 @@ export default function ManageTestCaseStatuses({ statuses }: Props) {
                                     />
                                     {!firstFreeColor && (
                                         <p className="text-sm text-destructive">
-                                            All available colors are in use. Edit an existing status to free one before creating another.
+                                            All available colors are in use.
+                                            Edit an existing status to free one
+                                            before creating another.
                                         </p>
                                     )}
                                     <InputError
@@ -444,7 +453,9 @@ function StatusRow({
                                     onBlur={() =>
                                         editForm.setData(
                                             'name',
-                                            normalizeStatusName(editForm.data.name),
+                                            normalizeStatusName(
+                                                editForm.data.name,
+                                            ),
                                         )
                                     }
                                     autoFocus
@@ -456,17 +467,24 @@ function StatusRow({
                             </div>
 
                             <div className="grid gap-2">
-                                <Label htmlFor={`edit-description-${status.id}`}>
+                                <Label
+                                    htmlFor={`edit-description-${status.id}`}
+                                >
                                     Description (when to use)
                                 </Label>
                                 <Input
                                     id={`edit-description-${status.id}`}
                                     value={editForm.data.description}
                                     onChange={(e) =>
-                                        editForm.setData('description', e.target.value)
+                                        editForm.setData(
+                                            'description',
+                                            e.target.value,
+                                        )
                                     }
                                 />
-                                <InputError message={editForm.errors.description} />
+                                <InputError
+                                    message={editForm.errors.description}
+                                />
                             </div>
 
                             <div className="grid gap-2">
@@ -479,18 +497,24 @@ function StatusRow({
                                     onChange={(e) =>
                                         editForm.setData(
                                             'category',
-                                            e.target.value as TestCaseStatusCategory,
+                                            e.target
+                                                .value as TestCaseStatusCategory,
                                         )
                                     }
                                     className="h-10 rounded-md border border-input bg-background px-3 text-sm"
                                 >
                                     {categoryOptions.map((option) => (
-                                        <option key={option.value} value={option.value}>
+                                        <option
+                                            key={option.value}
+                                            value={option.value}
+                                        >
                                             {option.label}
                                         </option>
                                     ))}
                                 </select>
-                                <InputError message={editForm.errors.category} />
+                                <InputError
+                                    message={editForm.errors.category}
+                                />
                             </div>
 
                             <div className="grid gap-2">

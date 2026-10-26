@@ -12,9 +12,17 @@ import {
     UserCheck,
     Users,
 } from 'lucide-react';
+import ProjectController from '@/actions/App/Http/Controllers/ProjectController';
 import AppLogo from '@/components/app-logo';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
     Sidebar,
     SidebarContent,
@@ -24,15 +32,7 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { dashboard, start } from '@/routes';
-import ProjectController from '@/actions/App/Http/Controllers/ProjectController';
 import { index as accountsIndex } from '@/routes/accounts';
 import { edit as jiraEdit } from '@/routes/jira';
 import { index as projectsIndex } from '@/routes/projects';

@@ -1,5 +1,5 @@
 import { Head, useForm } from '@inertiajs/react';
-import { Lock } from 'lucide-react';
+import { Check, Lock, X } from 'lucide-react';
 import type { FormEvent } from 'react';
 import { useState } from 'react';
 import Heading from '@/components/heading';
@@ -20,6 +20,8 @@ import { index, update } from '@/routes/role-permissions';
 import type { AvailablePermission, EditableRole } from '@/types';
 
 type Props = {
+    /** Roles from most to least access, as the editing rule sees them. */
+    hierarchy: string[];
     roles: EditableRole[];
     availablePermissions: AvailablePermission[];
 };
@@ -27,6 +29,7 @@ type Props = {
 export default function ManageRolePermissions({
     roles,
     availablePermissions,
+    hierarchy,
 }: Props) {
     return (
         <>
@@ -37,6 +40,20 @@ export default function ManageRolePermissions({
                     title="Manage permissions"
                     description="Set which actions each role can perform in the current project; other projects are not affected. You can only edit roles below your own; the administrator role always has every permission."
                 />
+
+                {/* The rule says "only roles below yours", so the order has
+                    to be on screen; alphabetical cards implied the opposite. */}
+                <p className="text-sm text-muted-foreground">
+                    Hierarchy, from most to least access:{' '}
+                    {hierarchy.map((name, position) => (
+                        <span key={name}>
+                            {position > 0 && ' › '}
+                            <span className="font-medium text-foreground">
+                                {name}
+                            </span>
+                        </span>
+                    ))}
+                </p>
 
                 <div className="flex flex-col gap-4">
                     {roles.map((role) => (
@@ -51,9 +68,6 @@ export default function ManageRolePermissions({
         </>
     );
 }
-
-/** Permissions that hand out control of the system itself. */
-const ADMIN_PERMISSIONS = ['users.manage', 'roles.manage', 'statuses.manage'];
 
 function RoleCard({
     role,
@@ -73,21 +87,47 @@ function RoleCard({
         form.data.permissions.some((permission) => !saved.includes(permission));
 
     /** Administrative permissions this save would newly grant. */
-    const grantedAdmin = form.data.permissions.filter(
-        (permission) =>
-            ADMIN_PERMISSIONS.includes(permission) &&
-            !saved.includes(permission),
+    const areas = [
+        ...new Set(availablePermissions.map((permission) => permission.area)),
+    ];
+
+    const administrative = new Set(
+        availablePermissions
+            .filter((permission) => permission.administrative)
+            .map((permission) => permission.value),
     );
 
+    const grantedAdmin = form.data.permissions.filter(
+        (permission) =>
+            administrative.has(permission) && !saved.includes(permission),
+    );
+
+    /**
+     * Some permissions are meaningless on their own: managing roles without
+     * seeing the accounts they apply to, for instance. Granting one pulls in
+     * what it needs, and revoking one drops whatever depended on it.
+     */
     function togglePermission(value: string, checked: boolean) {
-        form.setData(
-            'permissions',
-            checked
-                ? [...form.data.permissions, value]
-                : form.data.permissions.filter(
-                      (permission) => permission !== value,
-                  ),
-        );
+        const current = new Set(form.data.permissions);
+
+        if (checked) {
+            current.add(value);
+
+            const required =
+                availablePermissions.find(
+                    (permission) => permission.value === value,
+                )?.requires ?? [];
+
+            required.forEach((permission) => current.add(permission));
+        } else {
+            current.delete(value);
+
+            availablePermissions
+                .filter((permission) => permission.requires.includes(value))
+                .forEach((permission) => current.delete(permission.value));
+        }
+
+        form.setData('permissions', [...current]);
     }
 
     function submit(e: FormEvent) {
@@ -132,48 +172,124 @@ function RoleCard({
                         </Badge>
                     )}
 
-                    {role.can_edit && isDirty && (
+                    {role.read_only && (
+                        <Badge variant="secondary" className="gap-1">
+                            <Lock className="size-3" />
+                            Read-only role
+                        </Badge>
+                    )}
+
+                    {role.can_edit && !role.read_only && isDirty && (
                         <span className="text-sm text-warning">
                             Unsaved changes
                         </span>
                     )}
                 </div>
 
-                <div className="grid gap-3 sm:grid-cols-2">
-                    {availablePermissions.map((permission) => (
-                        <div
-                            key={permission.value}
-                            className="flex items-center gap-2"
-                        >
-                            <Checkbox
-                                id={`${role.id}-${permission.value}`}
-                                checked={
-                                    isAdmin ||
-                                    form.data.permissions.includes(
-                                        permission.value,
-                                    )
-                                }
-                                disabled={!role.can_edit}
-                                onCheckedChange={(checked) =>
-                                    togglePermission(
-                                        permission.value,
-                                        checked === true,
-                                    )
-                                }
-                            />
-                            <Label
-                                htmlFor={`${role.id}-${permission.value}`}
-                                className={
-                                    role.can_edit
-                                        ? 'font-normal'
-                                        : 'font-normal text-muted-foreground'
-                                }
-                            >
-                                {permission.label}
-                            </Label>
-                        </div>
-                    ))}
-                </div>
+                {/* A card the viewer cannot edit is a statement of fact, so
+                    it reads as a list with ticks and crosses. Disabled
+                    checkboxes rendered so pale that the two cards people most
+                    need to understand were the hardest to read. */}
+                {role.can_edit && !role.read_only ? (
+                    <div className="flex flex-col gap-4">
+                        {areas.map((area) => (
+                            <div key={area} className="flex flex-col gap-2">
+                                <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                                    {area}
+                                </p>
+
+                                <div className="grid gap-3 sm:grid-cols-2">
+                                    {availablePermissions
+                                        .filter(
+                                            (permission) =>
+                                                permission.area === area,
+                                        )
+                                        .map((permission) => (
+                                            <div
+                                                key={permission.value}
+                                                className="flex items-center gap-2"
+                                            >
+                                                <Checkbox
+                                                    id={`${role.id}-${permission.value}`}
+                                                    checked={form.data.permissions.includes(
+                                                        permission.value,
+                                                    )}
+                                                    onCheckedChange={(
+                                                        checked,
+                                                    ) =>
+                                                        togglePermission(
+                                                            permission.value,
+                                                            checked === true,
+                                                        )
+                                                    }
+                                                />
+                                                <Label
+                                                    htmlFor={`${role.id}-${permission.value}`}
+                                                    className="font-normal"
+                                                >
+                                                    {permission.label}
+                                                </Label>
+                                            </div>
+                                        ))}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="flex flex-col gap-4">
+                        {areas.map((area) => (
+                            <div key={area} className="flex flex-col gap-2">
+                                <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                                    {area}
+                                </p>
+
+                                <ul className="grid gap-2 sm:grid-cols-2">
+                                    {availablePermissions
+                                        .filter(
+                                            (permission) =>
+                                                permission.area === area,
+                                        )
+                                        .map((permission) => {
+                                            const granted =
+                                                isAdmin ||
+                                                role.effective_permissions.includes(
+                                                    permission.value,
+                                                );
+
+                                            return (
+                                                <li
+                                                    key={permission.value}
+                                                    className="flex items-center gap-2 text-sm"
+                                                >
+                                                    {granted ? (
+                                                        <Check
+                                                            className="size-4 shrink-0 text-success"
+                                                            aria-hidden="true"
+                                                        />
+                                                    ) : (
+                                                        <X
+                                                            className="size-4 shrink-0 text-muted-foreground"
+                                                            aria-hidden="true"
+                                                        />
+                                                    )}
+
+                                                    <span>
+                                                        {permission.label}
+                                                    </span>
+
+                                                    <span className="sr-only">
+                                                        {granted
+                                                            ? '(granted)'
+                                                            : '(not granted)'}
+                                                    </span>
+                                                </li>
+                                            );
+                                        })}
+                                </ul>
+                            </div>
+                        ))}
+                    </div>
+                )}
 
                 {role.can_edit && (
                     <div>

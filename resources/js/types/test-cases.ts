@@ -139,6 +139,8 @@ export type TestCaseFilters = {
     situation_id: number | null;
     execution_result: string | null;
     assigned_to_me: boolean;
+    /** Set when arriving from a requirement's coverage count. */
+    requirement_id: number | null;
 };
 
 export type Evidence = {

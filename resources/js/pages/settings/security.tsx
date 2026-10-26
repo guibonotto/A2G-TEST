@@ -1,6 +1,6 @@
 import { Form, Head } from '@inertiajs/react';
-import SecurityController from '@/actions/App/Http/Controllers/Settings/SecurityController';
 import { useRef } from 'react';
+import SecurityController from '@/actions/App/Http/Controllers/Settings/SecurityController';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import type { Props as ManagePasskeysProps } from '@/components/manage-passkeys';
@@ -111,13 +111,11 @@ export default function Security(props: Props) {
                                         passwordrules={props.passwordRules}
                                     />
 
-                                    <InputError
-                                        message={errors.password}
-                                    />
+                                    <InputError message={errors.password} />
 
                                     <p className="font-mono text-[10px] leading-relaxed text-muted-foreground">
-                                        Use a long, unique password to keep
-                                        your account more secure.
+                                        Use a long, unique password to keep your
+                                        account more secure.
                                     </p>
                                 </div>
 
@@ -140,9 +138,7 @@ export default function Security(props: Props) {
                                     />
 
                                     <InputError
-                                        message={
-                                            errors.password_confirmation
-                                        }
+                                        message={errors.password_confirmation}
                                     />
                                 </div>
 
@@ -195,8 +191,7 @@ export default function Security(props: Props) {
                                                 'Unknown device'}
                                         </p>
                                         <p className="mt-1 text-xs text-muted-foreground">
-                                            {session.ip_address ??
-                                                'Unknown IP'}{' '}
+                                            {session.ip_address ?? 'Unknown IP'}{' '}
                                             ·{' '}
                                             {session.last_activity ??
                                                 'Unknown activity time'}

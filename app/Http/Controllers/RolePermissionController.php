@@ -22,21 +22,38 @@ class RolePermissionController extends Controller
         $user = $request->user();
 
         return Inertia::render('management/permissions/index', [
+            /**
+             * Ordered by the hierarchy that actually governs who may edit
+             * whom. Alphabetical order put Developer above QA on screen while
+             * the rules said the opposite.
+             */
             'roles' => Role::query()
-                ->orderBy('name')
                 ->get(['id', 'name', 'slug', 'permissions'])
+                ->sortBy(fn (Role $role): int => Role::rankOf($role->slug))
+                ->values()
                 ->map(fn (Role $role): array => [
                     ...$role->only(['id', 'name', 'slug']),
                     'permissions' => $role->effectivePermissions(),
                     'effective_permissions' => $role->effectivePermissions(),
                     'can_edit' => $user->canEditPermissionsOf($role),
+                    /** Read-only roles hold nothing, so the boxes are inert. */
+                    'read_only' => $role->slug === Role::VIEWER,
                 ]),
             'availablePermissions' => collect(Permission::cases())
                 ->map(fn (Permission $permission) => [
                     'value' => $permission->value,
                     'label' => $permission->label(),
+                    'area' => $permission->area(),
+                    'administrative' => $permission->isAdministrative(),
+                    /** Permissions that have to be granted alongside this one. */
+                    'requires' => array_map(
+                        fn (Permission $required): string => $required->value,
+                        $permission->requires(),
+                    ),
                 ])
                 ->values(),
+            /** Shown on the page so the editing rule is not a guess. */
+            'hierarchy' => Role::hierarchy(),
         ]);
     }
 
