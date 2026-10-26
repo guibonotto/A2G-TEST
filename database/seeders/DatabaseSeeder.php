@@ -27,7 +27,7 @@ class DatabaseSeeder extends Seeder
         $roles = [
             ['name' => 'QA / Tester',   'slug' => 'qa', 'permissions' => Permission::forTesters()],
             ['name' => 'Developer',  'slug' => 'developer', 'permissions' => Permission::forDevelopers()],
-            ['name' => 'Administrator',  'slug' => 'admin', 'permissions' => Permission::values()],
+            ['name' => 'Test Manager',  'slug' => 'admin', 'permissions' => Permission::values()],
             /** Read-only by definition: the viewer holds no permission at all. */
             ['name' => 'Viewer',   'slug' => 'viewer', 'permissions' => []],
         ];
