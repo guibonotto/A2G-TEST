@@ -4,13 +4,16 @@ namespace Database\Seeders;
 
 use App\Enums\Permission;
 use App\Models\Classification;
-use App\Models\Project;
 use App\Models\Role;
-use App\Models\User;
 use Illuminate\Database\Seeder;
 
 /**
- * Model events stay on: roles and projects generate their uuid when created.
+ * The catalogue a deployment cannot work without: the roles and the test case
+ * classifications. It creates no accounts, so running it on a live deployment
+ * cannot hand anybody a way in. The demo project and its accounts live in
+ * {@see DemoSeeder}, which has to be asked for by name.
+ *
+ * Model events stay on: roles generate their uuid when created.
  */
 class DatabaseSeeder extends Seeder
 {
@@ -39,29 +42,6 @@ class DatabaseSeeder extends Seeder
             );
         }
 
-        $demoUsers = [
-            ['name' => 'Admin Demo', 'email' => 'admin@a2gtest.com', 'role' => 'admin'],
-            ['name' => 'QA Demo', 'email' => 'qa@a2gtest.com', 'role' => 'qa'],
-            ['name' => 'Viewer Demo', 'email' => 'viewer@a2gtest.com', 'role' => 'viewer'],
-        ];
-
-        /** Roles are held per project, so the demo accounts share a demo project where each one has its role. */
-        $demoProject = null;
-
-        foreach ($demoUsers as $demoUser) {
-            $user = User::firstOrCreate(
-                ['email' => $demoUser['email']],
-                [
-                    'name' => $demoUser['name'],
-                    'password' => 'password',
-                    'email_verified_at' => now(),
-                ]
-            );
-
-            $demoProject ??= Project::firstOrCreate(['name' => 'Demo Project'], ['owner_id' => $user->id]);
-            $demoProject->addMember($user, $demoUser['role']);
-        }
-
         $classifications = [
             ['name' => 'Unit', 'description' => 'Unit tests verify the behavior of individual components of the system.'],
             ['name' => 'Integration', 'description' => 'Integration tests assess the interaction between different modules or services.'],
@@ -69,8 +49,5 @@ class DatabaseSeeder extends Seeder
         foreach ($classifications as $classification) {
             Classification::firstOrCreate(['name' => $classification['name']], $classification);
         }
-
-        /** Statuses are per project; every project (the demo one included) gets the defaults when created. */
-        $this->call(RequirementSeeder::class);
     }
 }

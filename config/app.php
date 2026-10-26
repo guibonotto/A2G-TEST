@@ -123,4 +123,17 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Demo Account Password
+    |--------------------------------------------------------------------------
+    |
+    | The password DemoSeeder gives the demo accounts. Left unset, the seeder
+    | draws a random one and prints it once, so a demo database never ends up
+    | with a password that can be guessed from the source.
+    |
+    */
+
+    'demo_password' => env('DEMO_PASSWORD'),
+
 ];

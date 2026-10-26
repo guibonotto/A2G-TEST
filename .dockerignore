@@ -5,6 +5,7 @@
 node_modules
 tests
 vendor
+database/*.sqlite*
 storage/logs/*
 storage/framework/cache/*
 storage/framework/sessions/*

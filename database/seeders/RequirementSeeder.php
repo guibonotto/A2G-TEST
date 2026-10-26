@@ -49,11 +49,12 @@ class RequirementSeeder extends Seeder
 
     /**
      * Seed the functional requirements from the project proposal into the demo
-     * project, since requirements belong to a project.
+     * project, since requirements belong to a project. {@see DemoSeeder} is
+     * what creates that project, and what calls this.
      */
     public function run(): void
     {
-        $demoProject = Project::query()->where('name', 'Demo Project')->first();
+        $demoProject = Project::query()->where('name', DemoSeeder::PROJECT)->first();
 
         if ($demoProject === null) {
             return;

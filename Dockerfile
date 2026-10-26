@@ -37,5 +37,12 @@ ENV APP_ENV=production \
     QUEUE_CONNECTION=sync
 
 RUN chown -R www-data:www-data storage bootstrap/cache database
+# The repository is checked out on Windows, so the execute bit does not survive.
+RUN chmod +x /app/entrypoint.sh
 
 EXPOSE 80
+
+# Setting ENTRYPOINT clears the CMD inherited from the base image, so the
+# arguments it passes to `frankenphp run` have to be restated here.
+ENTRYPOINT ["/app/entrypoint.sh"]
+CMD ["--config", "/etc/frankenphp/Caddyfile", "--adapter", "caddyfile"]
