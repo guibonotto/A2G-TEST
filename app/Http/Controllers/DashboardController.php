@@ -7,12 +7,26 @@ use App\Models\Execution;
 use App\Models\Project;
 use App\Models\TestCase;
 use App\Services\Jira\JiraDefectStatusSync;
+use Illuminate\Contracts\View\View;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class DashboardController extends Controller
 {
+    /**
+     * Readable names of the execution results used in the report.
+     *
+     * @var array<string, string>
+     */
+    private const EXECUTION_RESULT_LABELS = [
+        'APROVADO' => 'Passed',
+        'REPROVADO' => 'Failed',
+        'BLOQUEADO' => 'Blocked',
+        'PENDENTE' => 'Pending',
+    ];
+
     /**
      * Display the dashboard with aggrgated test case metrics.
      */
@@ -31,6 +45,81 @@ class DashboardController extends Controller
             /** Asks Jira for fresh statuses, so it loads after the page instead of holding it up. */
             'openDefects' => Inertia::defer(fn (): array => $this->buildOpenDefects($project)),
         ]);
+    }
+
+    /**
+     * Show the test report as a printable page, which the browser saves as PDF.
+     */
+    public function report(): View
+    {
+        $project = Project::current();
+        abort_unless($project, 404);
+
+        return view('reports.test-report', [
+            ...$this->buildReport($project),
+            'fileName' => 'test-report-'.Str::slug($project->name).'-'.now()->format('Y-m-d').'.pdf',
+        ]);
+    }
+
+    /**
+     * The report data: the summary in numbers and one row per test case with
+     * its latest execution. Defect statuses are the ones last read from Jira,
+     * so the report does not wait for Jira.
+     *
+     * @return array{project: Project, generatedAt: Carbon, summary: array<string, int>, rows: list<array{id: int, title: string, situation: ?string, classification: ?string, assignee: string, version: int, requirements: string, result: string, resultSlug: string, executedAt: ?Carbon, executedBy: ?string, defectKey: ?string, defectStatus: ?string, defectUrl: ?string}>}
+     */
+    private function buildReport(Project $project): array
+    {
+        $integration = $project->jiraIntegration;
+
+        $testCases = TestCase::query()
+            ->where('project_id', $project->id)
+            ->with(['status:id,name', 'classification:id,name', 'assignee:id,name', 'requirements:requirements.id,code', 'latestExecution.executor:id,name'])
+            ->orderBy('id')
+            ->get();
+
+        $rows = $testCases->map(function (TestCase $testCase) use ($integration): array {
+            $execution = $testCase->latestExecution;
+            $result = self::EXECUTION_RESULT_LABELS[$execution?->status] ?? 'Not executed';
+
+            return [
+                'id' => $testCase->id,
+                'title' => $testCase->title,
+                'situation' => $testCase->status?->name,
+                'classification' => $testCase->classification?->name,
+                'assignee' => $testCase->assignee?->name ?? 'Unassigned',
+                'version' => (int) $testCase->version,
+                'requirements' => $testCase->requirements->pluck('code')->implode(', '),
+                'result' => $result,
+                'resultSlug' => Str::slug($result),
+                'executedAt' => $execution?->execution_date,
+                'executedBy' => $execution?->executor?->name,
+                'defectKey' => $execution?->jira_defect_key,
+                'defectStatus' => $execution?->jira_defect_status,
+                'defectUrl' => $execution?->jira_defect_key ? $integration?->issueUrl($execution->jira_defect_key) : null,
+            ];
+        });
+
+        $results = $rows->countBy('result');
+
+        return [
+            'project' => $project,
+            'generatedAt' => now(),
+            'summary' => [
+                'Test cases' => $rows->count(),
+                ...collect([...self::EXECUTION_RESULT_LABELS, 'Not executed'])
+                    ->mapWithKeys(fn (string $label): array => [$label => $results[$label] ?? 0])
+                    ->all(),
+                'Unassigned' => $testCases->whereNull('assigned_to')->count(),
+                'Open Jira defects' => Execution::query()
+                    ->whereNotNull('jira_defect_key')
+                    ->where('jira_defect_resolved', false)
+                    ->whereHas('testCase', fn ($query) => $query->where('project_id', $project->id))
+                    ->distinct()
+                    ->count('jira_defect_key'),
+            ],
+            'rows' => $rows->values()->all(),
+        ];
     }
 
     /**

@@ -9,6 +9,7 @@ Route::inertia('/', 'welcome')->name('home');
 Route::middleware(['auth', 'verified', 'project'])->group(function () {
     Route::get('start', StartController::class)->name('start');
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('dashboard/report', [DashboardController::class, 'report'])->name('dashboard.report');
 });
 
 require __DIR__.'/settings.php';
