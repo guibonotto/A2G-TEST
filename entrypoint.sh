@@ -24,6 +24,13 @@ fi
 echo 'entrypoint: running migrations'
 php artisan migrate --force
 
+# The roles and the classifications are catalogue, not sample data: without
+# them a project creates its own lone "admin" role on the fly and the invite
+# screen has a single option to offer. The seeder creates no accounts and
+# matches on slug, so running it on every boot is idempotent.
+echo 'entrypoint: seeding the catalogue'
+php artisan db:seed --force
+
 # Artisan runs as root here, so the write-ahead log files it leaves behind
 # would otherwise belong to root and the server could not write to them.
 if [ -n "$database" ]; then
