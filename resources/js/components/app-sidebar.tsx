@@ -93,6 +93,9 @@ const managementNavItems: NavItem[] = [
         title: 'Jira integration',
         href: jiraEdit(),
         icon: Plug,
+        /* Connecting the project's Jira site is reserved to the administrator,
+           so without this the other roles saw a link that only answered 403. */
+        permission: 'jira.manage',
     },
 ];
 
